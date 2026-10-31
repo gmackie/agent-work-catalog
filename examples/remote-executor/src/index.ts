@@ -37,6 +37,23 @@ const error=(unknown:unknown)=>{
  */
 export async function handleRequest(request:Request,env:Env):Promise<Response>{
   const path=new URL(request.url).pathname;
+  if(path==="/.well-known/awc-adapter.json" && request.method==="GET") {
+    return Response.json({
+      schemaVersion:"awc.adapter/v1",
+      id:"awc.example.remote-executor",version:"1.0.0",
+      displayName:"Read-only example remote Worker",
+      roles:["work-executor"],transport:"remote-http",
+      supportedTaskTypes:["task:example"],
+      capabilities:["start","inspect","recover","cancel"],
+      endpointPaths:{
+        start:"/v1/executions",
+        recover:"/v1/executions/by-idempotency/{key}",
+        inspect:"/v1/executions/{providerExecutionId}",
+        cancel:"/v1/executions/{providerExecutionId}/cancel",
+      },
+      executionPricing:"not for sale; no paid work",
+    },{headers:{"cache-control":"public,max-age=300","x-content-type-options":"nosniff"}});
+  }
   if(path==="/health" && request.method==="GET")return reply({
     service:"awc-example-remote-executor",mode:"deterministic-public-data-only",
     enabled:env.ENABLE_EXAMPLE_EXECUTOR==="true",
