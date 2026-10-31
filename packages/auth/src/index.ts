@@ -1,14 +1,14 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 
 export interface AuthConfig {
-  readonly issuer?:string;
-  readonly jwksUrl?:string;
-  readonly mcpAudience?:string;
-  readonly approvalAudience?:string;
-  readonly approvalClientId?:string;
+  readonly issuer?:string | undefined;
+  readonly jwksUrl?:string | undefined;
+  readonly mcpAudience?:string | undefined;
+  readonly approvalAudience?:string | undefined;
+  readonly approvalClientId?:string | undefined;
   readonly allowedApprovalAcr?:readonly string[];
-  readonly sandboxBuyerToken?:string;
-  readonly sandboxHumanToken?:string;
+  readonly sandboxBuyerToken?:string | undefined;
+  readonly sandboxHumanToken?:string | undefined;
 }
 export interface VerifiedActor {
   readonly buyerId:string;
