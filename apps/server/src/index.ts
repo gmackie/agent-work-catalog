@@ -248,7 +248,12 @@ export async function consumeWorkQueue(batch:MessageBatch<unknown>,env:Env):Prom
   const {commerce}=services(env,request);
   for(const msg of batch.messages){
     try{
-      await Effect.runPromise(commerce.runQueued(msg.body));
+      const candidate:unknown=msg.body;
+      if(!candidate || typeof candidate!=="object" || Array.isArray(candidate)){msg.ack();continue;}
+      const payload=candidate as {workId?:unknown;buyerId?:unknown};
+      if(typeof payload.workId!=="string"||typeof payload.buyerId!=="string"||
+         payload.workId.length>160||payload.buyerId.length>200){msg.ack();continue;}
+      await Effect.runPromise(commerce.runQueued({workId:payload.workId,buyerId:payload.buyerId}));
       msg.ack();
     }catch(e){
       const reason=e instanceof Error?e.message:"";
