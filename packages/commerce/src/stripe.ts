@@ -7,7 +7,9 @@ import { CommerceError, type CheckoutRail, type VerifiedFunding } from "./index.
  */
 export function stripeTestCheckout(stripe: Stripe, origin: string): CheckoutRail {
   const base = new URL(origin);
-  if (base.protocol !== "https:") throw new CommerceError("unsupported", "Checkout origin must be HTTPS");
+  if (base.protocol !== "https:" && !(base.protocol === "http:" && ["localhost","127.0.0.1"].includes(base.hostname))) {
+    throw new CommerceError("unsupported", "Checkout origin must use HTTPS except for local development");
+  }
   return {
     create: async(work, quote) => {
       const amount = Number(quote.price.minorUnits);
