@@ -123,7 +123,8 @@ export function makeCommerce(
   };
   const verified = async (buyerId:string,workId:string,proof:VerifiedFunding) => {
     const {work,quote,state}=await load(buyerId,workId);
-    if (state.status === "funded" && state.paymentReference === proof.reference) return state;
+    if (state.paymentReference === proof.reference && state.paymentRail===proof.rail &&
+        ["funded","queued","running","submitted","failed"].includes(state.status)) return state;
     if (!(state.status === "approved" || state.status === "checkout_pending")) {
       throw new CommerceError("invalid_state","Approval required before funding");
     }
@@ -167,7 +168,8 @@ export function makeCommerce(
     reconcileStripe: (buyerId,workId)=>attempt(async()=>{
       if (!options.checkout) throw new CommerceError("unsupported","Stripe funding not configured");
       const {work,quote,state}=await load(buyerId,workId);
-      if (state.status==="funded" && state.paymentRail==="stripe-test") return state;
+      if (state.paymentRail==="stripe-test" && state.paymentReference===state.checkoutSessionId &&
+          ["funded","queued","running","submitted","failed"].includes(state.status)) return state;
       if (state.status!=="checkout_pending"||!state.checkoutSessionId) {
         throw new CommerceError("invalid_state","No bound Checkout Session");
       }
