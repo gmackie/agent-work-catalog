@@ -24,7 +24,7 @@ function fakeD1():D1Database {
       bind(...v:(string|number|null)[]){args=v;return stmt;},
       async run(){
         if(sql.startsWith("INSERT")){
-          const [provider_id,client_id,idempotency_key,request_digest,snapshot_json]=args as string[];
+          const [provider_id,client_id,idempotency_key,request_digest,snapshot_json]=args as [string,string,string,string,string];
           if(!values.has(idempotency_key))values.set(idempotency_key,{provider_id,client_id,idempotency_key,request_digest,snapshot_json});
         }
       },
