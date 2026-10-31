@@ -180,7 +180,7 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
       const event=stripe.webhooks.constructEvent(raw,request.headers.get("stripe-signature")??"",env.STRIPE_WEBHOOK_SECRET);
       if(event.livemode)return json({error:"live_mode_prohibited"},403);
       if(event.type==="checkout.session.completed"||event.type==="checkout.session.async_payment_succeeded"){
-        const obj=event.data.object;
+        const obj=event.data.object as Stripe.Checkout.Session;
         const workId=obj.metadata?.awc_work_id;
         const buyerId=obj.metadata?.awc_buyer_id;
         if(!workId||!buyerId)return json({error:"missing_contract_reference"},422);
@@ -229,14 +229,6 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
     const ui=await env.ASSETS.fetch("https://assets.local/marketplace.html");
     const contractUi=await env.ASSETS.fetch("https://assets.local/contract.html");
     const paid=paidConfig(env);
-    const handler=createMcpHandler(()=>createCatalogMcpServer({
-      marketplace,commerce,buyerId:actor?.kind==="agent"?actor.buyerId:null,
-      buyerScopes:actor?.scopes??[],approvalBaseUrl:url.origin,
-      appHtml:ui.ok?undefined as never:"",contractAppHtml:contractUi.ok?undefined as never:"",
-      enqueue:env.AWC_JOBS ? msg=>env.AWC_JOBS!.send(msg) : undefined,
-      stripeCheckoutAvailable:!!stripe,
-      ...(paid?{paidSandbox:paid}:{}),
-    }),{route:"/mcp",corsOptions:false});
     // Load static App bundles once and provide the strings to the stateless MCP factory.
     const [html,contract]=await Promise.all([ui.ok?ui.text():Promise.resolve(""),contractUi.ok?contractUi.text():Promise.resolve("")]);
     const configured=createMcpHandler(()=>createCatalogMcpServer({
