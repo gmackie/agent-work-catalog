@@ -1,0 +1,19 @@
+{
+  "name": "@awc/payment-stripe",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "check": "pnpm typecheck"
+  },
+  "dependencies": {
+    "effect": "^4.0.6",
+    "stripe": "^23.1.0",
+    "@awc/contracts": "workspace:*",
+    "@awc/runtime": "workspace:*"
+  }
+}
