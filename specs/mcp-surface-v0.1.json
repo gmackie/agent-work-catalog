@@ -1,0 +1,135 @@
+{
+  "schemaVersion": "awc-mcp-surface/v0.1",
+  "status": "design-only",
+  "protocolTarget": "2026-07-28",
+  "transport": {
+    "path": "/mcp",
+    "transport": "streamable-http",
+    "sessionless": true
+  },
+  "tools": [
+    {
+      "name": "catalog.search",
+      "scope": "public",
+      "effect": "read",
+      "view": "ui://awc/marketplace.html"
+    },
+    {
+      "name": "catalog.get_offering",
+      "scope": "public",
+      "effect": "read"
+    },
+    {
+      "name": "catalog.compare",
+      "scope": "public",
+      "effect": "read",
+      "view": "ui://awc/compare.html"
+    },
+    {
+      "name": "catalog.get_task_type",
+      "scope": "public",
+      "effect": "read"
+    },
+    {
+      "name": "providers.inspect",
+      "scope": "public",
+      "effect": "read"
+    },
+    {
+      "name": "quotes.request",
+      "scope": "quotes:write",
+      "effect": "write"
+    },
+    {
+      "name": "quotes.get",
+      "scope": "quotes:read",
+      "effect": "read"
+    },
+    {
+      "name": "work.prepare",
+      "scope": "work:write",
+      "effect": "write",
+      "view": "ui://awc/contract.html"
+    },
+    {
+      "name": "work.confirm",
+      "scope": "work:authorize",
+      "effect": "purchase"
+    },
+    {
+      "name": "work.start",
+      "scope": "work:execute",
+      "effect": "execute"
+    },
+    {
+      "name": "work.get",
+      "scope": "work:read",
+      "effect": "read",
+      "view": "ui://awc/workboard.html"
+    },
+    {
+      "name": "work.list",
+      "scope": "work:read",
+      "effect": "read"
+    },
+    {
+      "name": "work.cancel",
+      "scope": "work:write",
+      "effect": "write"
+    },
+    {
+      "name": "work.review",
+      "scope": "work:review",
+      "effect": "write"
+    },
+    {
+      "name": "billing.options",
+      "scope": "billing:read",
+      "effect": "read"
+    },
+    {
+      "name": "billing.balance",
+      "scope": "billing:read",
+      "effect": "read"
+    },
+    {
+      "name": "receipts.verify",
+      "scope": "receipts:read",
+      "effect": "read",
+      "view": "ui://awc/receipts.html"
+    },
+    {
+      "name": "provider.publish_offering",
+      "scope": "provider:write",
+      "effect": "write",
+      "view": "ui://awc/provider.html"
+    }
+  ],
+  "resources": [
+    "awc://taxonomy/task-types/{id}/{version}",
+    "awc://offerings/{providerId}/{offeringId}/{version}",
+    "awc://providers/{providerId}/capabilities",
+    "awc://schemas/{schemaId}/{version}",
+    "awc://work-orders/{workOrderId}",
+    "awc://work-orders/{workOrderId}/deliverables",
+    "awc://receipts/{receiptId}"
+  ],
+  "apps": [
+    "ui://awc/marketplace.html",
+    "ui://awc/compare.html",
+    "ui://awc/contract.html",
+    "ui://awc/workboard.html",
+    "ui://awc/receipts.html",
+    "ui://awc/provider.html"
+  ],
+  "extensions": [
+    "io.modelcontextprotocol/tasks",
+    "io.modelcontextprotocol/ui"
+  ],
+  "notes": [
+    "WorkOrders are commercial domain objects and not MCP Tasks.",
+    "No paid Gateway rules on discovery/control plane.",
+    "All mutation tools require authenticated authorization and exact price/contract constraints.",
+    "This file is a draft manifest, NOT MCP tools/list wire format."
+  ]
+}

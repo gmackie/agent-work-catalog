@@ -159,7 +159,7 @@ export const processIncomingWork = (sourceId: string, payload: unknown) =>
     const acquired = yield* repository.claim(validated.id);
     if (!acquired) return yield* Effect.fail(new WorkError("duplicate", "Work claimed concurrently"));
     const worker = yield* executors.resolve(validated.taskTypeId);
-    const candidate = yield* worker.execute(validated).pipe(Effect.catch((error) =>
+    const candidate = yield* worker.execute(validated).pipe(Effect.catchAll((error) =>
       repository.failed(validated.id, error.message).pipe(Effect.flatMap(() => Effect.fail(error)))
     ));
     const result = yield* Effect.try({
@@ -170,7 +170,7 @@ export const processIncomingWork = (sourceId: string, payload: unknown) =>
         return value;
       },
       catch: (e) => e instanceof WorkError ? e : new WorkError("invalid_input", "Malformed worker output"),
-    }).pipe(Effect.catch((error) =>
+    }).pipe(Effect.catchAll((error) =>
       repository.failed(validated.id, error.message).pipe(Effect.flatMap(() => Effect.fail(error)))
     ));
 
