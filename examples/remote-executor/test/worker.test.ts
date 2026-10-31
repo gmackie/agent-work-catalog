@@ -39,6 +39,19 @@ function fakeD1():D1Database {
   }};
 }
 describe("End-to-end signed HTTP executor",()=>{
+  it("publishes an unpriced capability manifest without exposing a signing key",async()=>{
+    const response=await handleRequest(
+      new Request("https://remote.example/.well-known/awc-adapter.json"),
+      {DB:fakeD1(),ENABLE_EXAMPLE_EXECUTOR:"false",AWC_SHARED_KEY:key},
+    );
+    expect(response.status).toBe(200);
+    const manifest=await response.json() as {roles:string[];supportedTaskTypes:string[];executionPricing:string};
+    expect(manifest.roles).toContain("work-executor");
+    expect(manifest.supportedTaskTypes).toContain("task:example");
+    expect(manifest.executionPricing).toContain("not for sale");
+    expect(JSON.stringify(manifest)).not.toContain(key);
+  });
+
   it("runs authenticated requests through a remote Worker HTTP boundary with replay recovery",async()=>{
     const env={DB:fakeD1(),ENABLE_EXAMPLE_EXECUTOR:"true",AWC_SHARED_KEY:key};
     const worker=createRemoteHttpExecutor({
