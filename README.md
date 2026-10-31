@@ -34,3 +34,11 @@ pnpm demo
 See [MCP prototype](docs/mcp-implementation.md), [contract and execution walkthrough](docs/contract-execution.md), [MCP design](docs/mcp-server-design.md), and [Cloudflare Monetization Gateway research](docs/monetization-gateway.md).
 
 Never use demo credentials, simulated payment state, in-memory stores or synthetic issuer claims for real customer work.
+
+## Plug-in provider ecosystem
+
+The new `@awc/adapter-sdk` introduces separate `WorkSource` and `WorkExecutor` roles. GitHub Issues can feed signed, replay-protected **opportunities** to D1; a signed HTTPS remote executor handles authorized execution requests with durable idempotency and recovery. A standalone Cloudflare remote Worker example and integration tests exercise the real HTTP wire contract.
+
+These adapters are **not** automatically connected to real-money commerce. GitHub issues never create approved WorkOrders just by receiving a label; remote execution needs a trusted broker registration and scope checks.
+
+See [adapter SDK and buildable integrations](docs/adapters.md) for code samples, GitHub App enrollment, Cloudflare setup, security boundaries and conformance tests.
