@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
+import { Client, InMemoryTransport, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
+import { createMcpHandler } from "@modelcontextprotocol/server";
 import { makeMarketplace, inMemoryMarketplaceStore } from "@awc/marketplace";
 import { createCatalogMcpServer, MARKETPLACE_APP_URI } from "../src/index.ts";
 
@@ -12,6 +13,28 @@ async function fixture(authenticated: boolean) {
   return {client,server,close:async()=>{await client.close();await server.close();}};
 }
 describe("AWC MCP server", () => {
+  it("serves the modern 2026-07-28 stateless HTTP protocol without sockets", async () => {
+    const marketplace = makeMarketplace(inMemoryMarketplaceStore());
+    const handler = createMcpHandler(() => createCatalogMcpServer({
+      marketplace, buyerId: null, appHtml: "<!doctype html><html>Test UI</html>",
+    }));
+    const transport = new StreamableHTTPClientTransport(new URL("http://test.local/mcp"), {
+      fetch: (url, init) => handler.fetch(new Request(url, init)),
+    });
+    const client = new Client({ name:"awc-http-test",version:"0.1.0" }, {
+      versionNegotiation:{mode:"auto"},
+    });
+    try {
+      await client.connect(transport);
+      expect(client.getNegotiatedProtocolVersion()).toBe("2026-07-28");
+      const search = await client.callTool({ name:"catalog.search",arguments:{intent:"Modbus timeout diagnostics"} });
+      expect((search.structuredContent as {matches:unknown[]}).matches.length).toBeGreaterThan(0);
+    } finally {
+      await client.close();
+      await handler.close();
+    }
+  });
+
   it("exposes free read tools and MCP App resource to signed-out clients", async () => {
     const f=await fixture(false);
     try {
