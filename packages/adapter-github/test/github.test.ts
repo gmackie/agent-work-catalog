@@ -10,7 +10,7 @@ const allow:AllowedRepo={repositoryId:123,fullName:"testorg/fixture",installatio
 const headerSig=async(body:Uint8Array)=>{
   const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(secret),
     {name:"HMAC",hash:"SHA-256"},false,["sign"]);
-  return "sha256="+[...new Uint8Array(await crypto.subtle.sign("HMAC",key,body))]
+  return "sha256="+[...new Uint8Array(await crypto.subtle.sign("HMAC",key,Uint8Array.from(body)))]
     .map(x=>x.toString(16).padStart(2,"0")).join("");
 };
 function fixture(overrides:Record<string,unknown>={}){
