@@ -191,6 +191,10 @@ export function createGitHubIssueSource(config:GitHubSourceConfig):WorkSource {
         const repo=exactRepo(ref,config.repositories);
         const response=await api(ref,"GET",pathFor(repo,ref.issueNumber!));
         const data=Schema.decodeUnknownSync(RepoIssue)(await response.json());
+        if(data.number!==ref.issueNumber ||
+           ref.externalId!=="github:"+repo.repositoryId+":"+data.id){
+          throw new AdapterError("conflict","Upstream issue identity does not match the work reference");
+        }
         const open=data.state==="open"&&data.labels.some(l=>l.name===label);
         return {ref,status:open?"open":"closed",observedAt:new Date(now()).toISOString()};
       },catch:e=>e instanceof AdapterError?e:new AdapterError("unavailable","Could not reconcile GitHub issue"),
