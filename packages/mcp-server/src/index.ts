@@ -9,7 +9,7 @@ export const MARKETPLACE_APP_URI = "ui://awc/marketplace.html";
 
 export interface PaidSandboxConfig {
   readonly network: "base-sepolia";
-  readonly recipient: string;
+  readonly recipient: `0x${string}`;
   readonly facilitatorUrl: string;
 }
 export interface McpServerConfig {
@@ -33,13 +33,13 @@ const failure = (error: unknown) => {
     content: [{ type: "text" as const, text: known.code + ": " + known.message }],
   };
 };
-const guarded = async <T extends Record<string, unknown>>(
+const guarded = async <T extends object>(
   effect: Effect.Effect<T, MarketplaceError>,
   summary: (value: T) => string,
 ) => {
   try {
     const value = await Effect.runPromise(effect);
-    return response(value, summary(value));
+    return response(value as Record<string, unknown>, summary(value));
   } catch (error) {
     return failure(error);
   }
@@ -142,7 +142,16 @@ export function createCatalogMcpServer(config: McpServerConfig): McpServer {
         }).strict()).min(1).max(10),
       }).strict(),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-    }, async (args) => guarded(config.marketplace.prepareWork(buyerId, args), (value) =>
+    }, async (args) => guarded(config.marketplace.prepareWork(buyerId, {
+      quoteId: args.quoteId,
+      idempotencyKey: args.idempotencyKey,
+      inputs: args.inputs.map((input) => ({
+        name: input.name, mediaType: input.mediaType, kind: input.kind,
+        ...(input.data !== undefined ? { data: input.data } : {}),
+        ...(input.reference !== undefined ? { reference: input.reference } : {}),
+        ...(input.sha256 !== undefined ? { sha256: input.sha256 } : {}),
+      })),
+    }), (value) =>
       "Work order " + value.id + " is PREPARED, UNFUNDED. No executor has been started."));
 
     server.registerTool("work.get", {
