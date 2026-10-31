@@ -112,7 +112,7 @@ export interface QuoteRequest {
   readonly offeringId: string;
   readonly scope: string;
   readonly idempotencyKey: string;
-  readonly maxPriceMinor?: string;
+  readonly maxPriceMinor?: string | undefined;
 }
 export interface PrepareRequest {
   readonly quoteId: string;
