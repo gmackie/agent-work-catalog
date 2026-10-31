@@ -73,6 +73,9 @@ export async function verifyAwcRequest(
   request: Request, secret: string, now = Date.now(),
 ): Promise<{body: string; idempotencyKey: string}> {
   if (secret.length < 32) throw new AdapterError("unavailable", "Signing key unavailable");
+  if (new URL(request.url).search || new URL(request.url).hash) {
+    throw new AdapterError("unauthenticated", "Signed remote protocol does not permit query parameters");
+  }
   const timestamp = request.headers.get("x-awc-timestamp") ?? "";
   const idempotencyKey = request.headers.get("x-awc-idempotency-key") ?? "";
   const signature = request.headers.get("x-awc-signature") ?? "";
@@ -160,7 +163,13 @@ export function createRemoteHttpExecutor(config: RemoteExecutorConfig): WorkExec
     },
     start: request => Effect.tryPromise({
       try:async()=>{
-        const valid=validateExecutionRequest(request);
+        const valid=(() => {
+          try { return validateExecutionRequest(request); }
+          catch (error) {
+            if (error instanceof AdapterError) throw error;
+            throw new AdapterError("invalid_input","Execution request failed schema validation");
+          }
+        })();
         if (!config.supportedTaskTypes.includes(valid.taskTypeId)) {
           throw new AdapterError("unsupported","Task type not registered for executor");
         }
