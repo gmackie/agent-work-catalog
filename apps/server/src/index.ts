@@ -56,7 +56,7 @@ function testnetConfig(env: Env): PaidSandboxConfig | undefined {
   }
   const facilitatorUrl = env.X402_FACILITATOR_URL ?? "https://x402.org/facilitator";
   if (new URL(facilitatorUrl).protocol !== "https:") throw new Error("x402 facilitator must use HTTPS");
-  return { network: "base-sepolia", recipient: env.X402_TESTNET_RECIPIENT!, facilitatorUrl };
+  return { network: "base-sepolia", recipient: env.X402_TESTNET_RECIPIENT! as `0x${string}`, facilitatorUrl };
 }
 const connectPage = `<!doctype html><html lang="en"><meta charset="utf-8"><title>Agent Work Catalog</title>
 <body style="max-width:720px;margin:3rem auto;font:16px system-ui;line-height:1.5">
