@@ -46,7 +46,7 @@ const encoder=new TextEncoder();
 const sigHex=async(secret:string,bytes:Uint8Array):Promise<string>=>{
   const key=await crypto.subtle.importKey("raw",encoder.encode(secret),
     {name:"HMAC",hash:"SHA-256"},false,["sign"]);
-  return [...new Uint8Array(await crypto.subtle.sign("HMAC",key,bytes))]
+  return [...new Uint8Array(await crypto.subtle.sign("HMAC",key,Uint8Array.from(bytes)))]
     .map(v=>v.toString(16).padStart(2,"0")).join("");
 };
 const secureSame=(a:string,b:string):boolean=>{
