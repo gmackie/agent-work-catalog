@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Effect } from "effect";
 import { createRemoteHttpExecutor, verifyAwcRequest } from "../src/index.ts";
-import { probeExecutor, type ExecutionRequest } from "@awc/adapter-sdk";
+import { type ExecutionRequest } from "@awc/adapter-sdk";
+import { probeExecutor } from "@awc/adapter-sdk/conformance";
 
 const secret="remote-adapter-signature-key-very-long-demo-001";
 const input:ExecutionRequest={
