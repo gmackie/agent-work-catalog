@@ -235,7 +235,7 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
       marketplace,commerce,buyerId:actor?.kind==="agent"?actor.buyerId:null,
       buyerScopes:actor?.scopes??[],approvalBaseUrl:url.origin,
       appHtml:html,contractAppHtml:contract,
-      enqueue:env.AWC_JOBS ? msg=>env.AWC_JOBS!.send(msg) : undefined,
+      ...(env.AWC_JOBS ? {enqueue:async (msg:WorkRunMessage)=>{await env.AWC_JOBS!.send(msg);}} : {}),
       stripeCheckoutAvailable:!!stripe,
       ...(paid?{paidSandbox:paid}:{}),
     }),{route:"/mcp",corsOptions:false});
@@ -243,7 +243,7 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
   }catch(e){return errorResponse(e);}
 }
 
-export async function consumeWorkQueue(batch:MessageBatch<WorkRunMessage>,env:Env):Promise<void>{
+export async function consumeWorkQueue(batch:MessageBatch<unknown>,env:Env):Promise<void>{
   const request=new Request("https://awc.internal/health");
   const {commerce}=services(env,request);
   for(const msg of batch.messages){
@@ -267,5 +267,5 @@ export async function recoverQueued(env:Env):Promise<void>{
 export default {
   fetch:handleRequest,
   queue:consumeWorkQueue,
-  scheduled:async(_event:ScheduledEvent,env:Env,_ctx:ExecutionContext)=>recoverQueued(env),
+  scheduled:async(_event:ScheduledController,env:Env,_ctx:ExecutionContext)=>recoverQueued(env),
 } satisfies ExportedHandler<Env>;
