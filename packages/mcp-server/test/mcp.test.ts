@@ -22,7 +22,8 @@ describe("AWC MCP server", () => {
       const result=await f.client.callTool({name:"catalog.search",arguments:{intent:"OAuth security audit"}});
       expect((result.structuredContent as {matches:unknown[]}).matches.length).toBeGreaterThan(0);
       const app=await f.client.readResource({uri:MARKETPLACE_APP_URI});
-      expect(app.contents[0]?.text).toContain("Sample catalog app");
+      const appContent = app.contents[0];
+      expect(appContent && "text" in appContent ? appContent.text : "").toContain("Sample catalog app");
       const resources=await f.client.listResources();
       expect(resources.resources.some(x=>x.uri==="awc://catalog/manifest")).toBe(true);
     } finally {await f.close();}
