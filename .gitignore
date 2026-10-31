@@ -4,6 +4,10 @@ coverage/
 .env
 .env.*
 !.env.example
+.dev.vars
+.dev.vars.*
 .DS_Store
 *.tsbuildinfo
 .pnpm-store/
+.wrangler/
+apps/server/public/marketplace.html
