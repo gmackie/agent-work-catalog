@@ -62,11 +62,11 @@ export const seedOfferings: readonly Offering[] = [
 
 export interface SearchRequest {
   readonly intent: string;
-  readonly currency?: string;
-  readonly maxPriceMinor?: string;
-  readonly inputMediaType?: string;
-  readonly outputMediaType?: string;
-  readonly limit?: number;
+  readonly currency?: string | undefined;
+  readonly maxPriceMinor?: string | undefined;
+  readonly inputMediaType?: string | undefined;
+  readonly outputMediaType?: string | undefined;
+  readonly limit?: number | undefined;
 }
 export interface OfferingMatch {
   readonly offering: Offering;
