@@ -1,95 +1,39 @@
-# Runnable MCP marketplace vertical slice (draft)
+# AWC MCP vertical slice
 
-This repo contains an experimental Effect 4 MCP server and one real interactive MCP App. This is a **sandbox**, not a production commercial marketplace.
+A Cloudflare Workers/Effect 4 experimental marketplace with a free public catalog, buyer-authenticated quoting, contract inspection, independently authenticated approval, test-mode funding and Queue-backed **synthetic** execution.
 
-## Implemented
+## Implemented model-facing tools
 
-- Stateless Streamable HTTP MCP SDK v2 over Cloudflare Workers via `agents/mcp/server`.
-- Free tools: `catalog.search`, `catalog.get_offering`; public catalog and versioned offering resources.
-- Buyer-only tools: `quotes.request`, `work.prepare`, `work.get`, `billing.options`; private work-order resource template.
-- Three intentionally **fictional** offering records; matching is deterministic keyword retrieval with hard filters, not yet vector/OASF semantics.
-- Effect marketplace service with in-memory tests, D1-backed persistent quotes and prepared orders, per-buyer lookup and idempotency constraints.
-- `ui://awc/marketplace.html` MCP App (App SDK 2.x) with interactive search and safe DOM rendering; fallback structured tool results for ordinary clients.
-- A separately opt-in testnet-only `sandbox.paid_text_stats` tool using Cloudflare Agents SDK `withX402`/`paidTool`, fixed price $0.01 on Base Sepolia; payment isn't enabled by default.
-- Origin allowlist and tool-route header/body mismatch checks. One static sandbox buyer secret controls write access: **not multi-tenant OAuth**.
+- Free: `catalog.search`, `catalog.get_offering`.
+- Authenticated buyer: `quotes.request`, `work.prepare`, `work.get`, `billing.options`.
+- With Stripe TEST configured: `billing.checkout`, `billing.reconcile`.
+- With a Cloudflare Queue binding: `work.start`, which rejects any order not separately approved and verified funded.
+- Independently enabled testnet-only: `sandbox.paid_text_stats` with Cloudflare Agents SDK x402.
 
-No payment authorizations, inference execution, real provider onboarding, fund capture, production Stripe acceptance, OpenID/Poppy sign-in, Attest issuance, MCP Tasks execution, or dynamic paid quotes are implemented. No live wallet or cloud service was deployed by the code change.
+**There is no MCP `work.approve` tool.** An agent cannot authenticate as the human reviewer using its own audience token. The interactive Contract Inspector App opens the separate review page in the host browser.
 
-## Install and test
+Public versioned offerings and buyer-scoped work order resources remain available; results are structured and usable without MCP Apps. The v0.2 implementation uses fictional seed providers and keyword search, not live verified marketplace discovery.
 
-Use Node 24 and pnpm 10.
+## MCP Apps
 
-```sh
-corepack enable
-pnpm install --no-frozen-lockfile
-pnpm --filter @awc/mcp-ui build
-pnpm typecheck
-pnpm test
-pnpm --filter @awc/server bundle
-```
+- `ui://awc/marketplace.html`: search sample offerings.
+- `ui://awc/contract.html`: inspect the exact scoped quote, price and digest, and request the host open the separately authenticated browser review page.
+- Other Apps from `docs/mcp-apps.md` remain designs.
 
-The App build produces `apps/server/public/marketplace.html` with bundled JS, which the Worker serves as an MCP Apps resource via the ASSETS binding.
+## Running locally and configuring services
 
-## Local Cloudflare Worker
+Follow [the complete setup and security walkthrough](contract-execution.md). The Worker requires an actual D1 database ID, database migrations, a Queue named `awc-work-jobs`, bundled MCP App assets, and separate sandbox credentials. All spending stays simulated unless the separately configured **Stripe TEST** rail is exercised; even then only synthetic example work is produced.
 
-Create a D1 database named `awc-catalog`:
+In production, use an OIDC issuer such as nathan, not the localhost static demo credentials. Configurable keys are `OIDC_ISSUER`, `OIDC_JWKS_URL`, `OIDC_MCP_AUDIENCE`, `OIDC_APPROVAL_AUDIENCE`, `OIDC_APPROVAL_CLIENT_ID` and `OIDC_APPROVAL_ACR`. The issuer must mint a trusted `awc_buyer_id`, separate client/audience claims and correct scopes. This is a JWT verification layer, **not** an OAuth authorization code client or hosted login wizard. The review page currently expects a separately obtained token; proper PKCE/passkey login and CSRF handling remain outstanding.
 
-```sh
-pnpm --filter @awc/server exec wrangler d1 create awc-catalog
-```
+## Payment and trust boundaries
 
-Replace the **all-zero placeholder UUID** in `apps/server/wrangler.jsonc` with the returned D1 database ID. Apply the schema locally (or remotely only after approved deployment):
+Cloudflare Monetization Gateway is not configured here; it remains closed beta with documented x402 constraints. Its `PAYMENT-CONTEXT` is not automatically an independently settled work-order receipt. The existing Base Sepolia paidTool test doesn't pay for an entire gig.
 
-```sh
-cd apps/server
-pnpm exec wrangler d1 migrations apply awc-catalog --local
-cd ../..
-```
+Stripe TEST Checkout payment status is re-read from Stripe, matched to the exact work, and only then transitioned to `funded`. Production use still needs refund/chargeback reconciliation and audited ledger semantics.
 
-Set a cryptographically random, 32+-character sandbox buyer credential **in a local `.dev.vars` file** (gitignored):
-```sh
-# apps/server/.dev.vars
-AWC_BUYER_TOKEN=<generate a long random secret outside the repository>
-```
+D1 optimistic concurrency protects the lifecycle. Queue is at-least-once; the synthetic Worker is deterministic and restart-safe under a short execution lease. This is **not** general exactly-once execution for third-party agents, and commercial cancellation, evaluator approval, disputes, and Attest receipts remain next steps.
 
-Then:
-```sh
-pnpm --filter @awc/mcp-ui build
-pnpm --filter @awc/server dev
-```
+## Verification
 
-Public endpoint: `http://localhost:8787/mcp` (current Wrangler local port), and `/connect` for human instructions. Configure the MCP host with its ordinary Streamable HTTP URL. For sandbox private tools, set `Authorization: Bearer <AWC_BUYER_TOKEN>` in the client's secure connector configuration.
-
-**Never** publish that token in a catalog, app resource, link, prompt, or user conversation. The sandbox buyer ID is intentionally fixed; don't expose it to real users. Use proper OAuth, account identity and per-resource policy before any public buyer write operation.
-
-## Deployment
-
-1. Review access policy and ensure the sample records remain clearly marked as fictional.
-2. Create a real D1 database and update its ID, set `AWC_BUYER_TOKEN` via `wrangler secret put`, and apply remote migrations.
-3. Build bundled UI, then deploy the Worker using Wrangler.
-4. Validate `/health`, signed-out discovery, authorized quote creation and buyer isolation.
-5. Keep `ENABLE_X402_TESTNET=false` unless deliberately exercising paidTool with a **Base Sepolia testnet** receiving address. A live Monetization Gateway rule is not created here.
-6. For public adoption: replace sandbox auth with a standards-compatible OAuth authorization server and resource metadata, implement trusted catalog/provider registration, quotas and per-tenant authorization, deploy durable outbox/leases, and only then enable actual work execution or payments.
-
-## Auth and security notes
-
-- `AWC_BUYER_TOKEN` binds **one demo buyer** only. There is no auth self-registration. Write endpoints are absent from `tools/list` for signed-out clients.
-- All quote/work D1 records are looked up with the buyer ID, and repeated idempotency keys with differing terms are rejected. D1 uniqueness prevents concurrent duplicate records.
-- `work.prepare` returns `prepared_unfunded`; there is deliberately no `work.confirm` or `work.start` in this slice. This avoids conflating a draft job with authorized spending.
-- Work inputs are JSON inline or opaque `artifact:` references, never arbitrary remote URLs. No artifact resolver is enabled.
-- Search metadata is untrusted; matching or claimed provider skills never imply authorization or certification. For public use, authenticate provider origins and verify credentials.
-- A per-route browser Origin check and MCP routing header/body agreement are present; OAuth, rate limits, mandatory user confirmation and secure wallet approval remain to be built.
-
-## Monetization experiment
-
-The optional `sandbox.paid_text_stats` tool uses `agents/x402` `paidTool`, **not** Cloudflare Monetization Gateway edge rule creation. It operates only when the `ENABLE_X402_TESTNET` flag is `true` and `X402_TESTNET_RECIPIENT` is valid. The tool returns deterministic word/character counts after SDK verification of a Base Sepolia x402 payment.
-
-Cloudflare Monetization Gateway itself is closed beta and must be configured in an eligible account; it isn't deployed or enrolled by this repository. Review `docs/monetization-gateway.md` for the edge `exact` and `upto` flows, pricing minimum/maximum, streaming limitations, origin JWT verification and Bazaar indexing caveats.
-
-## Next implementation
-
-- OAuth nathan/other issuer, D1 principal binding, tenant and per-tool policy + quotas.
-- Real provider onboarding and a signed semantic catalog.
-- `billing.options` with actual Stripe/x402 rails and fixed-price mandate approval.
-- WorkOrder `start`, async MCP Tasks (when supported), and durable execution/receipt issuance.
-- Playground App contract review UI, Attest verification and dispute/funding states.
+CI builds both MCP Apps, typechecks Effect packages, runs domain/MCP/auth/commerce/Stripe negative tests and performs a Wrangler dry-run bundle. Successful CI is not evidence of real Cloudflare deployment, real payment settlement or external provider execution.
