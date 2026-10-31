@@ -8,9 +8,12 @@ import { d1WorkStateStore, type D1Database as CommerceD1 } from "@awc/commerce/d
 import { makeCommerce, sandboxExecutor, type WorkRunMessage } from "@awc/commerce";
 import { stripeTestCheckout } from "@awc/commerce/stripe";
 import { identifyActor, requireScope, AuthError, type VerifiedActor } from "@awc/auth";
+import { createGitHubIssueSource, type AllowedRepo } from "@awc/adapter-github";
+import { AdapterError } from "@awc/adapter-sdk";
+import { d1SourceInbox, type D1Database as SourceD1 } from "@awc/source-inbox/d1";
 
 export interface Env {
-  readonly DB: MarketplaceD1 & CommerceD1;
+  readonly DB: MarketplaceD1 & CommerceD1 & SourceD1;
   readonly ASSETS: { fetch(request:Request|URL|string):Promise<Response> };
   readonly AWC_JOBS?: Queue<WorkRunMessage>;
   readonly AWC_BUYER_TOKEN?:string;
@@ -28,6 +31,12 @@ export interface Env {
   readonly OIDC_APPROVAL_CLIENT_ID?:string;
   readonly OIDC_APPROVAL_ACR?:string;
   readonly ALLOWED_ORIGINS?:string;
+  readonly ENABLE_GITHUB_SOURCE?:string;
+  readonly GITHUB_WEBHOOK_SECRET?:string;
+  /** JSON array of explicit {repositoryId,fullName,installationId}, approved by admin. */
+  readonly GITHUB_SOURCE_REPOSITORIES?:string;
+  /** Trusted local tenant/buyer mapping, NEVER taken from the webhook payload. */
+  readonly GITHUB_SOURCE_BUYER_ID?:string;
 }
 const json=(value:object,status=200)=>Response.json(value,{status,headers:{
   "cache-control":"no-store","x-content-type-options":"nosniff",
@@ -90,11 +99,56 @@ const errorResponse=(e:unknown)=>{
     const code=String(e.code);
     if(["not_found"].includes(code))return json({error:code},404);
     if(["invalid_state","conflict"].includes(code))return json({error:code},409);
+    if(["unauthenticated"].includes(code))return json({error:code},401);
     if(["unauthorized"].includes(code))return json({error:code},403);
+    if(["invalid_input"].includes(code))return json({error:code},400);
+    if(["rate_limited"].includes(code))return json({error:code},429);
     if(["funding_required"].includes(code))return json({error:code},402);
   }
   return json({error:"unavailable"},503);
 };
+function githubSource(env:Env){
+  if(env.ENABLE_GITHUB_SOURCE!=="true"||!env.GITHUB_WEBHOOK_SECRET ||
+     !env.GITHUB_SOURCE_REPOSITORIES||!env.GITHUB_SOURCE_BUYER_ID) {
+    throw new AdapterError("unavailable","GitHub source not fully configured");
+  }
+  let repos:AllowedRepo[];
+  try {
+    const parsed:unknown=JSON.parse(env.GITHUB_SOURCE_REPOSITORIES);
+    if(!Array.isArray(parsed) || parsed.length===0 || parsed.length>50)throw new Error("Repo allowlist size");
+    repos=parsed as AllowedRepo[];
+  } catch {throw new AdapterError("unavailable","GitHub repository allowlist invalid");}
+  return createGitHubIssueSource({
+    id:"github.source",secret:env.GITHUB_WEBHOOK_SECRET,repositories:repos,
+    // Webhook intake only. GitHub App credentials are supplied separately for trusted outbound delivery.
+    credentials:{tokenFor:async()=>{throw new AdapterError("unauthorized","Outbound GitHub delivery not wired to the public Worker");}},
+  });
+}
+async function bodyUnderLimit(request:Request,max:number):Promise<Uint8Array>{
+  const length=Number(request.headers.get("content-length")??"0");
+  if(Number.isFinite(length)&&length>max)throw new AdapterError("invalid_input","Webhook exceeds size limit");
+  if(!request.body)throw new AdapterError("invalid_input","Webhook has no body");
+  const reader=request.body.getReader();
+  const chunks:Uint8Array[]=[];
+  let size=0;
+  try {
+    while(true){
+      const {done,value}=await reader.read();
+      if(done)break;
+      size+=value.byteLength;
+      if(size>max)throw new AdapterError("invalid_input","Webhook exceeds size limit");
+      chunks.push(Uint8Array.from(value));
+    }
+  }finally{reader.releaseLock();}
+  const out=new Uint8Array(size);
+  let offset=0;
+  for(const chunk of chunks){out.set(chunk,offset);offset+=chunk.byteLength;}
+  return out;
+}
+async function hexDigest(body:Uint8Array):Promise<string>{
+  const hash=new Uint8Array(await crypto.subtle.digest("SHA-256",Uint8Array.from(body)));
+  return [...hash].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
 const reviewPage=`<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Review Agent Work Contract</title><style>
 :root{color-scheme:light dark;font:15px system-ui}body{max-width:720px;margin:28px auto;padding:20px;line-height:1.5}
@@ -169,6 +223,25 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
       "referrer-policy":"no-referrer"}});
   }
   if(!allowedOrigin(request,env))return json({error:"origin_not_allowed"},403);
+  if(url.pathname==="/integrations/github/webhook" && request.method==="POST"){
+    if(env.ENABLE_GITHUB_SOURCE!=="true")return json({error:"not_found"},404);
+    try{
+      const source=githubSource(env);
+      const raw=await bodyUnderLimit(request,256_000);
+      const result=await Effect.runPromise(source.ingest({
+        body:raw,headers:Object.fromEntries(request.headers.entries()),
+      }));
+      if(result.type==="ignored")return json({
+        accepted:true,kind:"ignored",reason:result.reason,
+      },202);
+      const inbox=d1SourceInbox(env.DB);
+      const record=await inbox.record(
+        env.GITHUB_SOURCE_BUYER_ID!,result.opportunity,await hexDigest(raw));
+      // No billing, bidding, work-start, or external API writes in this ingress route.
+      return json({accepted:true,kind:"opportunity",opportunityId:record.opportunityId,
+        duplicate:record.duplicate,commercialStatus:"not_authorized"},202);
+    }catch(error){return errorResponse(error);}
+  }
   if(url.pathname==="/stripe/webhook"&&request.method==="POST"){
     if(!env.STRIPE_SECRET_KEY?.startsWith("sk_test_")||!env.STRIPE_WEBHOOK_SECRET){
       return json({error:"stripe_test_not_configured"},503);
@@ -237,6 +310,11 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
       appHtml:html,contractAppHtml:contract,
       ...(env.AWC_JOBS ? {enqueue:async (msg:WorkRunMessage)=>{await env.AWC_JOBS!.send(msg);}} : {}),
       stripeCheckoutAvailable:!!stripe,
+      ...(env.ENABLE_GITHUB_SOURCE==="true" && env.GITHUB_SOURCE_BUYER_ID
+        ? {listOpportunities:async (buyerId:string,limit:number)=>{
+          if(buyerId!==env.GITHUB_SOURCE_BUYER_ID)return [];
+          return d1SourceInbox(env.DB).list(buyerId,limit);
+        }} : {}),
       ...(paid?{paidSandbox:paid}:{}),
     }),{route:"/mcp",corsOptions:false});
     return configured(request,env,ctx);
