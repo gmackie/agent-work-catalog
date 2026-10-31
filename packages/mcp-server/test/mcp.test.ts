@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { Client, InMemoryTransport, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { createMcpHandler } from "@modelcontextprotocol/server";
 import { makeMarketplace, inMemoryMarketplaceStore } from "@awc/marketplace";
+import { makeCommerce, sandboxExecutor, type WorkRunMessage, type WorkSnapshot, type WorkStateStore } from "@awc/commerce";
+import { Effect } from "effect";
 import { createCatalogMcpServer, MARKETPLACE_APP_URI, CONTRACT_APP_URI } from "../src/index.ts";
 
 async function fixture(authenticated: boolean) {
@@ -15,6 +17,74 @@ async function fixture(authenticated: boolean) {
   return {client,server,close:async()=>{await client.close();await server.close();}};
 }
 describe("AWC MCP server", () => {
+
+  it("refuses MCP execution until separately approved and funded, then queues once",async()=>{
+    const marketplace=makeMarketplace(inMemoryMarketplaceStore());
+    const records=new Map<string,WorkSnapshot>();
+    const store:WorkStateStore={
+      initialize:async(work,now)=>{
+        const prev=records.get(work.id);
+        if(prev)return prev;
+        const state:WorkSnapshot={id:work.id,buyerId:work.buyerId,quoteDigest:work.quoteDigest,
+          status:"prepared_unfunded",version:0,attempts:0,updatedAt:now};
+        records.set(work.id,state);return state;
+      },
+      get:async(buyer,id)=>{
+        const state=records.get(id);return state?.buyerId===buyer?state:undefined;
+      },
+      cas:async(before,after)=>{
+        const old=records.get(before.id);
+        if(!old||old.version!==before.version)return false;
+        records.set(before.id,after);return true;
+      },
+      recoverable:async()=>[],
+    };
+    const commerce=makeCommerce(marketplace,store,sandboxExecutor,{enableSandboxFunding:true});
+    const queue:WorkRunMessage[]=[];
+    const server=createCatalogMcpServer({
+      marketplace,commerce,buyerId:"buyer-1",
+      buyerScopes:["quotes:write","work:prepare","work:read","work:execute","billing:checkout"],
+      appHtml:"<!doctype html><html>Marketplace</html>",
+      contractAppHtml:"<!doctype html><html>Contract</html>",
+      approvalBaseUrl:"https://awc.example",
+      enqueue:async(message)=>{queue.push(message);},
+    });
+    const client=new Client({name:"commerce-mcp-test",version:"0.2.0"});
+    const [a,b]=InMemoryTransport.createLinkedPair();
+    await Promise.all([server.connect(b),client.connect(a)]);
+    try{
+      const q=await client.callTool({name:"quotes.request",arguments:{
+        offeringId:"offering:oauth-audit",scope:"Analyze OAuth token handling and report vulnerabilities",
+        idempotencyKey:"quote_commerce_test_001",
+      }});
+      const quote=q.structuredContent as {id:string;termsDigest:string};
+      const w=await client.callTool({name:"work.prepare",arguments:{
+        quoteId:quote.id,idempotencyKey:"work_commerce_test_001",
+        inputs:[{name:"observations",mediaType:"text/plain",kind:"inline",data:"OAuth scope design review"}],
+      }});
+      const order=w.structuredContent as {id:string;reviewUrl:string};
+      expect(order.reviewUrl).toContain("/review?work=");
+      expect((await client.callTool({name:"work.start",arguments:{workId:order.id}})).isError).toBe(true);
+      expect(queue).toHaveLength(0);
+
+      await Effect.runPromise(commerce.approve("buyer-1",order.id,{
+        buyerId:"buyer-1",approverSubject:"authenticated-human",ceremony:"local-sandbox-only",
+        reviewedDigest:quote.termsDigest,
+      }));
+      expect((await client.callTool({name:"work.start",arguments:{workId:order.id}})).isError).toBe(true);
+      await Effect.runPromise(commerce.sandboxFund("buyer-1",order.id));
+      const started=await client.callTool({name:"work.start",arguments:{workId:order.id}});
+      expect(started.isError).not.toBe(true);
+      await client.callTool({name:"work.start",arguments:{workId:order.id}});
+      expect(queue).toHaveLength(1);
+      await Effect.runPromise(commerce.runQueued(queue[0]!));
+      const result=await client.callTool({name:"work.get",arguments:{workId:order.id}});
+      const state=result.structuredContent as {commerce:{status:string;result?:unknown}};
+      expect(state.commerce.status).toBe("submitted");
+      expect(state.commerce.result).toBeDefined();
+    }finally{await client.close();await server.close();}
+  });
+
   it("serves the modern 2026-07-28 stateless HTTP protocol without sockets", async () => {
     const marketplace = makeMarketplace(inMemoryMarketplaceStore());
     const handler = createMcpHandler(() => createCatalogMcpServer({
