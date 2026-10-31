@@ -66,7 +66,8 @@ describe("Commercial approval, funding and deterministic execution",()=>{
     const done=await run(commerce.runQueued({buyerId:"buyerA",workId:work.id}));
     expect(done.status).toBe("submitted");
     expect(done.result?.summary).toContain("DEMO ONLY");
-    expect((await run(commerce.runQueued({buyerId:"buyerA",workId:work.id})).version).toBe(done.version);
+    const replay=await run(commerce.runQueued({buyerId:"buyerA",workId:work.id}));
+    expect(replay.version).toBe(done.version);
     expect((await run(commerce.recoverable())).length).toBe(0);
     await expect(run(commerce.preview("buyerB",work.id))).rejects.toThrow();
   });
