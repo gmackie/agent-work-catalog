@@ -128,6 +128,7 @@ export interface MarketplaceStore {
 export interface Marketplace {
   readonly search: (input: SearchRequest) => Effect.Effect<SearchResult, MarketplaceError>;
   readonly getOffering: (id: string) => Effect.Effect<OfferingMatch, MarketplaceError>;
+  readonly getQuote: (buyerId: string, id: string) => Effect.Effect<Quote, MarketplaceError>;
   readonly requestQuote: (buyerId: string, request: QuoteRequest) => Effect.Effect<Quote, MarketplaceError>;
   readonly prepareWork: (buyerId: string, request: PrepareRequest) => Effect.Effect<PreparedWork, MarketplaceError>;
   readonly getWork: (buyerId: string, id: string) => Effect.Effect<PreparedWork, MarketplaceError>;
@@ -182,6 +183,14 @@ export function makeMarketplace(store: MarketplaceStore, now: () => number = Dat
         new MarketplaceError("invalid_request", "Search filters are invalid"),
     }),
     getOffering: (id) => Effect.try({ try: () => getOffering(id), catch: fail }),
+    getQuote: (buyerId, id) => Effect.tryPromise({
+      try: async () => {
+        const found = await store.getQuote(buyerId, id);
+        if (!found) throw new MarketplaceError("not_found", "Quote not found");
+        return found;
+      },
+      catch: fail,
+    }),
     requestQuote: (buyerId, request) => Effect.tryPromise({
       try: async () => {
         if (!buyerId || !keyOk(request.idempotencyKey) || request.scope.trim().length < 8 ||

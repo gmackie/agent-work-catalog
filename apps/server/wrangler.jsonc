@@ -4,19 +4,22 @@
   "main": "./src/index.ts",
   "compatibility_date": "2026-10-31",
   "workers_dev": true,
-  "observability": { "enabled": true },
+  "observability": {"enabled": true},
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
     "run_worker_first": true
   },
   "d1_databases": [{
-    "binding": "DB",
-    "database_name": "awc-catalog",
-    "database_id": "00000000-0000-0000-0000-000000000000",
-    "migrations_dir": "./migrations"
+    "binding":"DB",
+    "database_name":"awc-catalog",
+    "database_id":"00000000-0000-0000-0000-000000000000",
+    "migrations_dir":"./migrations"
   }],
-  "vars": {
-    "ENABLE_X402_TESTNET": "false"
-  }
+  "queues": {
+    "producers": [{"binding":"AWC_JOBS","queue":"awc-work-jobs"}],
+    "consumers": [{"queue":"awc-work-jobs","max_batch_size":10,"max_batch_timeout":5,"max_retries":3}]
+  },
+  "triggers": {"crons":["*/5 * * * *"]},
+  "vars": {"ENABLE_LOCAL_SANDBOX":"false","ENABLE_X402_TESTNET":"false"}
 }

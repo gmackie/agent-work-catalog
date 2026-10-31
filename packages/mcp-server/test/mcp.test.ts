@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import { Client, InMemoryTransport, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { createMcpHandler } from "@modelcontextprotocol/server";
 import { makeMarketplace, inMemoryMarketplaceStore } from "@awc/marketplace";
-import { createCatalogMcpServer, MARKETPLACE_APP_URI } from "../src/index.ts";
+import { createCatalogMcpServer, MARKETPLACE_APP_URI, CONTRACT_APP_URI } from "../src/index.ts";
 
 async function fixture(authenticated: boolean) {
   const marketplace = makeMarketplace(inMemoryMarketplaceStore());
-  const server = createCatalogMcpServer({marketplace,buyerId:authenticated?"buyer-1":null,appHtml:"<!doctype html><html><body>Sample catalog app</body></html>"});
+  const server = createCatalogMcpServer({marketplace,buyerId:authenticated?"buyer-1":null,
+    buyerScopes:authenticated?["quotes:write","work:prepare","work:read","billing:checkout"]:[],
+    approvalBaseUrl:"https://awc.example",contractAppHtml:"<!doctype html><html>Secure terms</html>",appHtml:"<!doctype html><html><body>Sample catalog app</body></html>"});
   const client = new Client({name:"awc-test",version:"0.1.0"});
   const [a,b] = InMemoryTransport.createLinkedPair();
   await Promise.all([server.connect(b),client.connect(a)]);
@@ -68,11 +70,16 @@ describe("AWC MCP server", () => {
       expect(work.isError).not.toBe(true);
       const w=work.structuredContent as {id:string;state:string;funding:{status:string}};
       expect(w.state).toBe("prepared_unfunded");
+      const contract=await f.client.readResource({uri:CONTRACT_APP_URI});
+      expect(contract.contents[0]&&"text" in contract.contents[0]?contract.contents[0].text:"").toContain("Secure terms");
+      expect((work.structuredContent as {reviewUrl:string}).reviewUrl).toBe("https://awc.example/review?work="+encodeURIComponent(w.id));
       expect(w.funding.status).toBe("not_authorized");
       const check=await f.client.callTool({name:"work.get",arguments:{workId:w.id}});
       expect((check.structuredContent as {quoteDigest:string}).quoteDigest).toBe(q.termsDigest);
       const options=await f.client.callTool({name:"billing.options",arguments:{}});
-      expect((options.structuredContent as {canStartWork:boolean}).canStartWork).toBe(false);
+      expect((options.structuredContent as {canStartWithoutFunding:boolean}).canStartWithoutFunding).toBe(false);
+      expect(list.tools.some(t=>t.name==="work.start")).toBe(false);
+      expect(list.tools.some(t=>t.name==="work.approve")).toBe(false);
     } finally {await f.close();}
   });
 });

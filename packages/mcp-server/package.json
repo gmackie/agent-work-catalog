@@ -1,7 +1,7 @@
 {
   "name": "@awc/mcp-server",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@awc/marketplace": "workspace:*",
+    "@awc/commerce": "workspace:*",
     "effect": "^4.0.6",
     "@modelcontextprotocol/server": "2.3.1",
     "@modelcontextprotocol/client": "2.3.1",
