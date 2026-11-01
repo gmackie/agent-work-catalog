@@ -125,6 +125,13 @@ def check_case(case: dict[str, Any], root: Path) -> str:
     if case["mode"] == "reject":
         if result.get("status") != "rejected" or result.get("error", {}).get("code") != case["error"]:
             raise AssertionError("Expected bounded parser rejection, got " + str(result))
+        if case["name"] == "pcapng_unsupported":
+            if path.read_bytes()[:4] != bytes.fromhex("0a0d0d0a"):
+                raise AssertionError("Invalid pcapng fixture magic")
+            confirmed = subprocess.run(["tshark", "-n", "-r", str(path), "-c", "1"],
+                                       capture_output=True, text=True, check=False)
+            if confirmed.returncode != 0:
+                raise AssertionError("TShark could not read independent pcapng capture")
         return "reject expected"
 
     if result.get("status") != "ok":
@@ -159,8 +166,13 @@ def check_case(case: dict[str, Any], root: Path) -> str:
     if name in ("ipv6_unsupported", "fragmented_ipv4_unsupported") and \
             report["coverage"]["parsedAdus"] != 0:
         raise AssertionError("Parser claimed unsupported IP stream data")
-    if name == "malformed_protocol_id" and counts.get("malformed_mbap", 0) != 1:
-        raise AssertionError("Malformed MBAP protocol field not detected")
+    if name in ("malformed_protocol_id", "invalid_mbap_length") and \
+            counts.get("malformed_mbap", 0) != 1:
+        raise AssertionError("Malformed MBAP protocol/length field not detected")
+    if name == "tcp_retransmission":
+        if report["coverage"]["parsedAdus"] != 3 or \
+           len(report["transactions"]) != 2:
+            raise AssertionError("Known no-retransmission behavior changed")
     return "bounded unsupported-mode behavior asserted"
 
 
