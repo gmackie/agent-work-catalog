@@ -19,7 +19,7 @@ This profile describes how a principal may delegate bounded economic and operati
 ## 2. Non-negotiable rules
 
 1. A mandate MUST name principal, delegate, accountable party, operation, entities, permitted actions, denied actions, effective dates, and financial-account constraints.
-2. Delegating a mandate MUST produce a strict attenuation of permissions, maximum risk, data classification, geography/entity scope, time, delegation depth, and per-action budget. The child MUST be issued by the parent delegate and retain principal/accountable-party identity.
+2. Delegating a mandate MUST produce a strict attenuation of permissions, maximum risk, data classification, entity scope, time, delegation depth, and per-action budget. The child MUST be issued by the parent delegate and retain principal/accountable-party identity.
 3. **Parallel descendant allowances MUST share one budget**. Granting two child allowances cannot multiply the original parent economic ceiling.
 4. The ability to spend is separate from actual funds. An authorized budget never guarantees available cash or credit; financial reservation MUST check both.
 5. A contractor's operating mandate MUST NOT imply asset-owner permission or override independent site policy.
@@ -150,3 +150,13 @@ Run using `pnpm operations:demo` or MCP `operations.simulate`. No live assets, c
 - Attest Issue #9 (verifiable marketplace work receipts): https://github.com/gmackie/attest/issues/9
 
 Do not claim formal conformance to those external standards based on the reference adapter alone.
+
+## 10. Future schema extensions explicitly NOT present in v0.1
+
+- Jurisdiction and geography restrictions, linked legal contract obligations and worker qualification evidence.
+- Resource-specific conditional approvals and human consent receipts.
+- A versioned, cross-language canonical signing and credential-status profile.
+- Continuous, tenant-specific mandate revocation and asset-owner grant registries. The reference coordinator supports trusted live lookup callbacks, but the public MCP tools never issue or activate real mandates.
+- Persistent obligation observation/event histories, external resource leasing, and production financial exposure ledgers.
+
+The v0.1 executable policy enforces exact entity IDs, not a geographic location ontology. Developers must not infer geographic eligibility from this version of the schema.
