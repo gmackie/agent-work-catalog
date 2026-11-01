@@ -36,6 +36,8 @@ export interface DispatchRecord {
   readonly status: DispatchStatus;
   readonly version: number;
   readonly attempts: number;
+  readonly recoveryAttempts: number;
+  readonly createdAt: string;
   readonly nextCheckAt: number;
   readonly leaseUntil: number;
   readonly updatedAt: string;
@@ -271,7 +273,8 @@ export function makeTrustedDispatcher(
     const requestDigest=await sha256(JSON.stringify(request));
     let record=await store.initialize({
       workId:work.id,buyerId,executorId:binding.id,quoteDigest:work.quoteDigest,
-      requestDigest,request,status:"new",version:0,attempts:0,nextCheckAt:0,
+      requestDigest,request,status:"new",version:0,attempts:0,recoveryAttempts:0,
+      createdAt:new Date(now()).toISOString(),nextCheckAt:0,
       leaseUntil:0,updatedAt:new Date(now()).toISOString(),
     });
     if(record.quoteDigest!==work.quoteDigest||record.requestDigest!==requestDigest ||
@@ -284,6 +287,11 @@ export function makeTrustedDispatcher(
     if(record.leaseUntil>now()||record.nextCheckAt>now())return record;
     if(record.status==="completed")return commit(record);
     if(record.status==="manual_review")return record;
+    if(record.status!=="new" && now()-Date.parse(record.createdAt)>15*60_000 +
+        binding.maxDurationSeconds*1000) {
+      return cas(record,{status:"manual_review",leaseUntil:0,nextCheckAt:0,
+        lastError:"Execution reconciliation exceeded sandbox deadline; manual operator review required"});
+    }
     const priorStatus=record.status;
     record=await cas(record,{
       status:priorStatus==="new"?"starting":
@@ -305,14 +313,25 @@ export function makeTrustedDispatcher(
       }
     }
     if(priorStatus==="starting"||priorStatus==="uncertain"){
+      const recoveryAttempts=record.recoveryAttempts+1;
       try{
         const found=await Effect.runPromise(executor.recover(request));
-        if(!found)return cas(record,{status:"uncertain",leaseUntil:0,nextCheckAt:now()+60_000,
-          lastError:"Provider has not yet confirmed acceptance; no second start attempt"});
-        return inspectAfterAccepted(record,found);
+        if(found)return inspectAfterAccepted(record,found);
+        const review=recoveryAttempts>=12;
+        return cas(record,{
+          status:review?"manual_review":"uncertain",
+          leaseUntil:0,nextCheckAt:review?0:now()+60_000,recoveryAttempts,
+          lastError:review?"Recovery threshold exceeded; operator must resolve the original execution":
+            "Provider has not yet confirmed acceptance; no second start attempt",
+        });
       }catch{
-        return cas(record,{status:"uncertain",leaseUntil:0,nextCheckAt:now()+60_000,
-          lastError:"Recovery temporarily unavailable; original idempotency key preserved"});
+        const review=recoveryAttempts>=12;
+        return cas(record,{
+          status:review?"manual_review":"uncertain",
+          leaseUntil:0,nextCheckAt:review?0:now()+60_000,recoveryAttempts,
+          lastError:review?"Remote recovery repeatedly unavailable; manual resolution required":
+            "Recovery temporarily unavailable; original idempotency key preserved",
+        });
       }
     }
     if(!record.handle)return cas(record,{status:"manual_review",leaseUntil:0,nextCheckAt:0,
