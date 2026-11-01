@@ -25,7 +25,7 @@ The agent plans actions. No LLM-generated string can itself satisfy a finance/ac
 - `OperatingMandate` and `ActionProposal`: declarative Effect Schema in `@awc/responsibility`.
 - `evaluateAction(proposal, trustedContext)`: pure policy evaluation, with four decisions and machine-readable reason codes.
 - `EconomicLedgerService`: two independent bounds, delegated authority ceiling and account available funds. Demo-only ledger; child wind-down returns unused authority and rolls captured spend into its parent.
-- `OperationsService`: reference coordinator that re-evaluates at commit and writes only to an in-memory simulated adapter.
+- `OperationsService`: reference coordinator that re-evaluates at commit, supports trusted live revocation/owner-permission/approval lookups, verifies proposal revision digests and writes only to an in-memory simulated adapter.
 - `ManagedSystemAdapters`: registry validating managed-system manifests with no arbitrary package loading. Remote read-only adapters cannot expose write capabilities.
 - `runScenario(id)`: deterministic in-memory domain simulation; returns receipts, state, obligations, costs, action decisions and next-cycle recommendations. Reconciliation suppresses duplicate restock/capacity requests while work is pending.
 
