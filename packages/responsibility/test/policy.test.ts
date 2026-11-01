@@ -22,6 +22,11 @@ const proposal:ActionProposal={
 const trusted=():PolicyContext=>({
  now:"2026-11-01T16:01:00Z",mandates:[root],revokedMandateIds:[],
  assetOwnerId:"org:machine-owner",
+ actionPolicies:[
+  {entityId:"machine:42",action:"inventory.replenishment.request",risk:"commercial",allowedEffects:["purchase"]},
+  {entityId:"machine:42",action:"maintenance.schedule",risk:"operational",allowedEffects:["business-work-order"]},
+  {entityId:"machine:42",action:"telemetry.read",risk:"observe",allowedEffects:[]},
+ ],
  ownerPermissions:[{ownerId:"org:machine-owner",granteePrincipalId:root.principalId,entityId:"machine:42",
  actions:["inventory.replenishment.request","maintenance.schedule","telemetry.read"],
  validUntil:"2026-12-01T00:00:00Z"}],
@@ -40,6 +45,8 @@ describe("responsibility and mandate policy",()=>{
    expect(evaluateAction(proposal,{...trusted(),ownerPermissions:[]})).toMatchObject({kind:"deny"});
    expect(evaluateAction(proposal,{...trusted(),assetOwnerId:"unrelated-asset-owner"})).toMatchObject({kind:"deny"});
    expect(evaluateAction({...proposal,actorId:"agent:other"},trusted())).toMatchObject({kind:"deny"});
+   expect(evaluateAction({...proposal,risk:"observe"},trusted())).toMatchObject({kind:"deny"});
+   expect(evaluateAction({...proposal,effects:["purchase","plc.write_coil"]},trusted())).toMatchObject({kind:"deny"});
    expect(evaluateAction(proposal,{...trusted(),observation:{entityId:"machine:42",stateVersion:"v1",observedAt:"2026-11-01T14:00:00Z",sourceId:"old"}})).toMatchObject({kind:"deny"});
  });
  it("denies revoked mandates, expired mandates, unbounded purchases or excessive cost",()=>{
@@ -52,7 +59,7 @@ describe("responsibility and mandate policy",()=>{
  it("escalates maintenance unless separately trusted, revision-bound approval exists",()=>{
    const {commitment:_ignored,...rest}=proposal;
    const p:ActionProposal={...rest,id:"proposal:maintenance",action:"maintenance.schedule",
-    risk:"operational"};
+    risk:"operational",effects:["business-work-order"]};
    expect(evaluateAction(p,trusted()).kind).toBe("escalate");
    const d=evaluateAction(p,{...trusted(),approvals:[{approverId:"org:operator",proposalId:p.id,
     revision:p.revision,validUntil:"2026-11-02T00:00:00Z"}]});
