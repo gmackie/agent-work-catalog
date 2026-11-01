@@ -11,3 +11,13 @@ This is an open Effect 4 monorepo defining machine-readable work contracts and i
 - Do not claim exactly-once external execution; use stable execution IDs, leases and reconciliation.
 - Keep Attest receipt claims separate from actual payment evidence; no unreviewed production ZK or token writes.
 - Write negative tests for schema swaps, duplicates, incorrect funding, callback failures, and task-type mismatches.
+
+## Delegated responsibility and operating safety
+
+- OperatingMandate objectives are **not** additional permission. Never grant capabilities based on a performance target or LLM plan alone.
+- All actions must be tied to a trusted mandate chain, principal, accountable party, independent asset-owner grant, current state/version and scoped authorization.
+- Parent and sibling delegates share one economic allowance. Funds are checked separately from budgets. Resource reservations must account for future liabilities and wind-down.
+- Generic physical control, safety-function changes, raw PLC/OT writes and hazardous equipment actions are **out of scope** for AWC's default adapters. Simulators only. No live resource provisioning or unattended plant actuation in this repository.
+- Mandates and observations supplied in MCP arguments are untrusted; trust sources must be configured by the server, not by user-provided metadata.
+- No public deployment may use `makeSimulatedEconomicLedger` to represent actual payment funding or `ActionReceipt.simulation` as evidence of production execution.
+- Revocation blocks new authority. Cleanup, existing liabilities and handing over ongoing operational responsibility require explicit reconciliation.
