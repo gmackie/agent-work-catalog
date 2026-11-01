@@ -32,8 +32,16 @@ async function fixture(kind:"vending-machine"|"cloud-service"|"production-cell",
  await run(ledger.seedSimulatedAccount({accountId:m.economics.accountId,ownerId:m.principalId,
  currency:"USD",fundedMinor:"8000"}));
  await run(ledger.registerMandate(m));
+ const policies=actions.map(action=>({
+  entityId:"entity:"+kind,action,
+  risk:action==="plc.write_coil"?"physical-control" as const:
+    action==="inventory.replenishment.request"||action==="capacity.acquire"?"commercial" as const:
+    action==="telemetry.read"?"observe" as const:"operational" as const,
+  allowedEffects:action==="inventory.replenishment.request"||action==="capacity.acquire"?
+    ["purchase"]:["business-work-order"],
+ }));
  const env=createSimulatedEnvironment({id:"entity:"+kind,kind,ownerId:"org:asset-owner",
- operationalPrincipalId:m.principalId,actions},
+ operationalPrincipalId:m.principalId,actions,actionPolicies:policies},
  {availability:0.95,stockRemaining:3,requestRate:150,throughput:850},timestamp);
  const grants:OwnerPermission[]=[{ownerId:"org:asset-owner",granteePrincipalId:m.principalId,
  entityId:env.entity.id,actions,validUntil:"2026-12-01T00:00:00Z"}];
