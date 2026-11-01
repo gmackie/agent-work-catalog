@@ -1,6 +1,6 @@
 import { Context, Effect, Layer } from "effect";
 import { evaluateAction, assertActionRevision, type ActionProposal, type OperatingMandate, type PolicyContext,
-  type OwnerPermission, type PolicyDecision, type TrustedObservation } from "@awc/responsibility";
+  type OwnerPermission, type PolicyDecision, type TrustedObservation, type ActionPolicy } from "@awc/responsibility";
 import { type EconomicLedger, EconomicError } from "@awc/economics";
 
 export interface ManagedEntity {
@@ -9,6 +9,7 @@ export interface ManagedEntity {
  readonly ownerId:string;
  readonly operationalPrincipalId:string;
  readonly actions:readonly string[];
+ readonly actionPolicies:readonly ActionPolicy[];
 }
 export interface OperationalObservation extends TrustedObservation {
  readonly metrics:Readonly<Record<string,number>>;
@@ -69,6 +70,7 @@ export function makeSimulatedOperations(
  const receipts=new Map<string,ActionReceipt>();
  const ctx=(now:string):PolicyContext=>({
   now,mandates:graph,ownerPermissions,assetOwnerId:environment.entity.ownerId,
+  actionPolicies:environment.entity.actionPolicies,
   revokedMandateIds:options.revokedMandateIds??[],
   observation:environment.observe(now),approvals:options.approvedProposals??[],
  });
