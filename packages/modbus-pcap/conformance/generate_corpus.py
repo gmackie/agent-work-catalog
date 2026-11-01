@@ -15,6 +15,7 @@ from typing import Any
 
 from scapy.all import Dot1Q, Ether, IP, IPv6, Raw, TCP, wrpcap  # type: ignore
 from scapy.layers.inet import IPOption_NOP  # type: ignore
+from scapy.utils import PcapNgWriter  # type: ignore
 
 BASE = 1700000000
 CLIENT, SERVER = "192.0.2.10", "192.0.2.20"
@@ -188,6 +189,23 @@ def cases() -> list[dict[str, Any]]:
     s.add("request", 76, raw=adu(76, pdu(3, False), protocol=1), decoded=False)
     add(s, mode="parser-only")
 
+    s = Scenario("tcp_retransmission")
+    s.add("request", 79, us=1000)
+    # Force the same sender TCP sequence number for an actual retransmission.
+    s.seq[(CLIENT, SERVER, 40000, 502)] -= len(adu(79, pdu(3, False)))
+    s.add("request", 79, us=12000)
+    s.add("response", 79, us=35000)
+    add(s, mode="parser-only", unanswered=1)
+
+    s = Scenario("invalid_mbap_length")
+    s.add("request", 80, raw=struct.pack("!HHHB", 80, 0, 0, 1) + b"\x03",
+          decoded=False)
+    add(s, mode="parser-only")
+
+    s = Scenario("pcapng_unsupported")
+    s.add("request", 81, us=1000)
+    add(s, mode="reject", error="unsupported")
+
     s = Scenario("truncated_record")
     s.add("request", 77, us=1000)
     add(s, mode="reject", error="invalid")
@@ -222,7 +240,16 @@ def main() -> None:
         packets = scenario.pop("packets")
         filename = name + ".pcap"
         path = directory / filename
-        wrpcap(str(path), packets)
+        if name == "pcapng_unsupported":
+            # A real pcapng capture, not merely a fake magic header.
+            writer = PcapNgWriter(str(path))
+            try:
+                for packet in packets:
+                    writer.write(packet)
+            finally:
+                writer.close()
+        else:
+            wrpcap(str(path), packets)
         if name == "big_endian_pcap":
             path.write_bytes(convert_endianness(path.read_bytes(), False))
         if name == "nanosecond_pcap":
