@@ -191,6 +191,36 @@ export function assertAttenuated(child:OperatingMandate,parent:OperatingMandate)
       throw new ResponsibilityError("invalid_mandate","Submandate enlarges authority or breaks delegation chain");
   }
 }
+
+/** Deterministic, explicitly ordered payload used to bind an action revision to all terms.
+ * Reference canonicalization only; this is NOT a cross-language signing standard. */
+export function canonicalActionProposal(p:ActionProposal):string{
+ return JSON.stringify({
+  schemaVersion:p.schemaVersion,id:p.id,mandateId:p.mandateId,
+  operationId:p.operationId,actorId:p.actorId,entityId:p.entityId,
+  action:p.action,risk:p.risk,dataClassification:p.dataClassification,
+  requestedAt:p.requestedAt,effects:[...p.effects],
+  expectedStateVersion:p.expectedStateVersion??null,
+  commitment:p.commitment?{
+   accountId:p.commitment.accountId,currency:p.commitment.currency,
+   maximumMinor:p.commitment.maximumMinor,pricingReference:p.commitment.pricingReference,
+  }:null,
+ });
+}
+export async function computeActionRevision(p:ActionProposal):Promise<string>{
+ const data=new TextEncoder().encode(canonicalActionProposal(p));
+ const digest=await crypto.subtle.digest("SHA-256",data);
+ return Array.from(new Uint8Array(digest),v=>v.toString(16).padStart(2,"0")).join("");
+}
+export async function sealActionProposal(p:ActionProposal):Promise<ActionProposal>{
+ return {...p,revision:await computeActionRevision(p)};
+}
+export async function assertActionRevision(p:ActionProposal):Promise<void>{
+ if(p.revision!==await computeActionRevision(p)){
+  throw new ResponsibilityError("invalid_proposal","Proposal revision does not bind to exact action terms");
+ }
+}
+
 /** Caller must supply mandates from an authenticated registry, never agent-provided assertions. */
 export function mandateChain(id:string,all:readonly OperatingMandate[]):readonly OperatingMandate[]{
   const byId=new Map<string,OperatingMandate>();
