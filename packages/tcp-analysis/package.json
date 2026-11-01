@@ -11,5 +11,8 @@
     "test": "vitest run",
     "check": "pnpm typecheck && pnpm test"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "@awc/modbus-pcap": "workspace:*"
+  }
 }
