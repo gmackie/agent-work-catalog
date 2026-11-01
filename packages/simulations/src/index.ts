@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import type { ActionProposal, OperatingMandate, OwnerPermission, PolicyDecision } from "@awc/responsibility";
+import { sealActionProposal, type ActionProposal, type OperatingMandate, type OwnerPermission, type PolicyDecision } from "@awc/responsibility";
 import { makeSimulatedEconomicLedger } from "@awc/economics";
 import { makeSimulatedOperations, assessObligations, type ActionReceipt, type OperationEvent } from "@awc/operations";
 import { createSimulatedEnvironment } from "@awc/operations/simulated";
@@ -83,7 +83,7 @@ export function runScenario(id:ScenarioId):Effect.Effect<SimulationReport,Error>
   const attempts:SimulationAttempt[]=[];
   for(const [index,action] of p.intent.entries()){
    const observation=yield* controller.inspect(NOW);
-   const request:ActionProposal={
+   const raw:ActionProposal={
     schemaVersion:"awc.action/v1",id:"proposal:demo:"+id+":"+index,
     revision:(index+1).toString(16).padStart(64,"0"),mandateId:m.id,operationId:m.operationId,
     actorId:m.delegateId,entityId,action:action.action,risk:action.risk,
@@ -93,6 +93,10 @@ export function runScenario(id:ScenarioId):Effect.Effect<SimulationReport,Error>
     ...(action.cost?{commitment:{accountId:m.economics.accountId,
      currency:"USD",maximumMinor:action.cost,pricingReference:"quote:simulation:"+id}}:{}),
    };
+   const request=yield* Effect.tryPromise({
+     try:()=>sealActionProposal(raw),
+     catch:()=>new Error("Unable to seal simulated proposal"),
+   });
    const decision=yield* controller.evaluate(request,NOW);
    if(decision.kind==="deny"||decision.kind==="escalate"){
     attempts.push({action:request.action,risk:request.risk,decision,
