@@ -63,16 +63,25 @@ export function makeSimulatedOperations(
  graph:readonly OperatingMandate[],
  ownerPermissions:readonly OwnerPermission[],
  ledger:EconomicLedger,
- options:{readonly revokedMandateIds?:readonly string[];readonly approvedProposals?:readonly {
+ options:{
+  readonly revokedMandateIds?:readonly string[];
+  /** Dynamic trusted stores are re-read before commit; static arrays are demos only. */
+  readonly revokedLookup?:()=>readonly string[];
+  readonly ownerPermissionLookup?:()=>readonly OwnerPermission[];
+  readonly approvalLookup?:()=>readonly {
+    approverId:string;proposalId:string;revision:string;validUntil:string;
+  }[];
+  readonly approvedProposals?:readonly {
    approverId:string;proposalId:string;revision:string;validUntil:string;
  }[]}={},
 ):OperationsCoordinator{
  const receipts=new Map<string,ActionReceipt>();
  const ctx=(now:string):PolicyContext=>({
-  now,mandates:graph,ownerPermissions,assetOwnerId:environment.entity.ownerId,
+  now,mandates:graph,ownerPermissions:options.ownerPermissionLookup?.()??ownerPermissions,
+  assetOwnerId:environment.entity.ownerId,
   actionPolicies:environment.entity.actionPolicies,
-  revokedMandateIds:options.revokedMandateIds??[],
-  observation:environment.observe(now),approvals:options.approvedProposals??[],
+  revokedMandateIds:options.revokedLookup?.()??options.revokedMandateIds??[],
+  observation:environment.observe(now),approvals:options.approvalLookup?.()??options.approvedProposals??[],
  });
  const guarded=<T>(fn:()=>T):Effect.Effect<T,OperationsError>=>Effect.try({
   try:fn,catch:e=>e instanceof OperationsError?e:new OperationsError("unavailable","Operation service failed"),
