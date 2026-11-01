@@ -67,6 +67,24 @@ describe("simulated economic authority ledger",()=>{
   expect((await run(l.account("account:a"))).availableMinor).toBe("5000");
   await expect(run(l.captureExpense(r.id,"100"))).rejects.toThrow();
  });
+
+ it("reconciles captured child spend into parent on close without minting new authority",async()=>{
+  const {l,root}=await setup();
+  const child=mandate("buyer",root,"4000");await run(l.registerMandate(child));
+  const reservation=await run(l.reserveExpense({mandateId:child.id,actionId:"a",idempotencyKey:"a",maximumMinor:"1000"}));
+  await expect(run(l.closeMandate(child.id))).rejects.toMatchObject({code:"invalid_state"});
+  await run(l.captureExpense(reservation.id,"750"));
+  const closed=await run(l.closeMandate(child.id));
+  expect(closed.closed).toBe(true);
+  const parent=await run(l.mandate(root.id));
+  expect(parent.spentMinor).toBe("750");
+  expect(parent.delegatedMinor).toBe("0");
+  expect(parent.availableMinor).toBe("8250");
+  expect((await run(l.account("account:a"))).spentMinor).toBe("750");
+  await expect(run(l.reserveExpense({mandateId:child.id,actionId:"b",idempotencyKey:"b",maximumMinor:"100"})))
+    .rejects.toMatchObject({code:"inactive"});
+ });
+
  it("revoke cascades to descendant actions and preserves existing expenses",async()=>{
   const {l,root}=await setup();
   const child=mandate("buyer",root,"4000");await run(l.registerMandate(child));
@@ -76,5 +94,8 @@ describe("simulated economic authority ledger",()=>{
     .rejects.toMatchObject({code:"inactive"});
   await run(l.releaseExpense(spent.id));
   expect((await run(l.account("account:a"))).availableMinor).toBe("10000");
+  const closed=await run(l.closeMandate(child.id));
+  expect(closed.closed).toBe(true);
+  expect((await run(l.mandate(root.id))).delegatedMinor).toBe("0");
  });
 });
