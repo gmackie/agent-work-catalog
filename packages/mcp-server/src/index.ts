@@ -120,6 +120,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       description:"Prepare UNFUNDED work under an existing quote. Opens a separate human-facing review.",
       inputSchema:z.object({
         quoteId:z.string().min(3).max(150),
+        dataClassification:z.enum(["public","internal","confidential"]).optional(),
         idempotencyKey:z.string().min(8).max(100),
         inputs:z.array(z.object({
           name:z.string().min(1).max(100),mediaType:z.string().min(3).max(120),
@@ -132,6 +133,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
     },async(args)=>{
       const prepare=config.marketplace.prepareWork(buyerId,{
         quoteId:args.quoteId,idempotencyKey:args.idempotencyKey,
+        ...(args.dataClassification!==undefined ? {dataClassification:args.dataClassification} : {}),
         inputs:args.inputs.map(i=>({
           name:i.name,mediaType:i.mediaType,kind:i.kind,
           ...(i.data!==undefined?{data:i.data}:{}),
