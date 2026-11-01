@@ -470,7 +470,7 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
   if(await mismatch(request))return json({error:"routing_header_mismatch"},400);
   try{
     const actor=await principal(request,env,"mcp");
-    const {marketplace,commerce,stripe,remoteDispatcher}=services(env,request);
+    const {marketplace,commerce,stripe,remoteDispatcher,custody}=services(env,request);
     const ui=await env.ASSETS.fetch("https://assets.local/marketplace.html");
     const contractUi=await env.ASSETS.fetch("https://assets.local/contract.html");
     const paid=paidConfig(env);
