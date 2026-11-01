@@ -14,7 +14,7 @@ export interface AccountView {
 export interface MandateView {
  readonly mandateId:string;readonly parentId?:string;
  readonly limitMinor:string;readonly spentMinor:string;readonly reservedMinor:string;
- readonly delegatedMinor:string;readonly availableMinor:string;readonly revoked:boolean;
+ readonly delegatedMinor:string;readonly availableMinor:string;readonly revoked:boolean;readonly closed:boolean;
 }
 export interface ExpenseReservation {
  readonly id:string;readonly mandateId:string;readonly accountId:string;
@@ -32,12 +32,14 @@ export interface EconomicLedger {
  readonly captureExpense:(reservationId:string,actualMinor:string)=>Effect.Effect<ExpenseReservation,EconomicError>;
  readonly releaseExpense:(reservationId:string)=>Effect.Effect<ExpenseReservation,EconomicError>;
  readonly revokeMandate:(mandateId:string)=>Effect.Effect<void,EconomicError>;
+ /** Close only after reservations and descendants reconcile; return unused allowance. */
+ readonly closeMandate:(mandateId:string)=>Effect.Effect<MandateView,EconomicError>;
  readonly account:(accountId:string)=>Effect.Effect<AccountView,EconomicError>;
  readonly mandate:(mandateId:string)=>Effect.Effect<MandateView,EconomicError>;
 }
 export class EconomicLedgerService extends Context.Service<EconomicLedgerService,EconomicLedger>()("@awc/EconomicLedger") {}
 interface AccountState {ownerId:string;currency:string;funded:bigint;spent:bigint;reserved:bigint;}
-interface MandateState {mandate:OperatingMandate;spent:bigint;reserved:bigint;delegated:bigint;revoked:boolean;}
+interface MandateState {mandate:OperatingMandate;spent:bigint;reserved:bigint;delegated:bigint;revoked:boolean;closed:boolean;}
 interface ReservationState {id:string;mandateId:string;accountId:string;actionId:string;
   idempotencyKey:string;authorized:bigint;charged?:bigint;status:"reserved"|"captured"|"released";}
 
@@ -67,7 +69,7 @@ export function makeSimulatedEconomicLedger():EconomicLedger{
   return {mandateId:id,...(m.mandate.parentId?{parentId:m.mandate.parentId}:{}),
    limitMinor:String(limit),spentMinor:String(m.spent),reservedMinor:String(m.reserved),
    delegatedMinor:String(m.delegated),
-   availableMinor:String(limit-m.spent-m.reserved-m.delegated),revoked:m.revoked};
+   availableMinor:String(limit-m.spent-m.reserved-m.delegated),revoked:m.revoked,closed:m.closed};
  };
  const reservationView=(r:ReservationState):ExpenseReservation=>({
   id:r.id,mandateId:r.mandateId,accountId:r.accountId,actionId:r.actionId,
@@ -82,7 +84,7 @@ export function makeSimulatedEconomicLedger():EconomicLedger{
   while(cur?.mandate.parentId){
    if(++steps>32)throw new EconomicError("invalid_state","Mandate graph cycle");
    const parent=getGrant(cur.mandate.parentId);
-   if(parent.revoked)return true;
+   if(parent.revoked||parent.closed)return true;
    cur=parent;
   }
   return false;
@@ -103,10 +105,10 @@ export function makeSimulatedEconomicLedger():EconomicLedger{
    if(account.ownerId!==mandate.principalId || account.currency!==mandate.economics.currency){
     throw new EconomicError("invalid_state","Mandate account owner/currency mismatch");
    }
-   const m:MandateState={mandate,spent:0n,reserved:0n,delegated:0n,revoked:false};
+   const m:MandateState={mandate,spent:0n,reserved:0n,delegated:0n,revoked:false,closed:false};
    if(mandate.parentId){
     const parent=getGrant(mandate.parentId);
-    if(parent.revoked||descendants(parent.mandate.id))throw new EconomicError("inactive","Parent authority is revoked");
+    if(parent.revoked||parent.closed||descendants(parent.mandate.id))throw new EconomicError("inactive","Parent authority is revoked");
     assertAttenuated(mandate,parent.mandate);
     const p=money(parent.mandate.economics.maxTotalMinor);
     const amount=money(mandate.economics.maxTotalMinor);
@@ -119,7 +121,7 @@ export function makeSimulatedEconomicLedger():EconomicLedger{
   }),
   reserveExpense:req=>perform(()=>{
    const g=getGrant(req.mandateId);
-   if(g.revoked||descendants(req.mandateId))throw new EconomicError("inactive","Mandate revoked");
+   if(g.revoked||g.closed||descendants(req.mandateId))throw new EconomicError("inactive","Mandate revoked");
    const amount=money(req.maximumMinor),perAction=money(g.mandate.economics.maxPerActionMinor);
    if(amount<=0n || amount>perAction)throw new EconomicError("limit_exceeded","Action exceeds spending mandate");
    if(!req.actionId||!req.idempotencyKey)throw new EconomicError("invalid_state","Missing execution reference");
@@ -167,6 +169,24 @@ export function makeSimulatedEconomicLedger():EconomicLedger{
   }),
   revokeMandate:id=>perform(()=>{
    const g=getGrant(id);g.revoked=true;
+  }),
+  closeMandate:id=>perform(()=>{
+   const g=getGrant(id);
+   if(g.closed)return grantView(id);
+   if(g.reserved!==0n || g.delegated!==0n){
+    throw new EconomicError("invalid_state","Cannot close while expense reservations or child allowances remain");
+   }
+   // Closing a child releases only UNUSED allowance to the parent, while rolling
+   // captured expense into the parent's consumed budget. Account cash is unchanged.
+   if(g.mandate.parentId){
+    const parent=getGrant(g.mandate.parentId);
+    const allowance=money(g.mandate.economics.maxTotalMinor);
+    if(parent.delegated<allowance)throw new EconomicError("invalid_state","Parent allocation inconsistent");
+    parent.delegated-=allowance;
+    parent.spent+=g.spent;
+   }
+   g.closed=true;g.revoked=true;
+   return grantView(id);
   }),
   account:id=>perform(()=>accountView(id)),
   mandate:id=>perform(()=>grantView(id)),
