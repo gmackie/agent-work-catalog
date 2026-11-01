@@ -98,6 +98,27 @@ async function allow(f:Awaited<ReturnType<typeof setup>>){
   await get(commerce.start("buyer-1",work.id));
 }
 describe("Trusted remote dispatch bridge",()=>{
+  it("escalates unresolved ambiguous starts instead of retrying a billable POST indefinitely",async()=>{
+    let starts=0;
+    const executor=fakeExecutor({
+      start:async()=>{starts++;throw new Error("remote POST response lost");},
+      recover:async()=>null,
+    });
+    const f=await setup(executor);
+    await allow(f);
+    expect((await get(f.dispatch.advance("buyer-1",f.work.id))).status).toBe("uncertain");
+    let state:"uncertain"|"manual_review"="uncertain";
+    for(let attempt=0;attempt<12;attempt++){
+      time+=61_000;
+      const step=await get(f.dispatch.advance("buyer-1",f.work.id));
+      if(step.status==="manual_review"){state="manual_review";break;}
+      expect(step.status).toBe("uncertain");
+    }
+    expect(state).toBe("manual_review");
+    expect(starts).toBe(1);
+    expect(await get(f.dispatch.recoverable())).toHaveLength(0);
+  });
+
   it("requires exact human disclosure consent + test funding before any remote invocation",async()=>{
     let started=0;
     const executor=fakeExecutor({start:async req=>{
