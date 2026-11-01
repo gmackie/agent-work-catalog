@@ -36,7 +36,7 @@ This profile describes how a principal may delegate bounded economic and operati
 - `OperatingMandate`: `schemaVersion`, IDs, parent, agreementRef, issued/valid/expires, `scope`, `economics`, `obligations`.
 - `scope`: exact `entityIds`, `actions`, `deniedActions`, `approvalActions`, `maximumRisk`, `maximumDataClassification`, `maximumObservationAgeMs`, `remainingDelegations`.
 - `economics`: `accountId`, ISO-like currency code, nonnegative integer **minor units**, maximum total exposure and maximum single commitment.
-- `ActionProposal`: exact actor, delegate mandate, operation/entity, semantic action, risk class, data classification, effects, expected state version, revision digest, and optional quantified financial commitment.
+- `ActionProposal`: exact actor, delegate mandate, operation/entity, semantic action, risk class, data classification, effects, expected state version, revision digest, and optional quantified financial commitment. The execution controller recomputes the deterministic SHA-256 revision over canonical field ordering and rejects a changed payload under an unchanged ID/revision.
 - `OwnerPermission`: resource, principal grantee, permitted action and validity (trusted system input, not a model claim).
 - `PolicyDecision`: `permit`, `permit-with-conditions`, `escalate`, or `deny`, with stable reasons and mandate ancestry.
 
@@ -80,6 +80,8 @@ unallocated(M) >= 0
 ```
 
 `reserveExpense` must atomically check idempotency, per-action maximum, the mandate's unallocated allowance, ancestor revocation, and actual available account funds. `captureExpense` converts the reservation into an irreversible recorded charge up to the reserved amount; `releaseExpense` returns only unused authorization and funding. Refunds of captured funds require a separate trusted settlement/credit event, never an arbitrary balance mutation.
+
+Delegated allowance is held by the child until closed. Closing a child MUST first reconcile any outstanding reservations and descendants, then return only unused authority while aggregating the child's actual captured spending into the parent budget. This prevents mandate revocation from silently minting new spending power.
 
 The current `@awc/economics` implementation enforces these rules **in memory only**. It does not move real money. A production ledger must provide serializable transactions across accounts and mandate ancestors, durable outbox, idempotent reconciliation, expirations, chargebacks and immutable events.
 
