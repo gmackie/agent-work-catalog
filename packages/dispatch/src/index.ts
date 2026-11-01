@@ -216,7 +216,7 @@ export function makeTrustedDispatcher(
       const snapshot=validateExecutionSnapshot(
         await Effect.runPromise(executor.inspect(current.handle!)),current.request,
       );
-      if(snapshot.handle.providerExecutionId!==current.handle.providerExecutionId)
+      if(snapshot.handle.providerExecutionId!==record.handle?.providerExecutionId)
         throw new DispatchError("invalid_contract","Provider switched execution handle");
       if(snapshot.status==="completed"){
         if(!snapshot.result)throw new DispatchError("invalid_contract","Completed execution omitted result");
