@@ -1,0 +1,19 @@
+{
+  "name": "@awc/adapter-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check": "pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "@awc/operations": "workspace:*",
+    "@awc/responsibility": "workspace:*",
+    "effect": "^4.0.6"
+  }
+}

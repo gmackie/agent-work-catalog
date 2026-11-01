@@ -85,6 +85,26 @@ describe("AWC MCP server", () => {
     }finally{await client.close();await server.close();}
   });
 
+
+  it("exposes simulated operating mandates with separate commercial and safety outcomes",async()=>{
+    const f=await fixture(false);
+    try{
+      const list=await f.client.listTools();
+      expect(list.tools.some(t=>t.name==="operations.simulate")).toBe(true);
+      expect(list.tools.some(t=>t.name==="mandates.activate")).toBe(false);
+      const result=await f.client.callTool({name:"operations.simulate",arguments:{scenario:"plant"}});
+      expect(result.isError).not.toBe(true);
+      const report=result.structuredContent as {
+        mode:string;attemptedActions:{status:string}[];account:{spentMinor:string};
+      };
+      expect(report.mode).toBe("strictly-simulated");
+      expect(report.attemptedActions.map(a=>a.status)).toEqual(["simulated","escalated","denied"]);
+      expect(report.account.spentMinor).toBe("0");
+      const resource=await f.client.readResource({uri:"awc://operations/scenarios"});
+      expect(resource.contents.length).toBeGreaterThan(0);
+    }finally{await f.close();}
+  });
+
   it("serves the modern 2026-07-28 stateless HTTP protocol without sockets", async () => {
     const marketplace = makeMarketplace(inMemoryMarketplaceStore());
     const handler = createMcpHandler(() => createCatalogMcpServer({

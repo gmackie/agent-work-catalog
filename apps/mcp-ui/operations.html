@@ -1,0 +1,37 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AWC Operations Sandbox</title>
+<style>
+:root{font:14px system-ui,-apple-system,sans-serif;color-scheme:light dark}
+*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#23344d}
+main{max-width:860px;margin:auto;padding:22px}h1{font-size:22px;margin:0 0 7px}
+h2{font-size:15px;margin:0 0 10px}p,small{color:#60718b;line-height:1.5}
+.info{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.pill{background:#fff1c2;color:#895500;font-size:11px;border-radius:99px;padding:5px 9px;white-space:nowrap}
+.choices{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}button{border:1px solid #a9b8cb;border-radius:9px;background:white;color:#2b4263;font:inherit;padding:9px 13px;cursor:pointer}
+button[data-active="true"]{background:#235898;border-color:#235898;color:white}
+button:disabled{opacity:.5;cursor:wait}.card{background:white;border:1px solid #d8e1ef;border-radius:14px;padding:16px;margin:10px 0}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.metric{background:#f3f6fa;border-radius:10px;padding:12px}
+.metric strong{font-size:20px;display:block;font-variant-numeric:tabular-nums;margin-top:3px}
+.muted{font-size:11px;color:#64748b}
+.rows{display:grid;gap:9px}.row{display:flex;align-items:start;justify-content:space-between;gap:12px;font-size:13px;border-bottom:1px solid #e7edf4;padding-bottom:9px}
+.row:last-child{border:0;padding:0}.tag{font-size:11px;font-weight:600;border-radius:6px;padding:4px 7px;white-space:nowrap}
+.simulated,.met{background:#dbf5e6;color:#09643c}.escalated,.breached{background:#fef1d5;color:#8e5b10}.denied,.unknown{background:#fce3e3;color:#982727}
+.track{background:#d9e3ef;border-radius:6px;overflow:hidden;height:13px;display:flex;gap:2px}
+.track span{height:100%;display:block;background:#2f82b7}.track span.funded{background:#7ca89a}
+footer{padding-top:12px;font-size:11px;color:#708198}
+@media(prefers-color-scheme:dark){body{background:#101925;color:#dce7f6}.card,button{background:#1c2a3e;color:#dce7f6;border-color:#3c516b}
+.metric{background:#27394f}.muted,p,small,footer{color:#a1b4ca}.row{border-color:#32465e}.track{background:#3b4d64}}
+@media(max-width:540px){.grid{grid-template-columns:1fr}.info{flex-direction:column}}
+</style></head><body><main>
+<header class="info"><div><h1>Operating Mandate Testbench</h1>
+<p>One responsibility model across vending, cloud infrastructure and production systems.</p></div>
+<span class="pill">Simulation only</span></header>
+<div class="choices" id="choices">
+<button data-scenario="vending">Vending</button><button data-scenario="cloud">Cloud</button>
+<button data-scenario="plant">Production</button></div>
+<p id="status" role="status">Run a fictional operation to see authority, spending and safety decisions.</p>
+<div id="results" aria-live="polite"></div>
+<footer>No payments, physical equipment operations, production deployments or live provider integrations are performed.</footer>
+</main><script type="module" src="/src/operations.ts"></script></body></html>
