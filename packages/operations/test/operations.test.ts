@@ -12,7 +12,7 @@ const mandate=(kind:"vending-machine"|"cloud-service"|"production-cell",actions:
  delegateId:"agent:manager",accountablePartyId:"org:operator",
  operationId:"operation:"+kind,issuerId:"org:operator",issuedAt:"2026-10-31T00:00:00Z",
  validFrom:"2026-10-31T00:00:00Z",expiresAt:"2026-12-01T00:00:00Z",
- scope:{entityIds:["entity:"+kind],actions,maximumRisk:"operational",
+ scope:{entityIds:["entity:"+kind],actions:actions.filter(x=>x!=="plc.write_coil"),maximumRisk:"operational",
  maximumDataClassification:"internal",deniedActions:["plc.write_coil"],
  approvalActions:["production.schedule.propose"],maximumObservationAgeMs:300_000,remainingDelegations:1},
  economics:{accountId:"account:"+kind,currency:"USD",maxTotalMinor:"10000",maxPerActionMinor:"5000"},
