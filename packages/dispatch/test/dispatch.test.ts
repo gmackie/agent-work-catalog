@@ -87,8 +87,8 @@ async function setup(executor:WorkExecutor=fakeExecutor()){
   }));
   return {marketplace,quote,work,commerce,dispatch};
 }
-async function allow(setup:Awaited<ReturnType<typeof setup>>){
-  const {commerce,work,dispatch}=setup;
+async function allow(f:Awaited<ReturnType<typeof setup>>){
+  const {commerce,work,dispatch}=f;
   const plan=await get(dispatch.plan("buyer-1",work.id));
   await get(commerce.consentExternal("buyer-1",work.id,{
     buyerId:"buyer-1",approverSubject:"human",reviewedDigest:plan.disclosureDigest,
