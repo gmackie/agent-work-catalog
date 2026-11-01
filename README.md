@@ -50,3 +50,7 @@ The newest `@awc/dispatch` package bridges an approved and **test-funded** comme
 **Off by default.** Only the fictional `offering:modbus-report` v1, public inline inputs and the read-only synthetic remote executor are eligible. No production payments, arbitrary provider URL selection, external side effects or Attest credential issuance are enabled. The provider's manifest is discovery metadata, not a trust grant.
 
 See [Trusted remote dispatch guide](docs/trusted-remote-dispatch.md) for local Cloudflare setup, consent, D1 migration, tests and remaining release gates.
+
+## Real Modbus/TCP pilot (private R2, evidence checks, draft Attest observations)
+
+The optional, bounded `offering:modbus-pcap-analysis` now runs a real classic-PCAP Modbus/TCP packet parser instead of synthetic output. Uploaded **public-only** captures are stored in private R2; a human separately approves disclosure to an operator-pinned remote worker. The broker recomputes findings, stores report and evaluation evidence in R2, and issues a **provisional broker-signed Attest-shaped observation JWS** (not an independent Attest VC, evaluation or payment receipt). Test/fake funding only; execution disabled by default. See [the packet-evidence pilot](docs/modbus-evidence-pilot.md) for setup, scope and limitations.
