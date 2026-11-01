@@ -91,11 +91,11 @@ def check_strict(case: dict[str, Any], report: dict[str, Any], tshark: list[dict
 
     transactions = report["transactions"]
     completed = sorted(
-        {"requestFrame": tx["requestFrame"], "responseFrame": tx["responseFrame"],
-         "tid": tx["transactionId"], "function": tx["functionCode"],
-         "exception": tx.get("exceptionCode")}
-        for tx in transactions if "responseFrame" in tx
-    , key=lambda v: (v["requestFrame"], v["responseFrame"]))
+        [{"requestFrame": tx["requestFrame"], "responseFrame": tx["responseFrame"],
+          "tid": tx["transactionId"], "function": tx["functionCode"],
+          "exception": tx.get("exceptionCode")}
+         for tx in transactions if "responseFrame" in tx],
+        key=lambda v: (v["requestFrame"], v["responseFrame"]))
     expected_pairs = sorted(case["pairs"],
                             key=lambda v: (v["requestFrame"], v["responseFrame"]))
     if completed != expected_pairs:
