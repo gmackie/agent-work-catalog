@@ -23,7 +23,11 @@
     "@awc/adapter-sdk": "workspace:*",
     "@awc/source-inbox": "workspace:*",
     "@awc/dispatch": "workspace:*",
-    "@awc/adapter-remote-http": "workspace:*"
+    "@awc/adapter-remote-http": "workspace:*",
+    "@awc/artifact-custody": "workspace:*",
+    "@awc/modbus-workflow": "workspace:*",
+    "@awc/modbus-pcap": "workspace:*",
+    "@awc/attest-receipts": "workspace:*"
   },
   "devDependencies": {
     "wrangler": "^4.148.0",

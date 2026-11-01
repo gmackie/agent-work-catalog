@@ -15,10 +15,15 @@ import { createRemoteHttpExecutor } from "@awc/adapter-remote-http";
 import { makeTrustedDispatcher,externalDisclosureDigest,
   type TrustedExecutorBinding,type TrustedDispatcher } from "@awc/dispatch";
 import { d1DispatchStore,type D1Database as DispatchD1 } from "@awc/dispatch/d1";
+import { createR2ArtifactCustody,type R2BucketLike,type ArtifactCustody } from "@awc/artifact-custody";
+import { createModbusResultProcessor } from "@awc/modbus-workflow";
+import { analyzeClassicPcap, MAX_CAPTURE_BYTES,PCAP_MEDIA_TYPE } from "@awc/modbus-pcap";
+import { verifyObservation } from "@awc/attest-receipts";
 
 export interface Env {
   readonly DB: MarketplaceD1 & CommerceD1 & SourceD1 & DispatchD1;
   readonly ASSETS: { fetch(request:Request|URL|string):Promise<Response> };
+  readonly ARTIFACTS?:R2Bucket;
   readonly AWC_JOBS?: Queue<WorkRunMessage>;
   readonly AWC_BUYER_TOKEN?:string;
   readonly AWC_SANDBOX_HUMAN_TOKEN?:string;
@@ -46,6 +51,11 @@ export interface Env {
   readonly AWC_REMOTE_EXECUTOR_ORIGIN?:string;
   readonly AWC_REMOTE_EXECUTOR_HOST?:string;
   readonly AWC_REMOTE_EXECUTOR_SHARED_KEY?:string;
+  readonly ENABLE_MODBUS_PCAP?:string;
+  readonly AWC_ATTEST_OBSERVATION_ISSUER?:string;
+  readonly AWC_ATTEST_KEY_ID?:string;
+  readonly AWC_ATTEST_PRIVATE_KEY_PEM?:string;
+  readonly AWC_ATTEST_PUBLIC_KEY_PEM?:string;
 }
 const json=(value:object,status=200)=>Response.json(value,{status,headers:{
   "cache-control":"no-store","x-content-type-options":"nosniff",
@@ -87,6 +97,21 @@ async function mismatch(request:Request):Promise<boolean>{
       request.headers.get("mcp-name")!==body.params.name;
   }catch{return true;}
 }
+function artifactCustody(env:Env):ArtifactCustody|undefined{
+  if(!env.ARTIFACTS)return undefined;
+  const binding=env.ARTIFACTS;
+  const bucket:R2BucketLike={
+    get:async(key)=>{
+      const item=await binding.get(key);
+      return item&&"arrayBuffer" in item
+        ? {size:item.size,arrayBuffer:()=>item.arrayBuffer()}:null;
+    },
+    put:async(key,content,options)=>binding.put(key,Uint8Array.from(content).buffer,{
+      sha256:options.sha256,httpMetadata:options.httpMetadata,
+    }),
+  };
+  return createR2ArtifactCustody(bucket);
+}
 function services(env:Env,request:Request){
   const marketplace=makeMarketplace(d1MarketplaceStore(env.DB));
   const stripe=env.STRIPE_SECRET_KEY?.startsWith("sk_test_")
@@ -97,6 +122,13 @@ function services(env:Env,request:Request){
   // can never choose the executor or override the price, data policy or task type.
   let binding:TrustedExecutorBinding|undefined;
   let remote:ReturnType<typeof createRemoteHttpExecutor>|undefined;
+  const boundedPcap=env.ENABLE_MODBUS_PCAP==="true";
+  const custody=artifactCustody(env);
+  if(boundedPcap && (!custody || !env.AWC_ATTEST_PRIVATE_KEY_PEM ||
+      !env.AWC_ATTEST_PUBLIC_KEY_PEM || !env.AWC_ATTEST_OBSERVATION_ISSUER ||
+      !env.AWC_ATTEST_KEY_ID || env.ENABLE_TRUSTED_REMOTE_DISPATCH!=="true")) {
+    throw new AdapterError("unavailable","Bounded PCAP mode requires private R2 custody and pinned receipt issuer keys");
+  }
   if(env.ENABLE_TRUSTED_REMOTE_DISPATCH==="true"){
     if(!env.AWC_REMOTE_EXECUTOR_ID || !env.AWC_REMOTE_EXECUTOR_ORIGIN ||
        !env.AWC_REMOTE_EXECUTOR_HOST || !env.AWC_REMOTE_EXECUTOR_SHARED_KEY){
@@ -106,14 +138,16 @@ function services(env:Env,request:Request){
       id:env.AWC_REMOTE_EXECUTOR_ID,baseUrl:env.AWC_REMOTE_EXECUTOR_ORIGIN,
       allowedHost:env.AWC_REMOTE_EXECUTOR_HOST,
       sharedKey:env.AWC_REMOTE_EXECUTOR_SHARED_KEY,
-      supportedTaskTypes:["task:modbus-diagnostics"],
+      supportedTaskTypes:[boundedPcap?"task:modbus-pcap":"task:modbus-diagnostics"],
     });
     binding={
       id:env.AWC_REMOTE_EXECUTOR_ID,origin:new URL(env.AWC_REMOTE_EXECUTOR_ORIGIN).origin+"/",
-      offeringId:"offering:modbus-report",offeringVersion:"1",
-      taskTypeId:"task:modbus-diagnostics",maxCostMinorUnits:"3500",
-      outputMediaTypes:["application/json"],maxDurationSeconds:120,
-      dataClassification:"public",allowedEffects:[],executionMode:"synthetic-test-only",
+      offeringId:boundedPcap?"offering:modbus-pcap-analysis":"offering:modbus-report",
+      offeringVersion:"1",
+      taskTypeId:boundedPcap?"task:modbus-pcap":"task:modbus-diagnostics",
+      maxCostMinorUnits:"3500",outputMediaTypes:["application/json"],
+      maxDurationSeconds:120,dataClassification:"public",allowedEffects:[],
+      executionMode:boundedPcap?"bounded-modbus-pcap/v1":"synthetic-test-only",
     };
   }
   const commerce=makeCommerce(marketplace,d1WorkStateStore(env.DB),sandboxExecutor,{
@@ -123,10 +157,19 @@ function services(env:Env,request:Request){
       work.offeringId===binding!.offeringId
         ? externalDisclosureDigest(work,quote,binding!) : undefined}:{}),
   });
+  const resultProcessor=boundedPcap&&custody ? createModbusResultProcessor(custody,{
+    issuerId:env.AWC_ATTEST_OBSERVATION_ISSUER!,
+    keyId:env.AWC_ATTEST_KEY_ID!,
+    privateKeyPem:env.AWC_ATTEST_PRIVATE_KEY_PEM!,
+    publicKeyPem:env.AWC_ATTEST_PUBLIC_KEY_PEM!,
+  }):undefined;
   const remoteDispatcher=remote && binding
-    ? makeTrustedDispatcher(commerce,d1DispatchStore(env.DB),remote,binding)
+    ? makeTrustedDispatcher(commerce,d1DispatchStore(env.DB),remote,binding,Date.now,{
+      ...(boundedPcap&&custody?{inputResolver:custody}:{}),
+      ...(resultProcessor?{resultProcessor}:{}),
+    })
     : undefined;
-  return {marketplace,commerce,stripe,remoteDispatcher};
+  return {marketplace,commerce,stripe,remoteDispatcher,custody};
 }
 async function principal(request:Request,env:Env,purpose:"mcp"|"human"){
   return identifyActor(request.headers.get("authorization"),purpose,authConfig(env),
@@ -295,6 +338,46 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
       "referrer-policy":"no-referrer"}});
   }
   if(!allowedOrigin(request,env))return json({error:"origin_not_allowed"},403);
+  if(url.pathname==="/api/artifacts/input"&&request.method==="POST"){
+    if(env.ENABLE_MODBUS_PCAP!=="true")return json({error:"not_found"},404);
+    try{
+      const actor=requireScope(await principal(request,env,"mcp"),"work:prepare");
+      if(request.headers.get("content-type")?.split(";")[0]!==PCAP_MEDIA_TYPE ||
+         request.headers.get("x-awc-data-classification")!=="public"){
+        return json({error:"public_classic_pcap_only"},415);
+      }
+      const raw=await bodyUnderLimit(request,MAX_CAPTURE_BYTES);
+      await analyzeClassicPcap(raw);
+      const custody=artifactCustody(env);
+      if(!custody)return json({error:"private_r2_not_configured"},503);
+      const stored=await custody.putInput(actor.buyerId,raw);
+      return json({...stored,declaredDataClassification:"public",
+        warning:"Upload only captures explicitly cleared for outside disclosure. Bytes are retained in private R2."},201);
+    }catch(error){return errorResponse(error);}
+  }
+  if(url.pathname.startsWith("/api/artifacts/results/")&&request.method==="GET"){
+    try{
+      const actor=requireScope(await principal(request,env,"mcp"),"work:read");
+      const pieces=url.pathname.split("/");
+      if(pieces.length!==6) return json({error:"invalid_artifact_path"},400);
+      const workId=pieces[4]!,digest=pieces[5]!;
+      if(!/^work_[a-f0-9-]{36}$/.test(workId)||!/^[a-f0-9]{64}$/.test(digest))
+        return json({error:"invalid_artifact_reference"},400);
+      const {commerce,custody}=services(env,request);
+      if(!custody)return json({error:"private_r2_not_configured"},503);
+      const preview=await Effect.runPromise(commerce.preview(actor.buyerId,workId));
+      const artifact=preview.state.result?.artifacts.find(x=>
+        x.reference==="artifact:sha256:"+digest && x.sha256===digest &&
+        ["application/json","application/jose"].includes(x.mediaType));
+      if(!artifact)return json({error:"artifact_not_in_completed_work"},404);
+      const bytes=await custody.readOutput(actor.buyerId,workId,artifact.reference!);
+      return new Response(Uint8Array.from(bytes).buffer,{headers:{
+        "content-type":artifact.mediaType,
+        "cache-control":"no-store","x-content-type-options":"nosniff",
+        "content-disposition":'attachment; filename="awc-artifact-'+digest.slice(0,12)+'"',
+      }});
+    }catch(error){return errorResponse(error);}
+  }
   if(url.pathname==="/integrations/github/webhook" && request.method==="POST"){
     if(env.ENABLE_GITHUB_SOURCE!=="true")return json({error:"not_found"},404);
     try{
