@@ -81,7 +81,8 @@ export function runScenario(id:ScenarioId):Effect.Effect<SimulationReport,Error>
    risk:action==="plc.write_coil"?"physical-control" as const:
     action==="capacity.acquire"||action==="inventory.replenishment.request"?"commercial" as const:
     action==="telemetry.read"?"observe" as const:"operational" as const,
-   allowedEffects:action==="capacity.acquire"||action==="inventory.replenishment.request"?
+   allowedEffects:action==="telemetry.read"?[]:
+    action==="capacity.acquire"||action==="inventory.replenishment.request"?
     ["purchase"]:["business-work-order"],
   }));
 
