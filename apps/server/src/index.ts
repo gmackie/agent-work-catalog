@@ -483,6 +483,30 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
       ...(env.AWC_JOBS ? {enqueue:async (msg:WorkRunMessage)=>{await env.AWC_JOBS!.send(msg);}} : {}),
       stripeCheckoutAvailable:!!stripe,
       ...(remoteDispatcher?{remoteDispatcher}:{}),
+      ...(custody?{readCompletedArtifact:async(buyerId:string,workId:string,ref:string)=>{
+        const preview=await Effect.runPromise(commerce.preview(buyerId,workId));
+        if(preview.state.status!=="submitted")throw new AdapterError("unauthorized","Work not submitted");
+        const artifact=preview.state.result?.artifacts.find(x=>x.reference===ref&&
+          x.sha256===ref.slice("artifact:sha256:".length));
+        if(!artifact)throw new AdapterError("not_found","Artifact not bound to buyer's submitted work");
+        const bytes=await custody.readOutput(buyerId,workId,ref);
+        if(artifact.mediaType==="application/json"){
+          return {ref,mediaType:artifact.mediaType,value:JSON.parse(new TextDecoder().decode(bytes)) as unknown,
+            integrityVerified:true};
+        }
+        if(artifact.mediaType==="application/jose"&&env.AWC_ATTEST_PUBLIC_KEY_PEM &&
+           env.AWC_ATTEST_KEY_ID&&env.AWC_ATTEST_OBSERVATION_ISSUER){
+          const observation=await verifyObservation(new TextDecoder().decode(bytes),{
+            issuerId:env.AWC_ATTEST_OBSERVATION_ISSUER,keyId:env.AWC_ATTEST_KEY_ID,
+            publicKeyPem:env.AWC_ATTEST_PUBLIC_KEY_PEM,
+            workId,contractDigest:preview.quote.termsDigest,
+          });
+          return {ref,mediaType:artifact.mediaType,value:observation,
+            integrityVerified:true,signatureVerified:true,
+            issuerAuthority:"Not independently established: local observation issuer only"};
+        }
+        throw new AdapterError("unauthorized","Unsupported or untrusted artifact type");
+      }}:{}),
       ...(env.ENABLE_GITHUB_SOURCE==="true" && env.GITHUB_SOURCE_BUYER_ID
         ? {listOpportunities:async (buyerId:string,limit:number)=>{
           if(buyerId!==env.GITHUB_SOURCE_BUYER_ID)return [];
