@@ -80,6 +80,27 @@ describe("common operational mandate across simulated industries",()=>{
   await expect(run(f.controller.commit(await sealActionProposal({...p,expectedStateVersion:"state:other"}),timestamp))).rejects.toThrow();
   expect((await run(f.ledger.account(f.m.economics.accountId))).spentMinor).toBe("0");
  });
+
+ it("rechecks live revocation and resource-owner permission at commit, even for zero-cost actions",async()=>{
+  const f=await fixture("production-cell",["maintenance.ticket.create"]);
+  const p=await sealActionProposal(proposal(f.m,"production-cell","maintenance.ticket.create"));
+  let revoked:string[]=[];
+  let owners:OwnerPermission[]=[{ownerId:"org:asset-owner",granteePrincipalId:f.m.principalId,
+    entityId:f.env.entity.id,actions:["maintenance.ticket.create"],validUntil:"2026-12-01T00:00:00Z"}];
+  const controller=makeSimulatedOperations(f.env,f.m,[f.m],owners,f.ledger,{
+    revokedLookup:()=>revoked,
+    ownerPermissionLookup:()=>owners,
+  });
+  expect((await run(controller.evaluate(p,timestamp))).kind).toBe("permit-with-conditions");
+  owners=[];
+  await expect(run(controller.commit(p,timestamp))).rejects.toMatchObject({code:"denied"});
+  owners=[{ownerId:"org:asset-owner",granteePrincipalId:f.m.principalId,
+    entityId:f.env.entity.id,actions:["maintenance.ticket.create"],validUntil:"2026-12-01T00:00:00Z"}];
+  revoked=[f.m.id];
+  await expect(run(controller.commit(p,timestamp))).rejects.toMatchObject({code:"denied"});
+  expect(f.env.snapshot().maintenanceTickets).toBeUndefined();
+ });
+
  it("measures a declared objective only from its authoritative, fresh source",()=>{
   const m=mandate("vending-machine",["telemetry.read"]);
   expect(assessObligations(m,[],timestamp)[0]?.status).toBe("unknown");
