@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from "effect";
-import { evaluateAction, type ActionProposal, type OperatingMandate, type PolicyContext,
+import { evaluateAction, assertActionRevision, type ActionProposal, type OperatingMandate, type PolicyContext,
   type OwnerPermission, type PolicyDecision, type TrustedObservation } from "@awc/responsibility";
 import { type EconomicLedger, EconomicError } from "@awc/economics";
 
@@ -82,6 +82,11 @@ export function makeSimulatedOperations(
   evaluate,
   history:()=>Effect.sync(()=>environment.events),
   commit:(proposal,now)=>Effect.gen(function*(){
+   // Reject revisions that purport to approve different action terms.
+   yield* Effect.tryPromise({
+    try:()=>assertActionRevision(proposal),
+    catch:()=>new OperationsError("invalid_proposal","Proposal revision is not bound to the action payload"),
+   });
    const key=proposal.id;
    const prior=receipts.get(key);
    if(prior){
