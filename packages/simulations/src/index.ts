@@ -75,9 +75,19 @@ export function runScenario(id:ScenarioId):Effect.Effect<SimulationReport,Error>
   yield* ledger.seedSimulatedAccount({accountId:m.economics.accountId,ownerId:m.principalId,
    currency:"USD",fundedMinor:"6000"});
   yield* ledger.registerMandate(m);
+
+  const actionPolicies=p.actions.map(action=>({
+   entityId,action,
+   risk:action==="plc.write_coil"?"physical-control" as const:
+    action==="capacity.acquire"||action==="inventory.replenishment.request"?"commercial" as const:
+    action==="telemetry.read"?"observe" as const:"operational" as const,
+   allowedEffects:action==="capacity.acquire"||action==="inventory.replenishment.request"?
+    ["purchase"]:["business-work-order"],
+  }));
+
   const env=createSimulatedEnvironment({
    id:entityId,kind:p.kind,ownerId:"org:asset-owner",
-   operationalPrincipalId:m.principalId,actions:p.actions},p.metrics,NOW);
+   operationalPrincipalId:m.principalId,actions:p.actions,actionPolicies},p.metrics,NOW);
   const before=env.snapshot();
   const ownerPermissions:OwnerPermission[]=[{ownerId:"org:asset-owner",
    granteePrincipalId:m.principalId,entityId,actions:p.actions,validUntil:"2026-12-01T00:00:00Z"}];
