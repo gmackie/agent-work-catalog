@@ -60,7 +60,7 @@ export function runScenario(id:ScenarioId):Effect.Effect<SimulationReport,Error>
    accountablePartyId:"org:demo-operator",operationId:"operation:demo:"+id,
    issuerId:"org:demo-operator",issuedAt:"2026-10-30T00:00:00Z",
    validFrom:"2026-10-30T00:00:00Z",expiresAt:"2026-11-30T00:00:00Z",
-   scope:{entityIds:[entityId],actions:p.actions,maximumRisk:"operational",
+   scope:{entityIds:[entityId],actions:p.actions.filter(x=>x!=="plc.write_coil"),maximumRisk:"operational",
     maximumDataClassification:"internal",deniedActions:["plc.write_coil","safety.override"],
     approvalActions:["production.schedule.propose"],maximumObservationAgeMs:300_000,
     remainingDelegations:1},
