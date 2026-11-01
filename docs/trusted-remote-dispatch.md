@@ -52,6 +52,8 @@ flowchart TB
 
 The adapter reports `outcome_unknown` when a remote POST may have been accepted. In that state the broker **only calls recovery**, never blindly repeats the POST. The external service must durably index the original idempotency key.
 
+Unconfirmed starts have a finite reconciliation budget (12 recover-by-key attempts or a sandbox deadline of 15 minutes beyond the configured maximum execution duration). After that, the record enters `manual_review` and **does not** automatically repeat the start request or issue a refund. An operator must investigate the remote provider's actual state.
+
 The D1 store uses optimistic compare-and-swap version checks plus a short lease. The first successful POST is preceded by a persisted `starting` record, so even an unobserved Worker crash leaves enough information to reconcile. The bridge persists the result before transitioning the commercial state to `submitted`, so a crash between those actions can safely retry finalization without a second remote execution.
 
 Cloudflare Queues uses at-least-once delivery and explicit per-message `ack()`; its scheduled recovery scan re-enqueues queued and due remote jobs. Multiple Queue messages don't constitute additional authorization. D1 optimistic concurrency prevents two workers from both claiming the same version, although stale in-flight effects must still be reconciled at the remote provider. Details: https://developers.cloudflare.com/queues/configuration/batching-retries/ and https://developers.cloudflare.com/d1/worker-api/d1-database/.
@@ -103,7 +105,7 @@ pnpm --filter @awc/server bundle
 pnpm --filter @awc/example-remote-executor bundle
 ```
 
-The dispatch suite covers: refusal before funding/consent, binding of offering/quote/data classification, ambiguous accepted POST with recovery rather than a second start, invalid output MIME, single execution and idempotent finalization. A second suite calls the **actual remote Worker HTTP handler** through the signed remote adapter, including a deliberately lost POST response after the remote D1 write.
+The dispatch suite covers: refusal before funding/consent, binding of offering/quote/data classification, ambiguous accepted POST with recovery rather than a second start, bounded manual-review escalation, invalid output MIME, single execution and idempotent finalization. A second suite calls the **actual remote Worker HTTP handler** through the signed remote adapter, including a deliberately lost POST response after the remote D1 write.
 
 ## Trust and release limitations
 
