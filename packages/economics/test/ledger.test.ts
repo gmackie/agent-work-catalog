@@ -4,7 +4,7 @@ import { makeSimulatedEconomicLedger } from "../src/index.ts";
 import type { OperatingMandate } from "@awc/responsibility";
 
 const mandate=(id:string,parent?:OperatingMandate,limit="9000"):OperatingMandate=>({
- schemaVersion:"awc.operating-mandate/v1",id,parentId:parent?.id,
+ schemaVersion:"awc.operating-mandate/v1",id,...(parent?{parentId:parent.id}:{}),
  principalId:"org:owner",accountablePartyId:"org:owner",
  issuerId:parent?.delegateId??"org:owner",delegateId:id==="root"?"agent:manager":id,
  operationId:"operation:cloud",issuedAt:"2026-10-31T00:00:00Z",
@@ -64,7 +64,7 @@ describe("simulated economic authority ledger",()=>{
   const {l}=await setup("5000");
   const r=await run(l.reserveExpense({mandateId:"root",actionId:"task",idempotencyKey:"key",maximumMinor:"3500"}));
   await run(l.releaseExpense(r.id));
-  expect((await run(l.account("account:a")).availableMinor)).toBe("5000");
+  expect((await run(l.account("account:a"))).availableMinor).toBe("5000");
   await expect(run(l.captureExpense(r.id,"100"))).rejects.toThrow();
  });
  it("revoke cascades to descendant actions and preserves existing expenses",async()=>{
