@@ -17,11 +17,13 @@ describe("cross-domain operations simulations",()=>{
   expect(r.after.restockOrders).toBe(1);
   expect(r.after.stockRemaining).toBe(2);
   expect(r.account.spentMinor).toBe("1800");
+  expect(r.nextReconciliation).toHaveLength(0);
  });
  it("cloud allocates synthetic capacity without new external API credentials",async()=>{
   const r=await Effect.runPromise(runScenario("cloud"));
   expect(r.after.reservedComputeUnits).toBe(1);
   expect(r.account.spentMinor).toBe("3500");
+  expect(r.nextReconciliation).toHaveLength(0);
  });
  it("plant performs safe coordination, escalates schedule and denies unsafe PLC write",async()=>{
   const r=await Effect.runPromise(runScenario("plant"));
@@ -30,5 +32,6 @@ describe("cross-domain operations simulations",()=>{
   expect(r.attemptedActions.map(x=>x.status)).toEqual(["simulated","escalated","denied"]);
   expect(r.account.spentMinor).toBe("0");
   expect(r.obligations[0]?.status).toBe("breached");
+  expect(r.nextReconciliation.map(x=>x.action)).toEqual(["production.schedule.propose"]);
  });
 });

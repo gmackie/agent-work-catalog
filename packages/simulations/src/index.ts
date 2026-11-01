@@ -3,6 +3,7 @@ import { sealActionProposal, type ActionProposal, type OperatingMandate, type Ow
 import { makeSimulatedEconomicLedger } from "@awc/economics";
 import { makeSimulatedOperations, assessObligations, type ActionReceipt, type OperationEvent } from "@awc/operations";
 import { createSimulatedEnvironment } from "@awc/operations/simulated";
+import { recommendOperationalWork, type PlannedOperationalWork } from "@awc/operations/planner";
 
 export const SCENARIOS=[
  {id:"vending",title:"Vending machine: low stock",description:"Commission replenishment within a delegated monthly budget"},
@@ -29,6 +30,7 @@ export interface SimulationReport {
  readonly obligations:ReturnType<typeof assessObligations>;
  readonly attemptedActions:readonly SimulationAttempt[];
  readonly events:readonly OperationEvent[];
+ readonly nextReconciliation:readonly PlannedOperationalWork[];
  readonly note:string;
 }
 const NOW="2026-11-01T18:00:00Z";
@@ -115,6 +117,7 @@ export function runScenario(id:ScenarioId):Effect.Effect<SimulationReport,Error>
    account:{fundedMinor:account.fundedMinor,spentMinor:account.spentMinor,
     reservedMinor:account.reservedMinor,availableMinor:account.availableMinor},
    obligations,attemptedActions:attempts,events:env.events,
+   nextReconciliation:recommendOperationalWork(env.entity,env.observe(NOW)),
    note:"Fictional telemetry, simulated authorization and simulated funds. NO real equipment, cloud resource, contractor or payments touched.",
   };
  });

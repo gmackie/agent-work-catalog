@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./simulated": "./src/simulated.ts"
+    "./simulated": "./src/simulated.ts",
+    "./planner": "./src/planner.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
