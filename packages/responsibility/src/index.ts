@@ -261,7 +261,9 @@ export function evaluateAction(proposal:ActionProposal,ctx:PolicyContext):Policy
   const root=chain[0]!;
   const reasons:string[]=[];
   const policy=ctx.actionPolicies.find(x=>x.entityId===proposal.entityId&&x.action===proposal.action);
-  if(!policy||policy.risk!==proposal.risk||!proposal.effects.every(x=>policy.allowedEffects.includes(x))){
+  if(!policy||policy.risk!==proposal.risk||
+     proposal.effects.length!==policy.allowedEffects.length ||
+     !proposal.effects.every(x=>policy.allowedEffects.includes(x))){
     reasons.push("ACTION_DESCRIPTOR_MISMATCH");
   }
   let now:number;
