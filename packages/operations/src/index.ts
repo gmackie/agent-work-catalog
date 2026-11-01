@@ -68,7 +68,8 @@ export function makeSimulatedOperations(
 ):OperationsCoordinator{
  const receipts=new Map<string,ActionReceipt>();
  const ctx=(now:string):PolicyContext=>({
-  now,mandates:graph,ownerPermissions,revokedMandateIds:options.revokedMandateIds??[],
+  now,mandates:graph,ownerPermissions,assetOwnerId:environment.entity.ownerId,
+  revokedMandateIds:options.revokedMandateIds??[],
   observation:environment.observe(now),approvals:options.approvedProposals??[],
  });
  const guarded=<T>(fn:()=>T):Effect.Effect<T,OperationsError>=>Effect.try({
