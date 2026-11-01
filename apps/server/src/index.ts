@@ -200,29 +200,52 @@ pre{white-space:pre-wrap;overflow-wrap:anywhere;background:rgba(128,128,128,.12)
 <label for="token">Human approval credential (never paste your agent's MCP token)</label>
 <input type="password" autocomplete="off" id="token" placeholder="Separate human approval token"/>
 <button id="load">Inspect terms</button><div id="details" role="status"></div>
-<button id="approve" disabled>Approve exact terms</button><button id="fund" disabled>Simulate funding (localhost only)</button>
+<button id="approve" disabled>Approve exact terms</button>
+<div id="disclosure" hidden>
+<p class="warning">EXTERNAL DATA DISCLOSURE: the listed remote executor will receive the declared public inputs. Do not approve sensitive, proprietary or personal data.</p>
+<label><input id="disclosure-check" type="checkbox" style="width:auto"/> I authorize sending these public inputs to the named remote test executor.</label>
+<button id="consent-remote" disabled>Authorize external test execution</button>
+</div>
+<button id="fund" disabled>Simulate funding (localhost only)</button>
 <p id="status"></p><small>On a real deployment, this screen must use OIDC authorization code + PKCE and an independently authenticated human session. Do not reuse an agent's credentials.</small>
 <script>
 const id=new URLSearchParams(location.search).get("work"),token=document.querySelector("#token"),
   status=document.querySelector("#status"),details=document.querySelector("#details");
-let reviewedDigest="";
+let reviewedDigest="",disclosureDigest="";
 function headers(){return {"authorization":"Bearer "+token.value,"content-type":"application/json"}}
 async function read(){
  if(!id){status.textContent="Missing work ID";return}
- status.textContent="Loading private contract...";reviewedDigest="";
+ status.textContent="Loading private contract...";reviewedDigest="";disclosureDigest="";
  document.querySelector("#approve").disabled=true;
+ document.querySelector("#consent-remote").disabled=true;
+ document.querySelector("#disclosure").hidden=true;
  const r=await fetch("/api/review?work="+encodeURIComponent(id),{headers:headers(),cache:"no-store"});
  if(!r.ok){status.textContent="Authorization failed or work unavailable";return}
  const data=await r.json(),q=data.quote,w=data.work,s=data.state;
+ const remote=data.remotePlan;
  reviewedDigest=q.termsDigest;
  details.replaceChildren();
  const pre=document.createElement("pre");pre.textContent=JSON.stringify({
   workId:w.id,offering:q.offeringId,scope:q.scope,
   amount:q.price,currency:q.price.currency,contractDigest:q.termsDigest,
-  inputDigest:w.inputDigest,dataDisclosure:"This prototype does not transfer data to external workers",
+  inputDigest:w.inputDigest,
+  dataClassification:w.dataClassification??"internal",
+  externalExecutor:remote?.origin??"Not enabled",
+  externalExecutorId:remote?.executorId??null,
+  externalDisclosureDigest:remote?.disclosureDigest??null,
+  dataDisclosure:remote?"Public inline inputs will be sent to named remote TEST executor only":"No external transfer configured",
   state:s.status,approvedBy:s.approvedBy??null,funding:s.paymentRail??null
  },null,2);details.append(pre);
  document.querySelector("#approve").disabled=s.status!=="prepared_unfunded";
+ if(remote){
+   disclosureDigest=remote.disclosureDigest;
+   document.querySelector("#disclosure").hidden=false;
+   document.querySelector("#disclosure-check").checked=false;
+   document.querySelector("#consent-remote").disabled=true;
+   document.querySelector("#consent-remote").disabled=!["approved","funded"].includes(s.status);
+   if(s.externalConsentDigest===disclosureDigest)
+     document.querySelector("#consent-remote").textContent="Remote disclosure already authorized";
+ }
  document.querySelector("#fund").disabled=s.status!=="approved"||location.hostname!=="localhost";
  status.textContent="Review the exact contract digest before approving.";
 }
@@ -232,6 +255,16 @@ document.querySelector("#approve").onclick=async()=>{
  const r=await fetch("/api/approve",{method:"POST",headers:headers(),
   body:JSON.stringify({workId:id,reviewedDigest})});
  status.textContent=r.ok?"Approval recorded; funds are NOT charged.":"Approval rejected";
+ await read();
+};
+document.querySelector("#consent-remote").onclick=async()=>{
+ if(!disclosureDigest||!document.querySelector("#disclosure-check").checked||
+    !confirm("Authorize sending the declared PUBLIC inputs to this named external test executor?"))return;
+ const r=await fetch("/api/consent-external",{
+   method:"POST",headers:headers(),
+   body:JSON.stringify({workId:id,reviewedDigest:disclosureDigest}),
+ });
+ status.textContent=r.ok?"Exact remote disclosure recorded.":"External consent was rejected.";
  await read();
 };
 document.querySelector("#fund").onclick=async()=>{
@@ -306,11 +339,17 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
     try{
       const actor=requireScope(await principal(request,env,"human"),"work:approve");
       const workId=url.searchParams.get("work")??"";
-      const {commerce}=services(env,request);
-      return json(await Effect.runPromise(commerce.preview(actor.buyerId,workId)));
+      const {commerce,remoteDispatcher}=services(env,request);
+      const preview=await Effect.runPromise(commerce.preview(actor.buyerId,workId));
+      let remotePlan:unknown=null;
+      if(remoteDispatcher?.appliesTo(preview.work.offeringId)){
+        try {remotePlan=await Effect.runPromise(remoteDispatcher.plan(actor.buyerId,workId));}
+        catch {remotePlan=null;}
+      }
+      return json({...preview,remotePlan});
     }catch(e){return errorResponse(e);}
   }
-  if(["/api/approve","/api/dev/fund"].includes(url.pathname)&&request.method==="POST"){
+  if(["/api/approve","/api/dev/fund","/api/consent-external"].includes(url.pathname)&&request.method==="POST"){
     try{
       const actor=requireScope(await principal(request,env,"human"),"work:approve");
       if(request.headers.get("content-type")?.split(";")[0]!=="application/json")return json({error:"invalid_content_type"},415);
@@ -326,6 +365,17 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
       }
       if(typeof payload.reviewedDigest!=="string"||!/^[a-f0-9]{64}$/.test(payload.reviewedDigest)){
         return json({error:"invalid_contract_digest"},400);
+      }
+      if(url.pathname==="/api/consent-external"){
+        const {remoteDispatcher}=services(env,request);
+        if(!remoteDispatcher)return json({error:"external_dispatch_disabled"},403);
+        const plan=await Effect.runPromise(remoteDispatcher.plan(actor.buyerId,payload.workId));
+        if(plan.disclosureDigest!==payload.reviewedDigest)
+          return json({error:"disclosure_contract_mismatch"},409);
+        return json(await Effect.runPromise(commerce.consentExternal(actor.buyerId,payload.workId,{
+          buyerId:actor.buyerId,approverSubject:actor.subject,
+          reviewedDigest:payload.reviewedDigest,ceremony:actor.ceremony!,
+        })));
       }
       return json(await Effect.runPromise(commerce.approve(actor.buyerId,payload.workId,{
         buyerId:actor.buyerId,approverSubject:actor.subject,reviewedDigest:payload.reviewedDigest,
