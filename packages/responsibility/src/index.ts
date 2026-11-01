@@ -89,6 +89,12 @@ export const ActionProposal = Schema.Struct({
 export type ActionProposal = typeof ActionProposal.Type;
 
 /** This is from a trusted asset-owner authorization store, not model-supplied arguments. */
+export interface ActionPolicy {
+  readonly entityId:string;
+  readonly action:string;
+  readonly risk:ActionRisk;
+  readonly allowedEffects:readonly string[];
+}
 export interface OwnerPermission {
   readonly ownerId: string;
   readonly granteePrincipalId: string;
@@ -114,6 +120,7 @@ export interface PolicyContext {
   readonly revokedMandateIds: readonly string[];
   readonly ownerPermissions: readonly OwnerPermission[];
   readonly assetOwnerId: string;
+  readonly actionPolicies: readonly ActionPolicy[];
   readonly observation?: TrustedObservation;
   readonly approvals: readonly IndependentApproval[];
 }
@@ -253,6 +260,10 @@ export function evaluateAction(proposal:ActionProposal,ctx:PolicyContext):Policy
   const ids=chain.map(x=>x.id);
   const root=chain[0]!;
   const reasons:string[]=[];
+  const policy=ctx.actionPolicies.find(x=>x.entityId===proposal.entityId&&x.action===proposal.action);
+  if(!policy||policy.risk!==proposal.risk||!proposal.effects.every(x=>policy.allowedEffects.includes(x))){
+    reasons.push("ACTION_DESCRIPTOR_MISMATCH");
+  }
   let now:number;
   try{now=date(ctx.now);date(proposal.requestedAt);}catch{
     return {kind:"deny",reasonCodes:["INVALID_TIME"],mandateChain:ids};
@@ -275,7 +286,7 @@ export function evaluateAction(proposal:ActionProposal,ctx:PolicyContext):Policy
     g.granteePrincipalId===root.principalId &&
     g.entityId===proposal.entityId && g.actions.includes(proposal.action) && date(g.validUntil)>now);
   if(!owner)reasons.push("ASSET_OWNER_PERMISSION_MISSING");
-  const write=proposal.risk==="commercial"||proposal.risk==="operational";
+  const write=policy?.risk==="commercial"||policy?.risk==="operational";
   if(write){
     const observation=ctx.observation;
     if(!observation || !proposal.expectedStateVersion ||
@@ -286,7 +297,7 @@ export function evaluateAction(proposal:ActionProposal,ctx:PolicyContext):Policy
       reasons.push("STALE_OR_MISMATCHED_OBSERVATION");
     }
   }
-  if(proposal.risk==="commercial"&&!proposal.commitment)reasons.push("UNBOUNDED_COMMERCIAL_ACTION");
+  if(policy?.risk==="commercial"&&!proposal.commitment)reasons.push("UNBOUNDED_COMMERCIAL_ACTION");
   if(proposal.commitment){
     const c=proposal.commitment;
     if(!c.pricingReference || money(c.maximumMinor)<=0n || chain.some(m=>
