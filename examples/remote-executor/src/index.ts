@@ -43,7 +43,7 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
       id:"awc.example.remote-executor",version:"1.0.0",
       displayName:"Read-only example remote Worker",
       roles:["work-executor"],transport:"remote-http",
-      supportedTaskTypes:["task:example"],
+      supportedTaskTypes:["task:example","task:modbus-diagnostics"],
       capabilities:["start","inspect","recover","cancel"],
       endpointPaths:{
         start:"/v1/executions",
@@ -64,7 +64,7 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
     const signed=await verifyAwcRequest(request,env.AWC_SHARED_KEY);
     if(request.method==="POST"&&path==="/v1/executions"){
       const input=validateExecutionRequest(JSON.parse(signed.body) as unknown);
-      if(input.taskTypeId!=="task:example"||input.constraints.allowedEffects.length||
+      if(!["task:example","task:modbus-diagnostics"].includes(input.taskTypeId)||input.constraints.allowedEffects.length||
          input.constraints.dataClassification!=="public" ||
          !input.requiredOutputs.some(x=>x.mediaType==="application/json")) {
         throw new AdapterError("unsupported","Example only accepts public, read-only JSON tasks");

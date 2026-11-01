@@ -11,9 +11,13 @@ import { identifyActor, requireScope, AuthError, type VerifiedActor } from "@awc
 import { createGitHubIssueSource, type AllowedRepo } from "@awc/adapter-github";
 import { AdapterError } from "@awc/adapter-sdk";
 import { d1SourceInbox, type D1Database as SourceD1 } from "@awc/source-inbox/d1";
+import { createRemoteHttpExecutor } from "@awc/adapter-remote-http";
+import { makeTrustedDispatcher,externalDisclosureDigest,
+  type TrustedExecutorBinding,type TrustedDispatcher } from "@awc/dispatch";
+import { d1DispatchStore,type D1Database as DispatchD1 } from "@awc/dispatch/d1";
 
 export interface Env {
-  readonly DB: MarketplaceD1 & CommerceD1 & SourceD1;
+  readonly DB: MarketplaceD1 & CommerceD1 & SourceD1 & DispatchD1;
   readonly ASSETS: { fetch(request:Request|URL|string):Promise<Response> };
   readonly AWC_JOBS?: Queue<WorkRunMessage>;
   readonly AWC_BUYER_TOKEN?:string;
@@ -37,6 +41,11 @@ export interface Env {
   readonly GITHUB_SOURCE_REPOSITORIES?:string;
   /** Trusted local tenant/buyer mapping, NEVER taken from the webhook payload. */
   readonly GITHUB_SOURCE_BUYER_ID?:string;
+  readonly ENABLE_TRUSTED_REMOTE_DISPATCH?:string;
+  readonly AWC_REMOTE_EXECUTOR_ID?:string;
+  readonly AWC_REMOTE_EXECUTOR_ORIGIN?:string;
+  readonly AWC_REMOTE_EXECUTOR_HOST?:string;
+  readonly AWC_REMOTE_EXECUTOR_SHARED_KEY?:string;
 }
 const json=(value:object,status=200)=>Response.json(value,{status,headers:{
   "cache-control":"no-store","x-content-type-options":"nosniff",
@@ -84,10 +93,40 @@ function services(env:Env,request:Request){
     ? new Stripe(env.STRIPE_SECRET_KEY)
     : undefined;
   const checkout=stripe ? stripeTestCheckout(stripe,new URL(request.url).origin):undefined;
+  // All routing is installation-configured. An advertised provider URL or MCP response
+  // can never choose the executor or override the price, data policy or task type.
+  let binding:TrustedExecutorBinding|undefined;
+  let remote:ReturnType<typeof createRemoteHttpExecutor>|undefined;
+  if(env.ENABLE_TRUSTED_REMOTE_DISPATCH==="true"){
+    if(!env.AWC_REMOTE_EXECUTOR_ID || !env.AWC_REMOTE_EXECUTOR_ORIGIN ||
+       !env.AWC_REMOTE_EXECUTOR_HOST || !env.AWC_REMOTE_EXECUTOR_SHARED_KEY){
+      throw new AdapterError("unavailable","Remote executor requires reviewed origin, identity and a secret");
+    }
+    remote=createRemoteHttpExecutor({
+      id:env.AWC_REMOTE_EXECUTOR_ID,baseUrl:env.AWC_REMOTE_EXECUTOR_ORIGIN,
+      allowedHost:env.AWC_REMOTE_EXECUTOR_HOST,
+      sharedKey:env.AWC_REMOTE_EXECUTOR_SHARED_KEY,
+      supportedTaskTypes:["task:modbus-diagnostics"],
+    });
+    binding={
+      id:env.AWC_REMOTE_EXECUTOR_ID,origin:new URL(env.AWC_REMOTE_EXECUTOR_ORIGIN).origin+"/",
+      offeringId:"offering:modbus-report",offeringVersion:"1",
+      taskTypeId:"task:modbus-diagnostics",maxCostMinorUnits:"3500",
+      outputMediaTypes:["application/json"],maxDurationSeconds:120,
+      dataClassification:"public",allowedEffects:[],executionMode:"synthetic-test-only",
+    };
+  }
   const commerce=makeCommerce(marketplace,d1WorkStateStore(env.DB),sandboxExecutor,{
-    ...(checkout?{checkout}:{}),enableSandboxFunding:localSandbox(request,env),
+    ...(checkout?{checkout}:{}),
+    enableSandboxFunding:localSandbox(request,env),
+    ...(binding?{externalDisclosureDigest:async(work,quote)=>
+      work.offeringId===binding!.offeringId
+        ? externalDisclosureDigest(work,quote,binding!) : undefined}:{}),
   });
-  return {marketplace,commerce,stripe};
+  const remoteDispatcher=remote && binding
+    ? makeTrustedDispatcher(commerce,d1DispatchStore(env.DB),remote,binding)
+    : undefined;
+  return {marketplace,commerce,stripe,remoteDispatcher};
 }
 async function principal(request:Request,env:Env,purpose:"mcp"|"human"){
   return identifyActor(request.headers.get("authorization"),purpose,authConfig(env),
@@ -298,7 +337,7 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
   if(await mismatch(request))return json({error:"routing_header_mismatch"},400);
   try{
     const actor=await principal(request,env,"mcp");
-    const {marketplace,commerce,stripe}=services(env,request);
+    const {marketplace,commerce,stripe,remoteDispatcher}=services(env,request);
     const ui=await env.ASSETS.fetch("https://assets.local/marketplace.html");
     const contractUi=await env.ASSETS.fetch("https://assets.local/contract.html");
     const paid=paidConfig(env);
@@ -310,6 +349,7 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
       appHtml:html,contractAppHtml:contract,
       ...(env.AWC_JOBS ? {enqueue:async (msg:WorkRunMessage)=>{await env.AWC_JOBS!.send(msg);}} : {}),
       stripeCheckoutAvailable:!!stripe,
+      ...(remoteDispatcher?{remoteDispatcher}:{}),
       ...(env.ENABLE_GITHUB_SOURCE==="true" && env.GITHUB_SOURCE_BUYER_ID
         ? {listOpportunities:async (buyerId:string,limit:number)=>{
           if(buyerId!==env.GITHUB_SOURCE_BUYER_ID)return [];
@@ -323,7 +363,7 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
 
 export async function consumeWorkQueue(batch:MessageBatch<unknown>,env:Env):Promise<void>{
   const request=new Request("https://awc.internal/health");
-  const {commerce}=services(env,request);
+  const {commerce,remoteDispatcher}=services(env,request);
   for(const msg of batch.messages){
     try{
       const candidate:unknown=msg.body;
@@ -331,6 +371,13 @@ export async function consumeWorkQueue(batch:MessageBatch<unknown>,env:Env):Prom
       const payload=candidate as {workId?:unknown;buyerId?:unknown};
       if(typeof payload.workId!=="string"||typeof payload.buyerId!=="string"||
          payload.workId.length>160||payload.buyerId.length>200){msg.ack();continue;}
+      if(remoteDispatcher){
+        const preview=await Effect.runPromise(commerce.preview(payload.buyerId,payload.workId));
+        if(remoteDispatcher.appliesTo(preview.work.offeringId)){
+          await Effect.runPromise(remoteDispatcher.advance(payload.buyerId,payload.workId));
+          msg.ack();continue;
+        }
+      }
       await Effect.runPromise(commerce.runQueued({workId:payload.workId,buyerId:payload.buyerId}));
       msg.ack();
     }catch(e){
@@ -342,9 +389,14 @@ export async function consumeWorkQueue(batch:MessageBatch<unknown>,env:Env):Prom
 }
 export async function recoverQueued(env:Env):Promise<void>{
   if(!env.AWC_JOBS)return;
-  const {commerce}=services(env,new Request("https://awc.internal/health"));
+  const {commerce,remoteDispatcher}=services(env,new Request("https://awc.internal/health"));
   for(const message of await Effect.runPromise(commerce.recoverable())){
     await env.AWC_JOBS.send(message);
+  }
+  if(remoteDispatcher){
+    for(const message of await Effect.runPromise(remoteDispatcher.recoverable())){
+      await env.AWC_JOBS.send(message);
+    }
   }
 }
 export default {
