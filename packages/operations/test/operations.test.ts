@@ -23,7 +23,7 @@ const proposal=(m:OperatingMandate,kind:OperatingMandate["id"],action:string,cos
  schemaVersion:"awc.action/v1",id:"proposal:"+action,revision:"a".repeat(64),
  mandateId:m.id,operationId:m.operationId,actorId:m.delegateId,entityId:"entity:"+kind,
  action,risk:cost?"commercial":"operational",dataClassification:"internal",
- requestedAt:timestamp,expectedStateVersion:"state:0",effects:[],
+ requestedAt:timestamp,expectedStateVersion:"state:0",effects:cost?["purchase"]:["business-work-order"],
  ...(cost?{commitment:{accountId:m.economics.accountId,currency:"USD",maximumMinor:cost,
  pricingReference:"quote:simulated"}}:{}),
 });
