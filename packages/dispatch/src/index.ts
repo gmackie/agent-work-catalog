@@ -118,6 +118,12 @@ async function buildRequest(work:PreparedWork,quote:Quote,binding:TrustedExecuto
       work.inputs.length===0||work.inputs.length>5){
     throw new DispatchError("invalid_contract","Work does not satisfy pinned public-data offering and budget");
   }
+  const actualInputDigest=await sha256(JSON.stringify({
+    inputs:work.inputs,dataClassification:work.dataClassification,
+  }));
+  if(actualInputDigest!==work.inputDigest){
+    throw new DispatchError("invalid_contract","Prepared input bytes no longer match the human-reviewed commitment");
+  }
   for(const input of work.inputs) {
     assertArtifactShape(input);
     if(input.kind!=="inline"||!["text/plain","application/json"].includes(input.mediaType) ||
@@ -152,14 +158,21 @@ async function validateSubmittedResult(
      JSON.stringify(value).length>120_000) {
     throw new DispatchError("invalid_contract","External result is not bound to the work contract");
   }
+  const artifacts:WorkArtifact[]=[];
   for(const artifact of value.artifacts) {
     assertArtifactShape(artifact);
     if(artifact.kind!=="inline" || !binding.outputMediaTypes.includes(artifact.mediaType) ||
        artifact.mediaType!=="application/json" || artifact.reference!==undefined) {
       throw new DispatchError("invalid_contract","Remote artifacts must be validated inline JSON");
     }
+    const contentDigest=await sha256(JSON.stringify(artifact.data));
+    if(artifact.sha256!==undefined && artifact.sha256!==contentDigest){
+      throw new DispatchError("invalid_contract","Remote artifact advertised the wrong content digest");
+    }
+    artifacts.push({...artifact,sha256:contentDigest});
   }
-  return {result:value,digest:await sha256(JSON.stringify(value))};
+  const submitted:WorkResult={...value,artifacts};
+  return {result:submitted,digest:await sha256(JSON.stringify(submitted))};
 }
 export interface DispatchPlan {
   readonly workId:string;
