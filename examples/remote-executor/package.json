@@ -13,7 +13,8 @@
   "dependencies": {
     "@awc/adapter-sdk": "workspace:*",
     "@awc/adapter-remote-http": "workspace:*",
-    "effect": "^4.0.6"
+    "effect": "^4.0.6",
+    "@awc/modbus-pcap": "workspace:*"
   },
   "devDependencies": {
     "wrangler": "^4.148.0",

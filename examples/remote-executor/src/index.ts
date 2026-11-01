@@ -1,5 +1,6 @@
 import { validateExecutionRequest, AdapterError, type ExecutionSnapshot, type ExecutionHandle } from "@awc/adapter-sdk";
 import { digest, verifyAwcRequest } from "@awc/adapter-remote-http";
+import { analyzeClassicPcap,captureSha256,MAX_CAPTURE_BYTES,PCAP_MEDIA_TYPE } from "@awc/modbus-pcap";
 export interface D1Statement {
   bind(...values:(string|number|null)[]):D1Statement;
   run():Promise<unknown>;
@@ -10,6 +11,7 @@ export interface Env {
   readonly DB:D1Database;
   readonly AWC_SHARED_KEY?:string;
   readonly ENABLE_EXAMPLE_EXECUTOR?:string;
+  readonly ENABLE_MODBUS_PCAP?:string;
 }
 type StoredRow={provider_id:string;client_id:string;idempotency_key:string;
   request_digest:string;snapshot_json:string};
@@ -43,7 +45,8 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
       id:"awc.example.remote-executor",version:"1.0.0",
       displayName:"Read-only example remote Worker",
       roles:["work-executor"],transport:"remote-http",
-      supportedTaskTypes:["task:example","task:modbus-diagnostics"],
+      supportedTaskTypes:["task:example","task:modbus-diagnostics",
+        ...(env.ENABLE_MODBUS_PCAP==="true"?["task:modbus-pcap"]:[])],
       capabilities:["start","inspect","recover","cancel"],
       endpointPaths:{
         start:"/v1/executions",
@@ -64,13 +67,35 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
     const signed=await verifyAwcRequest(request,env.AWC_SHARED_KEY);
     if(request.method==="POST"&&path==="/v1/executions"){
       const input=validateExecutionRequest(JSON.parse(signed.body) as unknown);
-      if(!["task:example","task:modbus-diagnostics"].includes(input.taskTypeId)||input.constraints.allowedEffects.length||
+      const realModbus=input.taskTypeId==="task:modbus-pcap";
+      if(!(realModbus&&env.ENABLE_MODBUS_PCAP==="true") &&
+         !["task:example","task:modbus-diagnostics"].includes(input.taskTypeId) ||
+         input.constraints.allowedEffects.length ||
          input.constraints.dataClassification!=="public" ||
          !input.requiredOutputs.some(x=>x.mediaType==="application/json")) {
-        throw new AdapterError("unsupported","Example only accepts public, read-only JSON tasks");
+        throw new AdapterError("unsupported","Executor only accepts approved public, read-only JSON tasks");
       }
       if(input.idempotencyKey!==signed.idempotencyKey)
         throw new AdapterError("unauthorized","Idempotency header and work request differ");
+      let modbusReport:Awaited<ReturnType<typeof analyzeClassicPcap>>|undefined;
+      if(realModbus){
+        if(input.inputs.length!==1 || input.constraints.maxDurationSeconds>300)
+          throw new AdapterError("invalid_input","Modbus capture input contract invalid");
+        const capture=input.inputs[0]!;
+        if(capture.kind!=="inline"||capture.mediaType!==PCAP_MEDIA_TYPE||
+          capture.name!=="capture"||typeof capture.data!=="string"||
+          !/^[A-Za-z0-9+/]+={0,2}$/.test(capture.data) ||
+          capture.data.length>Math.ceil(MAX_CAPTURE_BYTES*4/3)+4 ||
+          !/^[a-f0-9]{64}$/.test(capture.sha256??"")) {
+          throw new AdapterError("invalid_input","Expected a SHA-bound classic-PCAP base64 input");
+        }
+        try{
+          const raw=Uint8Array.from(atob(capture.data),ch=>ch.charCodeAt(0));
+          if(raw.length>MAX_CAPTURE_BYTES || await captureSha256(raw)!==capture.sha256)
+            throw new Error("Capture digest mismatch");
+          modbusReport=await analyzeClassicPcap(raw);
+        }catch{throw new AdapterError("invalid_input","Capture is malformed, unsupported or altered");}
+      }
       const checksum=await digest(signed.body);
       const providerId="job_"+checksum.slice(0,32);
       const handle:ExecutionHandle={
@@ -80,12 +105,15 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
         updatedAt:new Date().toISOString(),
         result:{
           orderId:input.workOrderId,producedAt:new Date().toISOString(),
-          summary:"Synthetic read-only remote adapter response; no external work was performed",
-          artifacts:[{name:"example-result.json",kind:"inline",mediaType:"application/json",data:{
-            notice:"Demo result only. Not a verified report, evaluation, or paid professional service.",
-            suppliedInputNames:input.inputs.map(x=>x.name),
-            workOrderId:input.workOrderId,
-          }}],
+          summary:realModbus
+            ? "Parsed classic PCAP and identified observable Modbus/TCP transactions; not a professional certification"
+            : "Synthetic read-only remote adapter response; no external work was performed",
+          artifacts:realModbus
+            ? [{name:"modbus-findings.json",kind:"inline",mediaType:"application/json",data:modbusReport!}]
+            : [{name:"example-result.json",kind:"inline",mediaType:"application/json",data:{
+              notice:"Demo result only. Not a verified report, evaluation, or paid professional service.",
+              suppliedInputNames:input.inputs.map(x=>x.name),workOrderId:input.workOrderId,
+            }}],
         },
       };
       await env.DB.prepare(
