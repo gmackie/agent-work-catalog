@@ -31,7 +31,7 @@ describe("Authenticated private PCAP upload API",()=>{
         ...(authenticated?{authorization:"Bearer "+token}:{}),
         "content-type":"application/vnd.tcpdump.pcap",
         ...(declared?{"x-awc-data-classification":"public"}:{}),
-      },body:bytes,
+      },body:Uint8Array.from(bytes).buffer,
     });
     expect((await handleRequest(request(false,true),env,ctx)).status).toBe(401);
     expect((await handleRequest(request(true,false),env,ctx)).status).toBe(415);
@@ -48,7 +48,7 @@ describe("Authenticated private PCAP upload API",()=>{
     pcapng.set([0x0a,0x0d,0x0d,0x0a],0);
     const r=await handleRequest(new Request("http://localhost:8787/api/artifacts/input",{
       method:"POST",headers:{authorization:"Bearer "+token,"content-type":"application/vnd.tcpdump.pcap",
-        "x-awc-data-classification":"public"},body:pcapng,
+        "x-awc-data-classification":"public"},body:Uint8Array.from(pcapng).buffer,
     }),{ENABLE_MODBUS_PCAP:"true",ENABLE_LOCAL_SANDBOX:"true",
       AWC_BUYER_TOKEN:token,ARTIFACTS:bucket()} as unknown as Env,ctx);
     expect(r.status).not.toBe(201);
