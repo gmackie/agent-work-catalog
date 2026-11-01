@@ -30,7 +30,7 @@ describe("Broker-owned packet evaluation, R2 custody and signed observation",()=
         name:"capture",kind:"inline",mediaType:"application/vnd.tcpdump.pcap",
         data:btoa(String.fromCharCode(...capture)),sha256:sha,
       }]},
-    } as DispatchRecord;
+    } as unknown as DispatchRecord;
     const result={orderId:record.workId,summary:"Raw result",producedAt:"2026-11-01T19:00:00Z",
       artifacts:[{kind:"inline" as const,name:"modbus-findings.json",mediaType:"application/json",data:parsed}]};
     const processor=createModbusResultProcessor(custody,signer);
