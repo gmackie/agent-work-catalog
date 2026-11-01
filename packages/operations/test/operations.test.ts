@@ -1,7 +1,7 @@
 import { describe,expect,it } from "vitest";
 import { Effect } from "effect";
 import { makeSimulatedEconomicLedger } from "@awc/economics";
-import type { ActionProposal, OperatingMandate, OwnerPermission } from "@awc/responsibility";
+import { sealActionProposal, type ActionProposal, type OperatingMandate, type OwnerPermission } from "@awc/responsibility";
 import { makeSimulatedOperations, assessObligations } from "../src/index.ts";
 import { createSimulatedEnvironment } from "../src/simulated.ts";
 
@@ -42,9 +42,10 @@ async function fixture(kind:"vending-machine"|"cloud-service"|"production-cell",
 describe("common operational mandate across simulated industries",()=>{
  it("vending agent commissions replenishment within shared spending authority",async()=>{
   const f=await fixture("vending-machine",["inventory.replenishment.request","telemetry.read"]);
-  const p=proposal(f.m,"vending-machine","inventory.replenishment.request","2400");
+  const p=await sealActionProposal(proposal(f.m,"vending-machine","inventory.replenishment.request","2400"));
   const first=await run(f.controller.commit(p,timestamp));
   expect(first.simulation).toBe(true);expect(first.chargedMinor).toBe("2400");
+  await expect(run(f.controller.commit({...p,action:"maintenance.ticket.create"},timestamp))).rejects.toMatchObject({code:"invalid_proposal"});
   expect(f.env.snapshot().restockOrders).toBe(1);
   const replay=await run(f.controller.commit(p,timestamp));
   expect(replay.eventId).toBe(first.eventId);
@@ -53,13 +54,13 @@ describe("common operational mandate across simulated industries",()=>{
  });
  it("cloud agent reserves compute capacity without accessing real provider credentials",async()=>{
   const f=await fixture("cloud-service",["capacity.acquire","capacity.release"]);
-  await run(f.controller.commit(proposal(f.m,"cloud-service","capacity.acquire","1500"),timestamp));
+  await run(f.controller.commit(await sealActionProposal(proposal(f.m,"cloud-service","capacity.acquire","1500")),timestamp));
   expect(f.env.snapshot().reservedComputeUnits).toBe(1);
   expect((await run(f.ledger.account(f.m.economics.accountId))).availableMinor).toBe("6500");
  });
  it("plant schedules require independent approval and cannot bypass equipment safety",async()=>{
   const f=await fixture("production-cell",["production.schedule.propose","maintenance.ticket.create","plc.write_coil"]);
-  const p=proposal(f.m,"production-cell","production.schedule.propose");
+  const p=await sealActionProposal(proposal(f.m,"production-cell","production.schedule.propose"));
   await expect(run(f.controller.commit(p,timestamp))).rejects.toMatchObject({code:"approval_required"});
   const write={...p,action:"plc.write_coil",risk:"physical-control" as const};
   expect((await run(f.controller.evaluate(write,timestamp))).kind).toBe("deny");
@@ -67,8 +68,8 @@ describe("common operational mandate across simulated industries",()=>{
  });
  it("rejects stale device state and never spends on rejected action",async()=>{
   const f=await fixture("vending-machine",["inventory.replenishment.request"]);
-  const p=proposal(f.m,"vending-machine","inventory.replenishment.request","5000");
-  await expect(run(f.controller.commit({...p,expectedStateVersion:"state:other"},timestamp))).rejects.toThrow();
+  const p=await sealActionProposal(proposal(f.m,"vending-machine","inventory.replenishment.request","5000"));
+  await expect(run(f.controller.commit(await sealActionProposal({...p,expectedStateVersion:"state:other"}),timestamp))).rejects.toThrow();
   expect((await run(f.ledger.account(f.m.economics.accountId))).spentMinor).toBe("0");
  });
  it("measures a declared objective only from its authoritative, fresh source",()=>{
