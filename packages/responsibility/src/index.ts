@@ -113,6 +113,7 @@ export interface PolicyContext {
   readonly mandates: readonly OperatingMandate[];
   readonly revokedMandateIds: readonly string[];
   readonly ownerPermissions: readonly OwnerPermission[];
+  readonly assetOwnerId: string;
   readonly observation?: TrustedObservation;
   readonly approvals: readonly IndependentApproval[];
 }
@@ -151,7 +152,6 @@ export function assertMandateValid(m:OperatingMandate):void{
     m.scope.entityIds.length===0 || m.scope.actions.length===0 ||
     !Number.isSafeInteger(m.scope.remainingDelegations) || m.scope.remainingDelegations<0 ||
     !Number.isSafeInteger(m.scope.maximumObservationAgeMs) || m.scope.maximumObservationAgeMs<0 ||
-    !Number.isSafeInteger(money(m.economics.maxTotalMinor)) && money(m.economics.maxTotalMinor)>BigInt(Number.MAX_SAFE_INTEGER) ||
     money(m.economics.maxPerActionMinor)>money(m.economics.maxTotalMinor) ||
     m.scope.actions.some(v=>m.scope.deniedActions.includes(v))) {
       throw new ResponsibilityError("invalid_mandate","Inconsistent identity, limits or scope");
@@ -241,7 +241,8 @@ export function evaluateAction(proposal:ActionProposal,ctx:PolicyContext):Policy
        classification.indexOf(proposal.dataClassification)>
          classification.indexOf(m.scope.maximumDataClassification))reasons.push("SCOPE_DENIED");
   }
-  const owner=ctx.ownerPermissions.some(g=>g.granteePrincipalId===root.principalId &&
+  const owner=ctx.ownerPermissions.some(g=>g.ownerId===ctx.assetOwnerId &&
+    g.granteePrincipalId===root.principalId &&
     g.entityId===proposal.entityId && g.actions.includes(proposal.action) && date(g.validUntil)>now);
   if(!owner)reasons.push("ASSET_OWNER_PERMISSION_MISSING");
   const write=proposal.risk==="commercial"||proposal.risk==="operational";
