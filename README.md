@@ -4,6 +4,20 @@ Open, Apache-2.0 Effect 4 monorepo for describing, discovering, commissioning an
 
 A **TaskType** describes an outcome; **Offering** describes what a seller promises; **Quote** binds terms; **WorkOrder** is the commercial contract; **WorkProvider** ingests external assignments; **Worker** executes them. MCP Tasks and A2A Tasks are execution handles, **not** the WorkOrder.
 
+
+## Responsibility and autonomous operations (new experimental reference)
+
+AWC can now model ongoing delegated **economic and operational responsibility** independently from a single commercial WorkOrder:
+
+- `@awc/responsibility`: versioned OperatingMandate and ActionProposal schemas, attenuated child mandates, independent asset-owner permission, fresh-state policy decisions, canonical action-revision commitments, and objective evidence assessment.
+- `@awc/economics`: Effect simulation ledger for funded accounts, per-mandate budget, sibling subdelegation allocations, expense reservations, exact capture, revocation and safe wind-down. **No real money.**
+- `@awc/operations`: bounded operations controller, observation-to-plan reconciliation and simulated action receipts; generic physical/safety-critical control is categorically denied.
+- `@awc/adapter-sdk`: reviewed adapter manifest + conformance validation and read-only WoT Thing Description inspection.
+- `@awc/simulations` and `apps/operations-demo`: vending, cloud and production-cell scenarios with execution history, spending and safety decisions.
+- MCP `operations.scenarios` and `operations.simulate`; optional `ui://awc/operations.html` testbench.
+
+Run `pnpm operations:demo` after installation. This is **simulation-only**: no external cloud provisioning, vending hardware, PLC commands, settlement, authentic Attest credentials or live mandate issuance. See [the responsibility specification](specs/responsibility-v1.md) and [operations architecture](docs/operations-architecture.md). The cryptographic trust registry and serializable production ledger remain release blockers.
+
 ## Current experimental implementation
 
 - `@awc/contracts`, `@awc/catalog` and `@awc/marketplace`: schema and task/offer matching, quote issuance, prepared contract persistence.
