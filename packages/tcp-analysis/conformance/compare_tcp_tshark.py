@@ -16,6 +16,14 @@ FIELDS = ["frame.number", "ip.src", "ip.dst", "tcp.srcport", "tcp.dstport",
           "tcp.flags.fin", "tcp.window_size_value"]
 
 
+def bit(value: str) -> int:
+    if value in ("True", "true"):
+        return 1
+    if value in ("False", "false"):
+        return 0
+    return int(value, 0)
+
+
 def tshark_tcp(path: Path) -> list[dict]:
     args = ["tshark", "-n", "-r", str(path), "-Y", "ip && tcp", "-T", "fields",
             "-E", "separator=/t", "-E", "occurrence=f", "-E", "quote=n"]
@@ -32,8 +40,8 @@ def tshark_tcp(path: Path) -> list[dict]:
         n, src, dst, sport, dport, size, syn, ack, rst, fin, window = cells
         records.append({
             "frame": int(n), "src": src, "dst": dst, "sport": int(sport), "dport": int(dport),
-            "payload": int(size), "syn": int(syn, 0), "ack": int(ack, 0),
-            "rst": int(rst, 0), "fin": int(fin, 0), "window": int(window)
+            "payload": int(size), "syn": bit(syn), "ack": bit(ack),
+            "rst": bit(rst), "fin": bit(fin), "window": int(window)
         })
     return records
 
