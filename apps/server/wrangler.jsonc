@@ -20,6 +20,10 @@
     "producers": [{"binding":"AWC_JOBS","queue":"awc-work-jobs"}],
     "consumers": [{"queue":"awc-work-jobs","max_batch_size":10,"max_batch_timeout":5,"max_retries":3}]
   },
+  "durable_objects": {
+    "bindings": [{"name":"AWC_ACCOUNT_TREASURY","class_name":"AWCEconomicAccount"}]
+  },
+  "migrations": [{"tag":"v1-sql-treasury","new_sqlite_classes":["AWCEconomicAccount"]}],
   "triggers": {"crons":["*/5 * * * *"]},
   "vars": {"ENABLE_LOCAL_SANDBOX":"false","ENABLE_X402_TESTNET":"false"}
 }

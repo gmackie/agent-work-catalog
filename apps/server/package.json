@@ -23,7 +23,8 @@
     "@awc/standards-demo": "workspace:*",
     "@awc/pdp-auth": "workspace:*",
     "@awc/mandate-registry": "workspace:*",
-    "@awc/coaz-mcp": "workspace:*"
+    "@awc/coaz-mcp": "workspace:*",
+    "@awc/economics-durable": "workspace:*"
   },
   "devDependencies": {
     "wrangler": "^4.148.0",

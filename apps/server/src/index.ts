@@ -394,6 +394,8 @@ export async function recoverQueued(env:Env):Promise<void>{
     await env.AWC_JOBS.send(message);
   }
 }
+/** Private SQLite-backed Durable Object class; no public treasury write APIs exist yet. */
+export { AWCEconomicAccount } from "./treasury.ts";
 export default {
   fetch:handleRequest,
   queue:consumeWorkQueue,
