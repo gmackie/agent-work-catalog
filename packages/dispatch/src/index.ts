@@ -77,7 +77,7 @@ function assertBinding(binding:TrustedExecutorBinding,executor:WorkExecutor):voi
       !/^\d+$/.test(binding.offeringVersion) ||
       !/^(0|[1-9]\d*)$/.test(binding.maxCostMinorUnits) ||
       binding.maxDurationSeconds<1 || binding.maxDurationSeconds>300 ||
-      !["synthetic-test-only","bounded-modbus-pcap/v1"].includes(binding.executionMode) ||
+      !["synthetic-test-only","bounded-modbus-pcap/v1","bounded-tcp-flow/v1"].includes(binding.executionMode) ||
       (binding.executionMode==="bounded-modbus-pcap/v1" &&
         (binding.offeringId!=="offering:modbus-pcap-analysis" ||
          binding.taskTypeId!=="task:modbus-pcap")) ||
