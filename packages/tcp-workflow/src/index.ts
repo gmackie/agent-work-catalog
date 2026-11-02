@@ -1,10 +1,10 @@
-import type { ArtifactCustody } from "@awc/artifact-custody";
+import { INPUT_MEDIA, type ArtifactCustody } from "@awc/artifact-custody";
 import { buildTcpObservation, signObservation, verifyObservation,
   TCP_OBSERVATION_SCHEMA, type ReceiptSigner } from "@awc/attest-receipts";
 import type { WorkResult } from "@awc/contracts";
 import type { DispatchRecord, RemoteResultProcessor } from "@awc/dispatch";
 import { evaluateTcpReport, tcpCaptureSha256, TCP_REPORT_SCHEMA } from "@awc/tcp-analysis";
-import { PCAP_MEDIA_TYPE } from "@awc/modbus-pcap";
+
 
 export class TcpWorkflowError extends Error {
   constructor(readonly code:"invalid"|"unavailable",message:string) {
@@ -31,7 +31,7 @@ export function createTcpResultProcessor(
         throw new TcpWorkflowError("invalid","TCP result is not bound to its execution");
       }
       const input=record.request.inputs[0]!,artifact=untrusted.artifacts[0]!;
-      if(input.kind!=="inline"||input.mediaType!==PCAP_MEDIA_TYPE||
+      if(input.kind!=="inline"||input.mediaType!==INPUT_MEDIA||
          typeof input.data!=="string"||!input.sha256||
          artifact.kind!=="inline"||artifact.mediaType!=="application/json"||
          typeof artifact.data!=="object"||artifact.data===null ||
