@@ -44,7 +44,8 @@
   "vars": {
     "ENABLE_LOCAL_SANDBOX": "false",
     "ENABLE_X402_TESTNET": "false",
-    "ENABLE_MODBUS_PCAP": "false"
+    "ENABLE_MODBUS_PCAP": "false",
+    "ENABLE_TCP_PCAP": "false"
   },
   "r2_buckets": [
     {
