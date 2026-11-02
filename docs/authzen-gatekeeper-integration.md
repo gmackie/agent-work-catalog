@@ -113,6 +113,18 @@ The ledger uses BigInt for integer minor units. Its test suite runs against Node
 
 **No public mutation methods are exposed on the Durable Object**. The `recordVerifiedFunding` ledger method is an internal, trusted-treasury port and assumes an independently authenticated and finalized upstream payment; never call it from an MCP request or model.
 
+## Companion Gatekeeper implementation
+
+The upstream AuthZEN facade is in [Gatekeeper draft PR #27](https://github.com/gmackie/gatekeeper/pull/27), separate from AWC's [draft PR #12](https://github.com/gmackie/agent-work-catalog/pull/12).
+
+Gatekeeper reuses its **existing OPA/PIP release runtime** and verifies a distinct PDP-audience OIDC token. The first Gatekeeper profile supports only **authenticated self-subject** decisions against reviewed canonical Gatekeeper actions and authoritative resource IDs.
+
+**The generic AWC remote tool-admission client and this first Gatekeeper facade are not automatically interoperable yet.** AWC currently projects COAZ-MCP `tools/call` for an arbitrary authenticated agent subject, while Gatekeeper requires the requested `subject.id` to equal the actual issuer-qualified subject of the PDP caller token and requires a canonical reviewed Gatekeeper action key.
+
+There is deliberately **no authorized impersonation** by a generic service credential. To make remote multi-principal MCP PEP calls work, implement a reviewed tool-name/argument-to-resource mapping and verifiable delegated actor identity (RFC 8693 or corresponding verified AuthZEN Actor profile). Until both requirements are satisfied, the Gatekeeper PDP will reject unsupported tool actions and mismatched subjects.
+
+Never make Gatekeeper accept a caller-provided agent ID in order to "fix" this mismatch.
+
 ## Security tests
 
 - Correct PDP issuer/audience/algorithm, dedicated client allowlist, expiry and `awc_tenant_id`; unauthenticated and mismatched tokens fail.
