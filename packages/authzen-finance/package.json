@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@awc/authzen": "workspace:*",
-    "@awc/economics-durable": "workspace:*"
+    "@awc/economics-durable": "workspace:*",
+    "@awc/standards-demo": "workspace:*"
   }
 }
