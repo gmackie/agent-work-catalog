@@ -180,6 +180,42 @@ describe("AWC MCP server", () => {
       expect(result.isError).toBe(true);
     }finally{await client.close();await server.close();}
   });
+
+  it("exposes approval request/status as separate authenticated MCP tools, never self-approval",async()=>{
+    const marketplace=makeMarketplace(inMemoryMarketplaceStore());
+    const calls:string[]=[];
+    const server=createCatalogMcpServer({
+      marketplace,buyerId:"buyer-1",buyerScopes:["catalog:read","work:execute"],
+      appHtml:"",authorizationMode:"authzen-required",
+      requestAccess:async(name,args,key)=>{
+        calls.push("requested:"+name+":"+key);
+        return {task:{id:"arq_"+"a".repeat(32),status:"pending",status_endpoint:"https://pdp.example/access/v1/requests/arq_"+ "a".repeat(32)}};
+      },
+      getAccessRequest:async(id)=>{
+        calls.push("status:"+id);return {task:{id,status:"pending"}};
+      },
+    });
+    const client=new Client({name:"approval-client-test",version:"0.1.0"});
+    const [a,b]=InMemoryTransport.createLinkedPair();
+    await Promise.all([server.connect(b),client.connect(a)]);
+    try{
+      const list=await client.listTools();
+      expect(list.tools.some(x=>x.name==="authorization.request_access")).toBe(true);
+      expect(list.tools.some(x=>x.name==="authorization.get_request")).toBe(true);
+      expect(list.tools.some(x=>x.name==="authorization.approve")).toBe(false);
+      const requested=await client.callTool({name:"authorization.request_access",arguments:{
+        toolName:"work.start",argumentsJson:{workId:"work:one"},
+        idempotencyKey:"approval_request_001"
+      }});
+      expect(requested.isError).not.toBe(true);
+      const status=await client.callTool({name:"authorization.get_request",arguments:{
+        requestId:"arq_"+"a".repeat(32)
+      }});
+      expect(status.isError).not.toBe(true);
+      expect(calls).toHaveLength(2);
+    }finally{await client.close();await server.close();}
+  });
+
   it("serves the modern 2026-07-28 stateless HTTP protocol without sockets", async () => {
     const marketplace = makeMarketplace(inMemoryMarketplaceStore());
     const handler = createMcpHandler(() => createCatalogMcpServer({

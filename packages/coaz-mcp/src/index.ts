@@ -90,7 +90,11 @@ export function mapReviewedToolCall(
     resource:{type:rule.resourceType,id:resource},
     // Only purpose is admitted by first Gatekeeper AuthZEN profile.
     // Client/tenant are verified independently by the PDP token and PIP.
-    context:{purpose:"awc-mcp:"+rule.toolName},
+    context:{purpose:"awc-mcp:"+rule.toolName,
+      ...(typeof invocation.params.arguments?.approvalId==="string" &&
+        /^apr_[0-9a-f]{32}$/.test(invocation.params.arguments.approvalId)
+        ? {approval:{id:invocation.params.arguments.approvalId}}:{}),
+    },
   };
 }
 /** These are safe initial mappings, not Gatekeeper policy grants.

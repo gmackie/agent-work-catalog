@@ -26,7 +26,8 @@
     "@awc/coaz-mcp": "workspace:*",
     "@awc/economics-durable": "workspace:*",
     "@awc/authzen-client": "workspace:*",
-    "@awc/token-exchange": "workspace:*"
+    "@awc/token-exchange": "workspace:*",
+    "@awc/authzen-approval-client": "workspace:*"
   },
   "devDependencies": {
     "wrangler": "^4.148.0",

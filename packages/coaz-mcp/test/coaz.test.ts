@@ -37,6 +37,16 @@ describe("reviewed COAZ-MCP tool-to-resource binding",()=>{
    context:{purpose:"awc-mcp:work.get"},
   });
  });
+ it("maps an approval reference without elevating it to authority",()=>{
+  const x=mapReviewedToolCall({method:"tools/call",
+    params:{name:"work.start",arguments:{workId:"work:123",
+      approvalId:"apr_"+"a".repeat(32)}}},actor,AWC_REVIEWED_TOOL_MAPPINGS);
+  expect(x.context?.approval).toEqual({id:"apr_"+"a".repeat(32)});
+  const y=mapReviewedToolCall({method:"tools/call",
+    params:{name:"work.start",arguments:{workId:"work:123",
+      approvalId:"invalid"}}},actor,AWC_REVIEWED_TOOL_MAPPINGS);
+  expect(y.context?.approval).toBeUndefined();
+ });
  it("fails closed when arguments, tool, or reviewed rule are missing or conflicting",()=>{
   const fn=(name:string,args:Record<string,unknown>)=>mapReviewedToolCall(
     {method:"tools/call",params:{name,arguments:args}},actor,AWC_REVIEWED_TOOL_MAPPINGS);
