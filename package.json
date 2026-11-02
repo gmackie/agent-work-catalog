@@ -12,7 +12,8 @@
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
     "demo": "pnpm --filter @awc/demo start",
-    "operations:demo": "pnpm --filter @awc/operations-demo start"
+    "operations:demo": "pnpm --filter @awc/operations-demo start",
+    "standards:demo": "pnpm --filter @awc/standards-demo-cli start"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

@@ -18,6 +18,23 @@ AWC can now model ongoing delegated **economic and operational responsibility** 
 
 Run `pnpm operations:demo` after installation. This is **simulation-only**: no external cloud provisioning, vending hardware, PLC commands, settlement, authentic Attest credentials or live mandate issuance. See [the responsibility specification](specs/responsibility-v1.md) and [operations architecture](docs/operations-architecture.md). The cryptographic trust registry and serializable production ledger remain release blockers.
 
+
+## Standards interoperability — experimental adapters
+
+The repository now includes working **standards-based projections** for responsibility delegation:
+
+- `@awc/authzen`: AuthZEN Authorization API 1.0 evaluation, fail-closed when execution requires extra financial/state checks; localhost-only PDP pilot.
+- `@awc/coaz-mcp`: experimental subset of COAZ-MCP's default tool-call mapping with strict reviewed-tool authorization. The complete CEL draft binding is not implemented.
+- `@awc/odrl-profile`: narrow W3C ODRL 2.2 JSON-LD Agreement profile and strict validation; not a legal contract or standalone grant.
+- `@awc/events`: CNCF CloudEvents 1.0 JSON envelope and replay-safe in-memory journal.
+- `@awc/provenance`: PROV-O delegation, activity, artifact and outcome graph exporter.
+- `@awc/openslo`: OpenSLO v1 threshold-metric obligations and data-source references.
+- `@awc/osb-adapter`: Open Service Broker API 2.17 catalog parsing and **non-executing** provision previews.
+- `@awc/ubl-adapter`: safe illustrative UBL 2.4 Order XML export (not full XSD/codelist validation).
+- `@awc/standards-demo`: the same vending/cloud/plant simulation mapped through these standards. Call MCP `operations.standards` or `pnpm standards:demo`.
+
+See [interoperability implementation](docs/standards-interoperability-implementation.md) and [standards adoption research](docs/standards-adoption-research.md). These packages are experimental adapter subsets, **not broad conformance claims** or production money/machine interfaces.
+
 ## Current experimental implementation
 
 - `@awc/contracts`, `@awc/catalog` and `@awc/marketplace`: schema and task/offer matching, quote issuance, prepared contract persistence.
