@@ -345,12 +345,13 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
           clientId:actor.clientId,scopes:actor.scopes,
           audience:url.origin+"/mcp"}
       : null;
-    const toolPdp=authzenReady&&verifiedToolActor
+    const remoteIntent=!!env.GATEKEEPER_AUTHZEN_ORIGIN;
+    const toolPdp=authzenReady&&!remoteIntent&&verifiedToolActor
       ? createTrustedMcpToolPdp(d1McpToolPolicies(env.DB))
       : null;
     // Only an RFC 8693 exchanged actor token can authorize an action on
     // another principal's behalf. A static service credential is insufficient.
-    const remoteConfigured=!!env.GATEKEEPER_AUTHZEN_ORIGIN&&
+    const remoteConfigured=remoteIntent&&
       !!env.GATEKEEPER_TOKEN_ENDPOINT&&!!env.GATEKEEPER_PDP_AUDIENCE&&
       !!env.AWC_PEP_CLIENT_ID&&!!env.AWC_PEP_CLIENT_SECRET&&!!env.AWC_PEP_ACTOR_TOKEN&&
       !!verifiedToolActor&&!!actor?.issuer;
