@@ -14,7 +14,8 @@ import { createRegistryBackedPdp } from "@awc/mandate-registry";
 import { d1TrustedMandateRegistry } from "@awc/mandate-registry/d1";
 import { createTrustedMcpToolPdp } from "@awc/mandate-registry/tools";
 import { d1McpToolPolicies } from "@awc/mandate-registry/d1-tools";
-import { mapToolCall } from "@awc/coaz-mcp";
+import { mapToolCall, mapReviewedToolCall, AWC_REVIEWED_TOOL_MAPPINGS } from "@awc/coaz-mcp";
+import { createTokenExchangeClient } from "@awc/token-exchange";
 import { createRemoteAuthzenPdp } from "@awc/authzen-client";
 import { runStandardsScenario } from "@awc/standards-demo";
 
@@ -47,6 +48,11 @@ export interface Env {
   /** Alternative: existing Gatekeeper AuthZEN PDP, authenticated via service token. */
   readonly GATEKEEPER_AUTHZEN_ORIGIN?:string;
   readonly GATEKEEPER_PDP_SERVICE_TOKEN?:string;
+  readonly GATEKEEPER_TOKEN_ENDPOINT?:string;
+  readonly GATEKEEPER_PDP_AUDIENCE?:string;
+  readonly AWC_PEP_CLIENT_ID?:string;
+  readonly AWC_PEP_CLIENT_SECRET?:string;
+  readonly AWC_PEP_ACTOR_TOKEN?:string;
 }
 const json=(value:object,status=200)=>Response.json(value,{status,headers:{
   "cache-control":"no-store","x-content-type-options":"nosniff",
@@ -342,11 +348,27 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
     const toolPdp=authzenReady&&verifiedToolActor
       ? createTrustedMcpToolPdp(d1McpToolPolicies(env.DB))
       : null;
-    const remoteConfigured=!!env.GATEKEEPER_AUTHZEN_ORIGIN&&!!env.GATEKEEPER_PDP_SERVICE_TOKEN;
-    const remotePdp=remoteConfigured&&verifiedToolActor
+    // Only an RFC 8693 exchanged actor token can authorize an action on
+    // another principal's behalf. A static service credential is insufficient.
+    const remoteConfigured=!!env.GATEKEEPER_AUTHZEN_ORIGIN&&
+      !!env.GATEKEEPER_TOKEN_ENDPOINT&&!!env.GATEKEEPER_PDP_AUDIENCE&&
+      !!env.AWC_PEP_CLIENT_ID&&!!env.AWC_PEP_CLIENT_SECRET&&!!env.AWC_PEP_ACTOR_TOKEN&&
+      !!verifiedToolActor&&!!actor?.issuer;
+    const tokenExchange=remoteConfigured
+      ? createTokenExchangeClient({
+          endpoint:env.GATEKEEPER_TOKEN_ENDPOINT!,
+          audience:env.GATEKEEPER_PDP_AUDIENCE!,
+          clientId:env.AWC_PEP_CLIENT_ID!,
+          clientSecret:async()=>env.AWC_PEP_CLIENT_SECRET!,
+          actorToken:async()=>env.AWC_PEP_ACTOR_TOKEN!,
+          scope:"authzen:evaluate",
+        })
+      : null;
+    const subjectToken=request.headers.get("authorization")?.replace(/^Bearer /,"")??"";
+    const remotePdp=tokenExchange
       ? createRemoteAuthzenPdp({
           origin:env.GATEKEEPER_AUTHZEN_ORIGIN!,
-          bearerToken:async()=>env.GATEKEEPER_PDP_SERVICE_TOKEN!,
+          bearerToken:async()=>(await tokenExchange.exchange(subjectToken)).accessToken,
         })
       : null;
     // Upstream is authoritative when configured. Never silently fall back to
@@ -369,13 +391,17 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
       authorizationMode:local?"legacy-sandbox":"authzen-required",
       ...(privateAuthorizationReady&&verifiedToolActor?{authorizePrivateTool:async(name:string,args:Readonly<Record<string,unknown>>)=>{
         const invocation={method:"tools/call" as const,params:{name,arguments:args}};
-        const mapped=mapToolCall(invocation,verifiedToolActor);
+        const mapped=remotePdp
+          ? mapReviewedToolCall(invocation,{
+              ...verifiedToolActor,
+              // External Gatekeeper principals are issuer-qualified; the
+              // token exchange AS MUST preserve this same trusted issuer/sub.
+              subjectId:"principal:"+encodeURIComponent(actor!.issuer!)+
+                ":sub:"+encodeURIComponent(verifiedToolActor.subjectId),
+            },AWC_REVIEWED_TOOL_MAPPINGS)
+          : mapToolCall(invocation,verifiedToolActor);
         const decision=remotePdp
-          ? await remotePdp.evaluate({
-              ...mapped,
-              context:{...mapped.context,awc_tenant_id:verifiedToolActor.tenantId,
-                awc_pep_resource:verifiedToolActor.audience},
-            })
+          ? await remotePdp.evaluate(mapped)
           : await toolPdp!.evaluate(mapped,verifiedToolActor);
         return decision.decision===true;
       }}:{}),
