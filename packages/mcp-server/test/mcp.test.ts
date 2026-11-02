@@ -105,6 +105,27 @@ describe("AWC MCP server", () => {
     }finally{await f.close();}
   });
 
+
+  it("projects all three fictional operations through standards adapters",async()=>{
+    const f=await fixture(false);
+    try{
+      const tools=await f.client.listTools();
+      expect(tools.tools.some(t=>t.name==="operations.standards")).toBe(true);
+      const result=await f.client.callTool({name:"operations.standards",arguments:{scenario:"vending"}});
+      expect(result.isError).not.toBe(true);
+      const r=result.structuredContent as {
+        mode:string;authzen:{output:{decision:boolean}}[];cloudevents:{type:string}[];ublExampleOrderXml?:string;
+      };
+      expect(r.mode).toBe("strictly-simulated");
+      expect(r.authzen[0]?.output.decision).toBe(true);
+      expect(r.authzen[1]?.output.decision).toBe(false);
+      expect(r.cloudevents).toHaveLength(1);
+      expect(r.ublExampleOrderXml).toContain("UBLVersionID");
+      const manifest=await f.client.readResource({uri:"awc://standards/manifest"});
+      expect(manifest.contents.length).toBe(1);
+    }finally{await f.close();}
+  });
+
   it("serves the modern 2026-07-28 stateless HTTP protocol without sockets", async () => {
     const marketplace = makeMarketplace(inMemoryMarketplaceStore());
     const handler = createMcpHandler(() => createCatalogMcpServer({

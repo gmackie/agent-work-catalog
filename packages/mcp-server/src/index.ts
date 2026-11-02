@@ -6,6 +6,7 @@ import { z } from "zod/v4";
 import { MarketplaceError, type Marketplace } from "@awc/marketplace";
 import { CommerceError, type Commerce, type WorkRunMessage } from "@awc/commerce";
 import { SCENARIOS, runScenario } from "@awc/simulations";
+import { runStandardsScenario } from "@awc/standards-demo";
 
 export const MARKETPLACE_APP_URI = "ui://awc/marketplace.html";
 export const CONTRACT_APP_URI = "ui://awc/contract.html";
@@ -127,6 +128,30 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
     mimeType:"application/json",
   },async(uri)=>({contents:[{uri:uri.href,mimeType:"application/json",
     text:JSON.stringify({schemaVersion:"awc.simulation/v1",mode:"strictly-simulated",scenarios:SCENARIOS})}]}));
+
+
+  // Read-only interoperability export; no authority, credentials or side effects are
+  // created by the returned policy documents.
+  server.registerTool("operations.standards",{
+    description:"Export a synthetic operating scenario as AuthZEN, ODRL, CloudEvents, PROV-O and OpenSLO; optional OSB/UBL previews. NO live actions.",
+    inputSchema:z.object({scenario:z.enum(["vending","cloud","plant"])}).strict(),
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false},
+  },async({scenario})=>guarded(Effect.tryPromise({
+    try:()=>runStandardsScenario(scenario),
+    catch:()=>new Error("Standards fixture failed")
+  }),r=>"DEMO ONLY: mapped "+r.scenario+" into "+
+    r.authzen.length+" AuthZEN requests, "+r.cloudevents.length+
+    " CloudEvents, and "+r.provenance.length+" PROV-O graphs."));
+
+  server.registerResource("AWC supported standards","awc://standards/manifest",{
+    title:"AWC Interoperability Test Manifest",mimeType:"application/json",
+  },async(uri)=>({contents:[{uri:uri.href,mimeType:"application/json",text:JSON.stringify({
+    mode:"strictly-simulated",
+    packages:["authzen-1.0","odrl-2.2-awc-profile","coaz-mcp-draft-subset",
+      "cloudevents-1.0","prov-o","openslo-v1","osb-2.17-preview","ubl-2.4-xml-subset"],
+    tool:"operations.standards",
+    productionConformance:false
+  })}]}));
 
   const buyerId=config.buyerId;
   if(buyerId&&scope("quotes:write")){

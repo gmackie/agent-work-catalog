@@ -17,6 +17,7 @@ export interface StandardsReport {
  readonly mode:"strictly-simulated";
  readonly scenario:ScenarioId;
  readonly simulation:SimulationReport;
+ readonly syntheticReadProposal:ActionProposal;
  readonly odrl:OdrlAgreement;
  readonly authzen:readonly AuthzenSample[];
  readonly cloudevents:readonly AWCCloudEvent[];
@@ -91,7 +92,7 @@ export async function runStandardsScenario(id:ScenarioId):Promise<StandardsRepor
    lines:[{id:"1",itemName:"Bottled Water",quantity:12,unitCode:"EA",priceMinor:"150"}]});
  }
  return {
-  mode:"strictly-simulated",scenario:id,simulation,odrl,authzen,cloudevents,
+  mode:"strictly-simulated",scenario:id,simulation,syntheticReadProposal:readProposal,odrl,authzen,cloudevents,
   provenance,openslo,
   ...(osbProvisionPreview?{osbProvisionPreview}:{}),
   ...(ublExampleOrderXml?{ublExampleOrderXml}:{}),
