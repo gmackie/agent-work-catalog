@@ -35,6 +35,22 @@ The repository now includes working **standards-based projections** for responsi
 
 See [interoperability implementation](docs/standards-interoperability-implementation.md) and [standards adoption research](docs/standards-adoption-research.md). These packages are experimental adapter subsets, **not broad conformance claims** or production money/machine interfaces.
 
+
+## AuthZEN authorization-first boundary (new draft PR)
+
+AWC's **external policy decision protocol is OpenID AuthZEN 1.0**. Authorization is not an LLM prompt, unsigned ODRL policy, MCP tool annotation, or claim of wallet funding.
+
+- `@awc/mandate-registry`: tenant-scoped read-only D1-backed authority snapshots for signed-format proposals, parent mandate chains, asset-owner permissions, current observations, reviewed MCP tool policies and independent approvals. No public registration endpoint.
+- `@awc/pdp-auth`: independent PDP OIDC audience, issuer/JWKS validation, strict client allowlist and service scope; no MCP/human-token reuse.
+- `@awc/authzen`: exact AuthZEN PDP evaluation and optional trusted conditional commitment verifier.
+- `@awc/authzen-client`: fixed-origin, authenticated AuthZEN 1.0 client for an external Gatekeeper PDP; rejects unavailable/malformed decisions rather than silently allowing.
+- `@awc/coaz-mcp`: supported COAZ-MCP tool-call mapping; verified OAuth subject/client, tenant-scoped Gatekeeper admission, and object-level domain policy.
+- `@awc/economics-durable`: real transactional SQLite reservation ledger tested using Node SQLite, with parent/child shared spending limits, idempotent settlement evidence and safe wind-down; not a payment processor.
+- `@awc/authzen-finance`: a **separately verified reservation** may satisfy a conditional AuthZEN decision for the exact action revision; only commit-time gateways may consume such authority.
+- `AWCEconomicAccount`: private Cloudflare SQLite-backed Durable Object with no public mutation RPC. The namespace is provisioned by Wrangler but is not connected to actual provider settlement.
+
+See [AuthZEN integration and security roadmap](docs/authzen-gatekeeper-integration.md). Production PDP is **off by default**, with no arbitrary issuer/admin writes or real settlement enabled. Current simulations remain usable locally.
+
 ## Current experimental implementation
 
 - `@awc/contracts`, `@awc/catalog` and `@awc/marketplace`: schema and task/offer matching, quote issuance, prepared contract persistence.
