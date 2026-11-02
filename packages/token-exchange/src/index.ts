@@ -32,7 +32,14 @@ const url=(value:string)=>{
 };
 export function createTokenExchangeClient(cfg:TokenExchangeConfig) {
   const endpoint=url(cfg.endpoint);
-  const audience=url(cfg.audience+"/authz").origin; // Canonical HTTPS resource origin, never caller-controlled
+  let audience:string;
+  try{
+    const target=new URL(cfg.audience);
+    if(target.protocol!=="https:"||target.username||target.password||target.search||target.hash){
+      throw Error("Not HTTPS");
+    }
+    audience=target.href.replace(/\/$/,"");
+  }catch{throw new ExchangeError("configuration","Invalid pinned PDP resource audience");}
   if(!cfg.clientId||cfg.clientId.length>200||cfg.scope!=="authzen:evaluate"||
     (cfg.timeoutMs!==undefined&&(!Number.isSafeInteger(cfg.timeoutMs)||
     cfg.timeoutMs<200||cfg.timeoutMs>15_000))){
