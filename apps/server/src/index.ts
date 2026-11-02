@@ -15,6 +15,7 @@ import { d1TrustedMandateRegistry } from "@awc/mandate-registry/d1";
 import { createTrustedMcpToolPdp } from "@awc/mandate-registry/tools";
 import { d1McpToolPolicies } from "@awc/mandate-registry/d1-tools";
 import { mapToolCall } from "@awc/coaz-mcp";
+import { createRemoteAuthzenPdp } from "@awc/authzen-client";
 import { runStandardsScenario } from "@awc/standards-demo";
 
 export interface Env {
@@ -43,6 +44,9 @@ export interface Env {
   readonly AUTHZEN_PDP_AUDIENCE?:string;
   readonly AUTHZEN_PDP_JWKS_URL?:string;
   readonly AUTHZEN_PDP_CLIENT_IDS?:string;
+  /** Alternative: existing Gatekeeper AuthZEN PDP, authenticated via service token. */
+  readonly GATEKEEPER_AUTHZEN_ORIGIN?:string;
+  readonly GATEKEEPER_PDP_SERVICE_TOKEN?:string;
 }
 const json=(value:object,status=200)=>Response.json(value,{status,headers:{
   "cache-control":"no-store","x-content-type-options":"nosniff",
@@ -338,6 +342,16 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
     const toolPdp=authzenReady&&verifiedToolActor
       ? createTrustedMcpToolPdp(d1McpToolPolicies(env.DB))
       : null;
+    const remoteConfigured=!!env.GATEKEEPER_AUTHZEN_ORIGIN&&!!env.GATEKEEPER_PDP_SERVICE_TOKEN;
+    const remotePdp=remoteConfigured&&verifiedToolActor
+      ? createRemoteAuthzenPdp({
+          origin:env.GATEKEEPER_AUTHZEN_ORIGIN!,
+          bearerToken:async()=>env.GATEKEEPER_PDP_SERVICE_TOKEN!,
+        })
+      : null;
+    // Upstream is authoritative when configured. Never silently fall back to
+    // local policy if the network/token/provider decision fails.
+    const privateAuthorizationReady=!!(remotePdp||toolPdp);
     const ui=await env.ASSETS.fetch("https://assets.local/marketplace.html");
     const contractUi=await env.ASSETS.fetch("https://assets.local/contract.html");
     const operationsUi=await env.ASSETS.fetch("https://assets.local/operations.html");
@@ -350,13 +364,19 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
     ]);
     const configured=createMcpHandler(()=>createCatalogMcpServer({
       marketplace,commerce,
-      buyerId:actor?.kind==="agent"&&(local||toolPdp)?actor.buyerId:null,
+      buyerId:actor?.kind==="agent"&&(local||privateAuthorizationReady)?actor.buyerId:null,
       buyerScopes:actor?.scopes??[],approvalBaseUrl:url.origin,
       authorizationMode:local?"legacy-sandbox":"authzen-required",
-      ...(toolPdp&&verifiedToolActor?{authorizePrivateTool:async(name:string,args:Readonly<Record<string,unknown>>)=>{
+      ...(privateAuthorizationReady&&verifiedToolActor?{authorizePrivateTool:async(name:string,args:Readonly<Record<string,unknown>>)=>{
         const invocation={method:"tools/call" as const,params:{name,arguments:args}};
-        const request=mapToolCall(invocation,verifiedToolActor);
-        const decision=await toolPdp.evaluate(request,verifiedToolActor);
+        const mapped=mapToolCall(invocation,verifiedToolActor);
+        const decision=remotePdp
+          ? await remotePdp.evaluate({
+              ...mapped,
+              context:{...mapped.context,awc_tenant_id:verifiedToolActor.tenantId,
+                awc_pep_resource:verifiedToolActor.audience},
+            })
+          : await toolPdp!.evaluate(mapped,verifiedToolActor);
         return decision.decision===true;
       }}:{}),
       appHtml:html,contractAppHtml:contract,operationsAppHtml:operations,
