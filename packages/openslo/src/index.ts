@@ -15,11 +15,18 @@ export interface OpenSloDocument {
  * Export only thresholdMetric SLOs with >= or <= and an explicit source adapter.
  * This is NOT a real telemetry query. The consumer must implement AWC metricSource.
  */
+export interface SloProjectionPolicy {
+  /** Explicit fraction of events meeting the threshold; distinct from the metric value. */
+  readonly reliabilityTarget: number;
+}
 export function projectMetricObligation(
  mandate:OperatingMandate,
  obligation:Obligation,
+ policy:SloProjectionPolicy,
 ):readonly [OpenSloDocument,OpenSloDocument] {
- if(obligation.kind!=="metric"||obligation.comparator==="=" ||
+ if(!Number.isFinite(policy.reliabilityTarget) ||
+   policy.reliabilityTarget<0 || policy.reliabilityTarget>=1 ||
+   obligation.kind!=="metric"||obligation.comparator==="=" ||
    !Number.isFinite(obligation.target)||
    !Number.isSafeInteger(obligation.windowSeconds)||obligation.windowSeconds<=0||
    obligation.windowSeconds%60!==0){
@@ -46,7 +53,7 @@ export function projectMetricObligation(
     budgetingMethod:"Occurrences",
     objectives:[{displayName:obligation.id,
       op:obligation.comparator===">="?"gte":"lte",
-      value:obligation.target}],
+      value:obligation.target,target:policy.reliabilityTarget}],
   },
  };
  return [indicator,objective];
