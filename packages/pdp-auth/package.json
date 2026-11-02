@@ -12,6 +12,7 @@
     "check": "pnpm typecheck && pnpm test"
   },
   "dependencies": {
-    "jose": "^6.1.0"
+    "jose": "^6.1.0",
+    "@awc/mandate-registry": "workspace:*"
   }
 }
