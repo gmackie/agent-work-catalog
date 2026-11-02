@@ -93,7 +93,7 @@ describe("Actual TCP evidence -> R2 -> signed remote Worker -> checked report ->
    }));
    const binding:TrustedExecutorBinding={
      id:"remote.pcap",origin:"https://pcap.example/",
-     offeringId:"offering:modbus-pcap-analysis",offeringVersion:"1",
+     offeringId:"offering:tcp-flow-evidence",offeringVersion:"1",
      taskTypeId:"task:tcp-flow-evidence",maxCostMinorUnits:"2500",
      outputMediaTypes:["application/json"],maxDurationSeconds:120,
      dataClassification:"public",allowedEffects:[],executionMode:"bounded-tcp-flow/v1",
