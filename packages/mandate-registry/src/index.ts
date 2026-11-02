@@ -1,6 +1,7 @@
 import { assertActionRevision, assertMandateValid, mandateChain } from "@awc/responsibility";
 import type { ActionProposal, OperatingMandate, PolicyContext, PolicyDecision } from "@awc/responsibility";
-import { createAuthzenPdp, type AuthoritativeProposal, type AuthzenResolver, type VerifiedPdpCaller } from "@awc/authzen";
+import { createAuthzenPdp, type AuthoritativeProposal, type AuthzenResolver,
+  type VerifiedPdpCaller, type ConditionalAuthorizationVerifier } from "@awc/authzen";
 
 /**
  * The caller's tenant is derived from the verified access token and NEVER from
@@ -74,14 +75,17 @@ export function createStaticTrustedRegistry(snapshots:readonly TrustedProposalSn
     },
   };
 }
-export function createRegistryBackedPdp(registry:TrustedMandateRegistry){
+export function createRegistryBackedPdp(
+  registry:TrustedMandateRegistry,
+  conditionalVerifier?:ConditionalAuthorizationVerifier
+){
   return {
     evaluate:async(request:unknown,caller:TrustedRegistryCaller)=>{
       const resolver:AuthzenResolver={
         resolve:(proposalId: string,token:VerifiedPdpCaller)=>
           registry.resolve(caller.tenantId,proposalId,token.subjectId),
       };
-      return createAuthzenPdp(resolver).evaluate(request,caller);
+      return createAuthzenPdp(resolver,conditionalVerifier?{conditionalVerifier}:{}).evaluate(request,caller);
     },
   };
 }
