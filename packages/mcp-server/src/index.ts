@@ -7,6 +7,7 @@ import { MarketplaceError, type Marketplace } from "@awc/marketplace";
 import { CommerceError, type Commerce, type WorkRunMessage } from "@awc/commerce";
 import type { StoredOpportunity } from "@awc/source-inbox";
 import type { TrustedDispatcher } from "@awc/dispatch";
+import { listTcpServiceProfiles } from "@awc/offering-profiles";
 
 export const MARKETPLACE_APP_URI = "ui://awc/marketplace.html";
 export const CONTRACT_APP_URI = "ui://awc/contract.html";
@@ -79,6 +80,24 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
     annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
   },async({offeringId})=>guarded(config.marketplace.getOffering(offeringId),
     x=>"Illustrative offering: "+x.offering.title));
+
+  server.registerTool("catalog.list_tcp_services",{
+    description:"Explore the versioned TCP/OT service family, its evidence contracts and example pricing. Only pilot-test-only profiles have a sandbox implementation; other tiers are NOT purchasable.",
+    inputSchema:z.object({}).strict(),
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+  },async()=>reply({
+    kind:"awc.tcp-service-catalog/v1",actualBillingEnabled:false,
+    profiles:listTcpServiceProfiles(),
+    note:"Illustrative prices, no market validation. Planned profiles cannot be ordered.",
+  },"Nine TCP/OT service profiles, explicitly marked pilot or planned. No real payments."));
+
+  server.registerResource("TCP/OT service profiles","awc://catalog/tcp-service-tiers",{
+    description:"Public versioned service taxonomy with implementation readiness and outcome evidence requirements.",
+    mimeType:"application/json",
+  },async(uri)=>({contents:[{
+    uri:uri.href,mimeType:"application/json",
+    text:JSON.stringify({version:"awc.tcp-service-catalog/v1",profiles:listTcpServiceProfiles()}),
+  }]}));
 
   for (const [name,uri,html] of [
     ["Marketplace Explorer",MARKETPLACE_APP_URI,config.appHtml],
