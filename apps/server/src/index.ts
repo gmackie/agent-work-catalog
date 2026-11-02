@@ -485,13 +485,18 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
     const {marketplace,commerce,stripe,remoteDispatcher,custody}=services(env,request);
     const ui=await env.ASSETS.fetch("https://assets.local/marketplace.html");
     const contractUi=await env.ASSETS.fetch("https://assets.local/contract.html");
+    const tcpUi=await env.ASSETS.fetch("https://assets.local/tcp-report.html");
     const paid=paidConfig(env);
     // Load static App bundles once and provide the strings to the stateless MCP factory.
-    const [html,contract]=await Promise.all([ui.ok?ui.text():Promise.resolve(""),contractUi.ok?contractUi.text():Promise.resolve("")]);
+    const [html,contract,tcpReport]=await Promise.all([
+      ui.ok?ui.text():Promise.resolve(""),
+      contractUi.ok?contractUi.text():Promise.resolve(""),
+      tcpUi.ok?tcpUi.text():Promise.resolve(""),
+    ]);
     const configured=createMcpHandler(()=>createCatalogMcpServer({
       marketplace,commerce,buyerId:actor?.kind==="agent"?actor.buyerId:null,
       buyerScopes:actor?.scopes??[],approvalBaseUrl:url.origin,
-      appHtml:html,contractAppHtml:contract,
+      appHtml:html,contractAppHtml:contract,tcpReportAppHtml:tcpReport,
       ...(env.AWC_JOBS ? {enqueue:async (msg:WorkRunMessage)=>{await env.AWC_JOBS!.send(msg);}} : {}),
       stripeCheckoutAvailable:!!stripe,
       ...(remoteDispatcher?{remoteDispatcher}:{}),

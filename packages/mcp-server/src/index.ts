@@ -12,6 +12,7 @@ import { listCandidateDomains } from "@awc/domain-opportunities";
 
 export const MARKETPLACE_APP_URI = "ui://awc/marketplace.html";
 export const CONTRACT_APP_URI = "ui://awc/contract.html";
+export const TCP_REPORT_APP_URI = "ui://awc/tcp-report.html";
 export interface PaidSandboxConfig {
   readonly network: "base-sepolia";
   readonly recipient: `0x${string}`;
@@ -23,6 +24,7 @@ export interface McpServerConfig {
   readonly buyerScopes?: readonly string[];
   readonly appHtml: string;
   readonly contractAppHtml?: string;
+  readonly tcpReportAppHtml?: string;
   readonly approvalBaseUrl?: string;
   readonly commerce?: Commerce;
   readonly enqueue?: (work:WorkRunMessage)=>Promise<void>;
@@ -120,6 +122,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
   for (const [name,uri,html] of [
     ["Marketplace Explorer",MARKETPLACE_APP_URI,config.appHtml],
     ["Contract Review",CONTRACT_APP_URI,config.contractAppHtml??""],
+    ["TCP Evidence Inspector",TCP_REPORT_APP_URI,config.tcpReportAppHtml??""],
   ] as const){
     registerAppResource(server,name,uri,{
       description:name+" interface, optional in clients without MCP Apps",
@@ -259,13 +262,14 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
     });
   }
   if(buyerId&&scope("work:read")&&config.readCompletedArtifact){
-    server.registerTool("work.artifacts.read",{
+    registerAppTool(server,"work.artifacts.read",{
       description:"Read and verify a buyer-scoped completed JSON artifact or broker-signed observation from private R2. No arbitrary URLs.",
       inputSchema:z.object({
         workId:z.string().regex(/^work_[a-f0-9-]{36}$/),
         artifactRef:z.string().regex(/^artifact:sha256:[a-f0-9]{64}$/),
       }).strict(),
       annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+      _meta:{ui:{resourceUri:TCP_REPORT_APP_URI}},
     },async({workId,artifactRef})=>{
       try{
         const item=await config.readCompletedArtifact!(buyerId,workId,artifactRef);

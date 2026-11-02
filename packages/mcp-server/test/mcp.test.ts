@@ -4,7 +4,7 @@ import { createMcpHandler } from "@modelcontextprotocol/server";
 import { makeMarketplace, inMemoryMarketplaceStore } from "@awc/marketplace";
 import { makeCommerce, sandboxExecutor, type WorkRunMessage, type WorkSnapshot, type WorkStateStore } from "@awc/commerce";
 import { Effect } from "effect";
-import { createCatalogMcpServer, MARKETPLACE_APP_URI, CONTRACT_APP_URI } from "../src/index.ts";
+import { createCatalogMcpServer, MARKETPLACE_APP_URI, CONTRACT_APP_URI, TCP_REPORT_APP_URI } from "../src/index.ts";
 
 async function fixture(authenticated: boolean) {
   const marketplace = makeMarketplace(inMemoryMarketplaceStore());
@@ -216,6 +216,8 @@ describe("AWC MCP server", () => {
       expect(work.isError).not.toBe(true);
       const w=work.structuredContent as {id:string;state:string;funding:{status:string}};
       expect(w.state).toBe("prepared_unfunded");
+      const tcpReport=await f.client.readResource({uri:TCP_REPORT_APP_URI});
+      expect(tcpReport.contents.length).toBeGreaterThan(0);
       const contract=await f.client.readResource({uri:CONTRACT_APP_URI});
       expect(contract.contents[0]&&"text" in contract.contents[0]?contract.contents[0].text:"").toContain("Secure terms");
       expect((work.structuredContent as {reviewUrl:string}).reviewUrl).toBe("https://awc.example/review?work="+encodeURIComponent(w.id));

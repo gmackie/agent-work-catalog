@@ -208,3 +208,14 @@ expert reviewer acceptance, signed credentials and actual service terms.
 external certified Attest issuer, live capture retention policy or
 comprehensive network diagnosis. These are deployment gates, not hidden
 product features.
+
+## Optional MCP TCP Evidence Inspector
+
+When a buyer invokes `work.artifacts.read` on the JSON report from a submitted
+TCP pilot WorkOrder, an MCP Apps-compatible host may render
+`ui://awc/tcp-report.html`. It shows the validated packet frames, flow
+summaries, observed flags and declared limitations, all using text nodes
+rather than injecting untrusted HTML. Other MCP clients still receive
+the normal bounded, structured tool result. The view is not an
+independent packet evaluator and does not grant purchase or work
+approval authority.
