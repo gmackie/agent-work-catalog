@@ -11,6 +11,8 @@ async function main(){
    cloudevents:r.cloudevents.map(e=>e.type),
    provenanceGraphs:r.provenance.length,
    opensloDocuments:r.openslo.map(x=>x.kind),
+   proposedRichAuthorizationRequests:r.oauthRichAuthorizationDetails.length,
+   independentSyntheticEpcisReceipt:!!r.fictionalIndependentReceipt,
    resourceProvisioned:false,osbPreviewOnly:!!r.osbProvisionPreview,
    ublOrderExampleOnly:!!r.ublExampleOrderXml,
   })+"\n");

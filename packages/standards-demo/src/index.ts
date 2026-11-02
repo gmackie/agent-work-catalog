@@ -8,6 +8,8 @@ import { projectMandateObjectives, type OpenSloDocument } from "@awc/openslo";
 import { osbResourcePlans,parseOsbCatalog,previewOsbProvision, type ProvisionPreview } from "@awc/osb-adapter";
 import { exportUblOrder } from "@awc/ubl-adapter";
 import { sealActionProposal, type ActionProposal } from "@awc/responsibility";
+import { createActionAuthorizationDetail, type AWCActionAuthorizationDetail } from "@awc/oauth-rar";
+import { makeEpcisReceiptEvent,makeEpcisDocument } from "@awc/epcis-adapter";
 
 export interface AuthzenSample {
   readonly input: AuthzenEvaluationRequest;
@@ -23,6 +25,8 @@ export interface StandardsReport {
  readonly cloudevents:readonly AWCCloudEvent[];
  readonly provenance:readonly ProvGraph[];
  readonly openslo:readonly OpenSloDocument[];
+ readonly oauthRichAuthorizationDetails:readonly AWCActionAuthorizationDetail[];
+ readonly fictionalIndependentReceipt?:ReturnType<typeof makeEpcisDocument>;
  readonly osbProvisionPreview?:ProvisionPreview;
  readonly ublExampleOrderXml?:string;
  readonly note:string;
@@ -70,6 +74,22 @@ export async function runStandardsScenario(id:ScenarioId):Promise<StandardsRepor
  // Demo policy is explicit and fictional; the 98% measured-value threshold
  // is NOT an SLO reliability/error-budget target.
  const openslo=projectMandateObjectives(mandate,{"objective:availability":{reliabilityTarget:0.99}});
+ const oauthRichAuthorizationDetails=await Promise.all(
+  attemptedActions.filter(a=>a.proposal.commitment!==undefined)
+    .map(a=>createActionAuthorizationDetail(a.proposal,"https://awc-gateway.example"))
+ );
+ // This is a SEPARATE, FICTIONAL physical scan, not the result of the
+ // restock WorkOrder. We do not claim products actually arrived.
+ const fictionalIndependentReceipt=id==="vending"
+  ? makeEpcisDocument(makeEpcisReceiptEvent({
+     receiptId:"4898a223-216a-4f46-9e18-338ccf6fa3ba",
+     eventTime:"2026-11-01T18:30:00Z",eventTimeZoneOffset:"+00:00",
+     readPointId:"urn:epc:id:sgln:0614141.00777.0",
+     businessLocationId:"urn:epc:id:sgln:0614141.00888.0",
+     productClassUri:"urn:epc:class:lgtin:4012345.012345.998877",
+     quantity:12,unitOfMeasure:"EA",verifiedSourceId:"synthetic:scanner",
+    }),"2026-11-01T18:31:00Z")
+  : undefined;
  let osbProvisionPreview:ProvisionPreview|undefined;
  if(id==="cloud"){
   const catalog=parseOsbCatalog({services:[{
@@ -95,7 +115,8 @@ export async function runStandardsScenario(id:ScenarioId):Promise<StandardsRepor
  }
  return {
   mode:"strictly-simulated",scenario:id,simulation,syntheticReadProposal:readProposal,odrl,authzen,cloudevents,
-  provenance,openslo,
+  provenance,openslo,oauthRichAuthorizationDetails,
+  ...(fictionalIndependentReceipt?{fictionalIndependentReceipt}:{}),
   ...(osbProvisionPreview?{osbProvisionPreview}:{}),
   ...(ublExampleOrderXml?{ublExampleOrderXml}:{}),
   note:"Cross-protocol synthetic projections. AuthZEN only unconditionally permits reads; conditional operations still require authoritative commit and finance checks. No signed VC or production control.",

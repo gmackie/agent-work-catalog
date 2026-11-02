@@ -18,6 +18,8 @@ The normative reference material is in [standards-adoption-research.md](standard
 | `@awc/events` | CloudEvents JSON 1.0 / v1.0.2 event envelope, typed action/revocation events, deduplication/monotonic sequencing in an in-memory reference journal | Durable event bus, ordering across distributed systems, signed events |
 | `@awc/provenance` | PROV-O JSON-LD attributed actors, delegated party, activity, inputs and generated simulated receipt | Digital proof, validity of outcome, credential issuer |
 | `@awc/openslo` | OpenSLO v1 SLI/SLO for metric thresholds (`>=`, `<=`), rolling window, named metrics/observation sources, **and a separately supplied reliability/error-budget target** | Other obligation classes, actual metrics provider implementation and SLO accounting |
+| `@awc/oauth-rar` | RFC 9396 `authorization_details` type for exact action/amount/actor/resource; verifies exact authorized grants from already validated OAuth tokens | OAuth issuance, actor-chain trust, actual payment reservation |
+| `@awc/epcis-adapter` | GS1 EPCIS 2.0 JSON-LD restricted ObjectEvent for a separate observed stock receipt | Full EPCIS JSON Schema, actual scanner identity verification, proof goods arrived |
 | `@awc/osb-adapter` | OSB 2.17 catalog normalization and approval-bound **non-executing** PUT request preview | Live broker calls, resource instance state, deprovision and billing |
 | `@awc/ubl-adapter` | UBL 2.4 Order XML subset with buyer, seller, lines, currency and contract digest note | Full XSD validation, tax, delivery, legal acceptance or payment |
 | `@awc/standards-demo` | Synthetic vending/cloud/plant operations emitted through all compatible standards; conformance/evidence tests | Real cloud, physical devices, procurement or customer information |
@@ -67,7 +69,9 @@ const request = actionToAuthzen(report.syntheticReadProposal);
 5. PROV-O graphs describe provenance but do not verify signatures or truth. A simulated ActionReceipt must never be presented as an independently verified Attest credential or settled financial receipt.
 6. OpenSLO projections describe what to measure but do not query live telemetry or assert compliance. A **metric threshold is not a reliability target**; the adapter requires an explicitly supplied `reliabilityTarget`. The demo uses a fictional 99% error-budget target. Without one, no SLO is exported. Missing/stale measurements remain unknown.
 7. OSB 2.17 provisioning has an external side effect that may cost money. The adapter produces only a preview and never sends an HTTP write. OSB catalogs do not guarantee price or lease-expiry support, so the broker must obtain authoritative quotes and handle ongoing cost.
-8. UBL 2.4 example export doesn't constitute a purchase, accepted order, tax document or payment. A production adapter must use normative XSD/code lists and jurisdiction-specific review.
+8. RFC 9396 authorization details are **not** bearer tokens or payment evidence. An OAuth server must authenticate its holder, audience and issuer; then AWC can compare the exact transaction fields.
+9. A GS1 EPCIS receiving event requires an actual separately authenticated physical observation. The demo uses a fictional scanner event independent of the restocking request. An order or invoice is not proof of received inventory.
+10. UBL 2.4 example export doesn't constitute a purchase, accepted order, tax document or payment. A production adapter must use normative XSD/code lists and jurisdiction-specific review.
 
 ## Acceptance and negative tests
 

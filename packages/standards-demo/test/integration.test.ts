@@ -13,12 +13,17 @@ describe("cross-standards synthetic responsibility contract",()=>{
   expect(r.provenance[0]?.["@graph"].some(n=>n["prov:actedOnBehalfOf"]!==undefined)).toBe(true);
   expect(r.openslo.map(x=>x.kind)).toEqual(["SLI","SLO"]);
   expect(r.ublExampleOrderXml).toContain("UBLVersionID>2.4");
+  expect(r.oauthRichAuthorizationDetails).toHaveLength(1);
+  expect(r.oauthRichAuthorizationDetails[0]?.awc_maximum_minor).toBe("1800");
+  expect(r.fictionalIndependentReceipt?.epcisBody.eventList[0]?.bizStep).toBe("receiving");
   expect(r.osbProvisionPreview).toBeUndefined();
  });
  it("builds an OSB provision preview for cloud only and no active infrastructure",async()=>{
   const r=await runStandardsScenario("cloud");
   expect(r.osbProvisionPreview?.authorizedForExecution).toBe(false);
   expect(r.osbProvisionPreview?.url).toContain("/v2/service_instances/demo-instance-001");
+  expect(r.oauthRichAuthorizationDetails[0]?.awc_maximum_minor).toBe("3500");
+  expect(r.fictionalIndependentReceipt).toBeUndefined();
   expect(r.cloudevents.length).toBe(1);
  });
  it("keeps physical control denied and production scheduling escalated",async()=>{
@@ -28,5 +33,7 @@ describe("cross-standards synthetic responsibility contract",()=>{
   expect(r.cloudevents).toHaveLength(1);
   expect(r.simulation.account.spentMinor).toBe("0");
   expect(r.osbProvisionPreview).toBeUndefined();
+  expect(r.oauthRichAuthorizationDetails).toHaveLength(0);
+  expect(r.fictionalIndependentReceipt).toBeUndefined();
  });
 });

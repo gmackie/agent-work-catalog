@@ -148,7 +148,8 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
   },async(uri)=>({contents:[{uri:uri.href,mimeType:"application/json",text:JSON.stringify({
     mode:"strictly-simulated",
     packages:["authzen-1.0","odrl-2.2-awc-profile","coaz-mcp-draft-subset",
-      "cloudevents-1.0","prov-o","openslo-v1","osb-2.17-preview","ubl-2.4-xml-subset"],
+      "cloudevents-1.0","prov-o","openslo-v1","oauth-rar-9396-action","epcis-2.0-object-event",
+      "osb-2.17-preview","ubl-2.4-xml-subset"],
     tool:"operations.standards",
     productionConformance:false
   })}]}));
