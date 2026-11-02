@@ -1,7 +1,7 @@
 import {describe,expect,it} from "vitest";
 import {projectMetricObligation,projectMandateObjectives} from "../src/index.ts";
 import type {OperatingMandate,Obligation} from "@awc/responsibility";
-const mandate={operationId:"operation:vending",obligations:[]} as OperatingMandate;
+const mandate={operationId:"operation:vending",obligations:[]} as unknown as OperatingMandate;
 const metric:Obligation={kind:"metric",id:"uptime",metric:"availability",comparator:">=",
  target:0.98,windowSeconds:2592000,observationSourceId:"source:machine"};
 describe("OpenSLO v1 threshold metric projection",()=>{
