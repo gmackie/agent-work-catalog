@@ -249,11 +249,14 @@ export async function analyzeTcpPcap(raw:Uint8Array):Promise<TcpReport>{
     observedGaps:f.observedGaps,
     ...(f.handshakeSynToSynAckMs===undefined?{}:{handshakeSynToSynAckMs:f.handshakeSynToSynAckMs}),
   }));
-  return {schemaVersion:"awc.tcp.packet-evidence/v1",analyzer:ANALYZER_ID,
+  const report:TcpReport={schemaVersion:"awc.tcp.packet-evidence/v1",analyzer:ANALYZER_ID,
     captureSha256:await hash(raw),
     coverage:{totalFrames,tcpFrames,skippedFrames,truncatedFrames,flows:flows.length,
       captureStartMidstreamPossible:[...seen.values()].some(f=>!f.seenSyn)},
     flows,segments,observations,limitations:[...LIMITATIONS]};
+  if(JSON.stringify(report).length>120_000)
+    throw new TcpCaptureError("too_large","Bounded TCP evidence result exceeds size budget");
+  return report;
 }
 /** Version-bound consistency check. Same implementation is NOT independent professional review. */
 export async function evaluateTcpReport(input:Uint8Array,untrusted:unknown){
