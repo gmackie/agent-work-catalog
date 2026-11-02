@@ -67,7 +67,9 @@ export async function runStandardsScenario(id:ScenarioId):Promise<StandardsRepor
  }
  const cloudevents=journal.list("urn:awc:operation:"+encodeURIComponent(mandate.operationId),
   simulation.managedEntityId);
- const openslo=projectMandateObjectives(mandate);
+ // Demo policy is explicit and fictional; the 98% measured-value threshold
+ // is NOT an SLO reliability/error-budget target.
+ const openslo=projectMandateObjectives(mandate,{"objective:availability":{reliabilityTarget:0.99}});
  let osbProvisionPreview:ProvisionPreview|undefined;
  if(id==="cloud"){
   const catalog=parseOsbCatalog({services:[{
