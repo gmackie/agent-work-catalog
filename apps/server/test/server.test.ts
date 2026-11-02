@@ -15,6 +15,28 @@ describe("Cloudflare MCP entrypoint", () => {
     expect((await r.json() as {livePayments:boolean}).livePayments).toBe(false);
   });
 
+
+  it("keeps the production PDP disabled without explicit TLS origin and separate token",async()=>{
+    const meta=await handleRequest(new Request("https://pdp.example/.well-known/authzen-configuration"),env,ctx);
+    expect(meta.status).toBe(404);
+    const enabled={...env,ENABLE_AUTHZEN_PDP:"true",
+      AUTHZEN_PUBLIC_ORIGIN:"https://pdp.example",
+      AUTHZEN_PDP_ISSUER:"https://issuer.example",AUTHZEN_PDP_AUDIENCE:"https://pdp.example",
+      AUTHZEN_PDP_JWKS_URL:"https://issuer.example/jwks",
+      AUTHZEN_PDP_CLIENT_IDS:"awc-trusted-pep"} as Env;
+    const published=await handleRequest(new Request("https://pdp.example/.well-known/authzen-configuration"),enabled,ctx);
+    expect(published.status).toBe(200);
+    expect((await published.json() as {access_evaluation_endpoint:string}).access_evaluation_endpoint)
+      .toBe("https://pdp.example/access/v1/evaluation");
+    const denied=await handleRequest(new Request("https://pdp.example/access/v1/evaluation",{
+      method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({subject:{type:"identity",id:"agent:manager"},action:{name:"telemetry.read"},
+        resource:{type:"awc-managed-entity",id:"asset:123"}})
+    }),enabled,ctx);
+    expect(denied.status).toBe(401);
+    const wrongHost=await handleRequest(new Request("https://evil.example/.well-known/authzen-configuration"),enabled,ctx);
+    expect(wrongHost.status).toBe(404);
+  });
   it("exposes AuthZEN 1.0 only on localhost and with verified demo caller",async()=>{
     const local={...env,ENABLE_LOCAL_SANDBOX:"true",
       AWC_BUYER_TOKEN:"sandbox-buyer-token-never-publish-1234567890"} as Env;
