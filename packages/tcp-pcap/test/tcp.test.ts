@@ -61,7 +61,7 @@ describe("conservative TCP packet evidence",()=>{
   });
   it("rejects pcapng, overlarge captures and broken packet records",async()=>{
     const b=pcap([{seq:1,flags:0x02}]);
-    const broken=Uint8Array.from(b);broken[40]=0xff;
+    const broken=Uint8Array.from(b);broken[32]=0xff; // PCAP incl_len > orig_len
     await expect(analyzeTcpPcap(broken)).rejects.toThrow(TcpCaptureError);
     const pcapng=Uint8Array.from(b);pcapng.set([10,13,13,10],0);
     await expect(analyzeTcpPcap(pcapng)).rejects.toThrow(TcpCaptureError);
