@@ -91,6 +91,8 @@ export async function buildTcpObservation(input: ObservationInput & {
     throw new ReceiptError("invalid","Invalid TCP observation counts");
   }
   const prior=await buildObservation(input);
+  const claims={...prior.claims};
+  delete claims["awc.parser_version"];
   return {
     ...prior,
     id:"awc:tcp-observation:"+await digest(JSON.stringify({
@@ -101,7 +103,7 @@ export async function buildTcpObservation(input: ObservationInput & {
     })),
     schema:TCP_OBSERVATION_SCHEMA,
     claims:{
-      ...prior.claims,
+      ...claims,
       "awc.analyzer_version":{kind:"string",value:"awc/tcp-flow-evidence@0.1.0"},
       "awc.flow_count":{kind:"integer",value:String(input.flowCount),unit:"flows"},
       "awc.observed_tcp_segments":{kind:"integer",value:String(input.tcpSegments),unit:"segments"},
