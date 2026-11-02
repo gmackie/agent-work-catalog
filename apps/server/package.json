@@ -20,7 +20,10 @@
     "agents": "^0.27.0",
     "stripe": "^23.1.0",
     "@awc/authzen": "workspace:*",
-    "@awc/standards-demo": "workspace:*"
+    "@awc/standards-demo": "workspace:*",
+    "@awc/pdp-auth": "workspace:*",
+    "@awc/mandate-registry": "workspace:*",
+    "@awc/coaz-mcp": "workspace:*"
   },
   "devDependencies": {
     "wrangler": "^4.148.0",
