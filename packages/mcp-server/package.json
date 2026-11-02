@@ -26,6 +26,7 @@
     "@x402/evm": "^2.29.0",
     "@awc/source-inbox": "workspace:*",
     "@awc/dispatch": "workspace:*",
-    "@awc/offering-profiles": "workspace:*"
+    "@awc/offering-profiles": "workspace:*",
+    "@awc/domain-opportunities": "workspace:*"
   }
 }

@@ -8,6 +8,7 @@ import { CommerceError, type Commerce, type WorkRunMessage } from "@awc/commerce
 import type { StoredOpportunity } from "@awc/source-inbox";
 import type { TrustedDispatcher } from "@awc/dispatch";
 import { listTcpServiceProfiles } from "@awc/offering-profiles";
+import { listCandidateDomains } from "@awc/domain-opportunities";
 
 export const MARKETPLACE_APP_URI = "ui://awc/marketplace.html";
 export const CONTRACT_APP_URI = "ui://awc/contract.html";
@@ -97,6 +98,23 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
   },async(uri)=>({contents:[{
     uri:uri.href,mimeType:"application/json",
     text:JSON.stringify({version:"awc.tcp-service-catalog/v1",profiles:listTcpServiceProfiles()}),
+  }]}));
+
+  server.registerTool("catalog.list_domain_opportunities",{
+    description:"Explore twelve research-only agent work domains with concrete sources, execution pipelines, deliverables, verification criteria and illustrative pricing. None are currently purchasable.",
+    inputSchema:z.object({}).strict(),
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+  },async()=>reply({
+    kind:"awc.domain-opportunities/v1",readiness:"design-only",
+    opportunities:listCandidateDomains(),actualBillingEnabled:false,
+  },"Twelve design-only domain opportunities, not executable or priced live listings."));
+
+  server.registerResource("Agent work opportunity map","awc://catalog/domain-opportunities",{
+    description:"Research-only work domains and measurable output contracts",
+    mimeType:"application/json",
+  },async(uri)=>({contents:[{
+    uri:uri.href,mimeType:"application/json",
+    text:JSON.stringify({schema:"awc.domain-opportunities/v1",items:listCandidateDomains()}),
   }]}));
 
   for (const [name,uri,html] of [
