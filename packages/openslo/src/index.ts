@@ -58,7 +58,13 @@ export function projectMetricObligation(
  };
  return [indicator,objective];
 }
-export function projectMandateObjectives(mandate:OperatingMandate):readonly OpenSloDocument[]{
- return mandate.obligations.flatMap(o=>o.kind==="metric"&&o.comparator!=="="?
-  [...projectMetricObligation(mandate,o)]:[]);
+export function projectMandateObjectives(
+ mandate:OperatingMandate,
+ policyByObligationId:Readonly<Record<string,SloProjectionPolicy>>,
+):readonly OpenSloDocument[]{
+ return mandate.obligations.flatMap(o=>{
+  const policy=policyByObligationId[o.id];
+  if(!policy)return [];
+  return [...projectMetricObligation(mandate,o,policy)];
+ });
 }
