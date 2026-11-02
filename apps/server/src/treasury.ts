@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { makeDurableAccountLedger } from "@awc/economics-durable";
+import type { Env } from "./index.ts";
 import type { AtomicSqlStorage } from "@awc/economics-durable";
 
 /**
@@ -12,9 +13,9 @@ import type { AtomicSqlStorage } from "@awc/economics-durable";
  *
  * A caller cannot create synthetic money by accessing an MCP tool.
  */
-export class AWCEconomicAccount extends DurableObject {
+export class AWCEconomicAccount extends DurableObject<Env> {
   private readonly ledger:ReturnType<typeof makeDurableAccountLedger>;
-  constructor(ctx:DurableObjectState,env:unknown){
+  constructor(ctx:DurableObjectState,env:Env){
     super(ctx,env);
     const storage:AtomicSqlStorage={
       sql:{
