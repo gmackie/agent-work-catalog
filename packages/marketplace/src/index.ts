@@ -36,6 +36,12 @@ export const seedTaskTypes: readonly TaskType[] = [
     outputMediaTypes: ["application/json"],permittedEffects:[],
   },
   {
+    id: "task:tcp-flow-evidence", version: "1", name: "TCP Flow Evidence Report",
+    description: "Extract limited, observable TCP flow, sequence-range, window and reset evidence from a public sanitized classic PCAP. No guaranteed packet-loss or root-cause attribution.",
+    inputMediaTypes: ["application/vnd.tcpdump.pcap"],
+    outputMediaTypes: ["application/json"], permittedEffects: [],
+  },
+  {
     id: "task:expert-chat", version: "1", name: "Specialist engineering chat",
     description: "Metered advisory inference, without a deliverable guarantee",
     inputMediaTypes: ["text/plain"], outputMediaTypes: ["text/plain"], permittedEffects: [],
@@ -62,6 +68,13 @@ export const seedOfferings: readonly Offering[] = [
     taskTypeId:"task:modbus-pcap",title:"Classic Modbus PCAP Evidence Report (TEST ONLY)",
     description:"Actual bounded parser for public sanitized Ethernet/IPv4/TCP captures. Reports observed exception responses and unmatched transactions; not a comprehensive network assessment.",
     pricing:{mode:"fixed",fixedAmount:{currency:"USD",minorUnits:"3500"}},
+    execution:[{protocol:"custom",endpoint:"https://example.invalid/v1/executions"}],
+  },
+  {
+    id:"offering:tcp-flow-evidence",version:"1",providerId:"example-provider:network",
+    taskTypeId:"task:tcp-flow-evidence",title:"TCP Flow Evidence (PUBLIC TEST ONLY)",
+    description:"Real bounded passive parser with evidence-tagged flow metrics, signed broker observation and deterministic R2 artifacts. 48KiB classic PCAP only; no loss attribution or stream reassembly.",
+    pricing:{mode:"fixed",fixedAmount:{currency:"USD",minorUnits:"2500"}},
     execution:[{protocol:"custom",endpoint:"https://example.invalid/v1/executions"}],
   },
   {

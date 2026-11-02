@@ -1,6 +1,7 @@
 import { validateExecutionRequest, AdapterError, type ExecutionSnapshot, type ExecutionHandle } from "@awc/adapter-sdk";
 import { digest, verifyAwcRequest } from "@awc/adapter-remote-http";
 import { analyzeClassicPcap,captureSha256,MAX_CAPTURE_BYTES,PCAP_MEDIA_TYPE } from "@awc/modbus-pcap";
+import { analyzeTcpCapture } from "@awc/tcp-analysis";
 export interface D1Statement {
   bind(...values:(string|number|null)[]):D1Statement;
   run():Promise<unknown>;
@@ -12,6 +13,7 @@ export interface Env {
   readonly AWC_SHARED_KEY?:string;
   readonly ENABLE_EXAMPLE_EXECUTOR?:string;
   readonly ENABLE_MODBUS_PCAP?:string;
+  readonly ENABLE_TCP_FLOW?:string;
 }
 type StoredRow={provider_id:string;client_id:string;idempotency_key:string;
   request_digest:string;snapshot_json:string};
@@ -46,7 +48,8 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
       displayName:"Read-only example remote Worker",
       roles:["work-executor"],transport:"remote-http",
       supportedTaskTypes:["task:example","task:modbus-diagnostics",
-        ...(env.ENABLE_MODBUS_PCAP==="true"?["task:modbus-pcap"]:[])],
+        ...(env.ENABLE_MODBUS_PCAP==="true"?["task:modbus-pcap"]:[]),
+        ...(env.ENABLE_TCP_FLOW==="true"?["task:tcp-flow-evidence"]:[])],
       capabilities:["start","inspect","recover","cancel"],
       endpointPaths:{
         start:"/v1/executions",
@@ -68,7 +71,10 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
     if(request.method==="POST"&&path==="/v1/executions"){
       const input=validateExecutionRequest(JSON.parse(signed.body) as unknown);
       const realModbus=input.taskTypeId==="task:modbus-pcap";
+      const realTcp=input.taskTypeId==="task:tcp-flow-evidence";
+      const realCapture=realModbus||realTcp;
       if(!(realModbus&&env.ENABLE_MODBUS_PCAP==="true") &&
+         !(realTcp&&env.ENABLE_TCP_FLOW==="true") &&
          !["task:example","task:modbus-diagnostics"].includes(input.taskTypeId) ||
          input.constraints.allowedEffects.length ||
          input.constraints.dataClassification!=="public" ||
@@ -77,8 +83,9 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
       }
       if(input.idempotencyKey!==signed.idempotencyKey)
         throw new AdapterError("unauthorized","Idempotency header and work request differ");
-      let modbusReport:Awaited<ReturnType<typeof analyzeClassicPcap>>|undefined;
-      if(realModbus){
+      let captureReport:Awaited<ReturnType<typeof analyzeClassicPcap>> |
+        Awaited<ReturnType<typeof analyzeTcpCapture>> | undefined;
+      if(realCapture){
         if(input.inputs.length!==1 || input.constraints.maxDurationSeconds>300)
           throw new AdapterError("invalid_input","Modbus capture input contract invalid");
         const capture=input.inputs[0]!;
@@ -93,7 +100,7 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
           const raw=Uint8Array.from(atob(capture.data),ch=>ch.charCodeAt(0));
           if(raw.length>MAX_CAPTURE_BYTES || await captureSha256(raw)!==capture.sha256)
             throw new Error("Capture digest mismatch");
-          modbusReport=await analyzeClassicPcap(raw);
+          captureReport=realModbus?await analyzeClassicPcap(raw):await analyzeTcpCapture(raw);
         }catch{throw new AdapterError("invalid_input","Capture is malformed, unsupported or altered");}
       }
       const checksum=await digest(signed.body);
@@ -105,11 +112,14 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
         updatedAt:new Date().toISOString(),
         result:{
           orderId:input.workOrderId,producedAt:new Date().toISOString(),
-          summary:realModbus
-            ? "Parsed classic PCAP and identified observable Modbus/TCP transactions; not a professional certification"
+          summary:realCapture
+            ? realModbus
+              ? "Parsed observable Modbus/TCP transactions, not a professional certification"
+              : "Parsed observable TCP flows and flags; no packet-loss or causal diagnosis"
             : "Synthetic read-only remote adapter response; no external work was performed",
-          artifacts:realModbus
-            ? [{name:"modbus-findings.json",kind:"inline",mediaType:"application/json",data:modbusReport!}]
+          artifacts:realCapture
+            ? [{name:realModbus?"modbus-findings.json":"tcp-flow-evidence.json",
+              kind:"inline",mediaType:"application/json",data:captureReport!}]
             : [{name:"example-result.json",kind:"inline",mediaType:"application/json",data:{
               notice:"Demo result only. Not a verified report, evaluation, or paid professional service.",
               suppliedInputNames:input.inputs.map(x=>x.name),workOrderId:input.workOrderId,
