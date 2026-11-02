@@ -98,7 +98,7 @@ export async function identifyActor(
     const client=payload.azp??payload.client_id;
     const tenant=payload.awc_tenant_id;
     return {
-      buyerId,subject,issuer:payload.iss,kind:"agent",scopes,
+      buyerId,subject,issuer,kind:"agent",scopes,
       ...(typeof client==="string" && client.length>0 && client.length<=200?{clientId:client}:{}),
       ...(typeof tenant==="string" && tenant.length>0 && tenant.length<=200?{tenantId:tenant}:{}),
     };
