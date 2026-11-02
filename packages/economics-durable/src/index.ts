@@ -302,6 +302,13 @@ export function makeDurableAccountLedger(storage:AtomicSqlStorage,now:()=>number
         return mandateView(id);
       });
     },
+    reservationByAction:(mandateId:string,actionId:string,idempotencyKey:string):
+      DurableReservation|undefined=>{
+      const row=selectOne<ReservationRow>(sql,
+        "SELECT * FROM awc_expense WHERE mandate_id=? AND action_id=? AND idem_key=?",
+        mandateId,actionId,idempotencyKey);
+      return row?reservationView(row):undefined;
+    },
     account:()=>accountView(),
     mandate:(id:string)=>mandateView(id),
     journal:()=>sql.exec<{sequence:number;kind:string;ref:string;amount_minor:string}>(
