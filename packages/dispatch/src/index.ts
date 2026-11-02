@@ -21,7 +21,7 @@ export interface TrustedExecutorBinding {
   /** V1 can only disclose explicitly public, inline, no-side-effect inputs. */
   readonly dataClassification: "public";
   readonly allowedEffects: readonly [];
-  readonly executionMode: "synthetic-test-only" | "bounded-modbus-pcap/v1";
+  readonly executionMode: "synthetic-test-only" | "bounded-modbus-pcap/v1" | "bounded-tcp-pcap/v1";
 }
 export type DispatchStatus =
   "new" | "starting" | "uncertain" | "active" | "polling" |
@@ -76,10 +76,13 @@ function assertBinding(binding:TrustedExecutorBinding,executor:WorkExecutor):voi
       !/^\d+$/.test(binding.offeringVersion) ||
       !/^(0|[1-9]\d*)$/.test(binding.maxCostMinorUnits) ||
       binding.maxDurationSeconds<1 || binding.maxDurationSeconds>300 ||
-      !["synthetic-test-only","bounded-modbus-pcap/v1"].includes(binding.executionMode) ||
+      !["synthetic-test-only","bounded-modbus-pcap/v1","bounded-tcp-pcap/v1"].includes(binding.executionMode) ||
       (binding.executionMode==="bounded-modbus-pcap/v1" &&
         (binding.offeringId!=="offering:modbus-pcap-analysis" ||
          binding.taskTypeId!=="task:modbus-pcap")) ||
+      (binding.executionMode==="bounded-tcp-pcap/v1" &&
+        (binding.offeringId!=="offering:tcp-pcap-evidence" ||
+         binding.taskTypeId!=="task:tcp-pcap")) ||
       binding.dataClassification!=="public" ||
       binding.allowedEffects.length!==0 ||
       !binding.outputMediaTypes.includes("application/json")) {
@@ -139,7 +142,7 @@ async function buildRequest(
     throw new DispatchError("invalid_contract","Prepared input bytes no longer match the human-reviewed commitment");
   }
   let executionInputs:ExecutionRequest["inputs"]=[...work.inputs];
-  if(binding.executionMode==="bounded-modbus-pcap/v1"){
+  if(["bounded-modbus-pcap/v1","bounded-tcp-pcap/v1"].includes(binding.executionMode)){
     if(work.inputs.length!==1 || !resolver) {
       throw new DispatchError("invalid_contract","Bounded PCAP execution requires one privately stored capture");
     }
@@ -220,7 +223,7 @@ export interface DispatchPlan {
   readonly disclosureDigest:string;
   readonly dataClassification:"public";
   readonly allowedEffects:readonly [];
-  readonly mode:"synthetic-test-only" | "bounded-modbus-pcap/v1";
+  readonly mode:"synthetic-test-only" | "bounded-modbus-pcap/v1" | "bounded-tcp-pcap/v1";
 }
 export interface TrustedDispatcher {
   readonly appliesTo: (offeringId:string) => boolean;
@@ -275,7 +278,7 @@ export function makeTrustedDispatcher(
         if(!snapshot.result)throw new DispatchError("invalid_contract","Completed execution omitted result");
         const verified=await validateSubmittedResult(snapshot.result,current.request,binding);
         let result=verified.result;
-        if(binding.executionMode==="bounded-modbus-pcap/v1"){
+        if(["bounded-modbus-pcap/v1","bounded-tcp-pcap/v1"].includes(binding.executionMode)){
           if(!options.resultProcessor)throw new DispatchError("invalid_contract","Report evaluator and R2 custody required");
           try { result=await options.resultProcessor.process(current,result); }
           catch {throw new DispatchError("invalid_contract","Report evaluation, custody or signed evidence failed");}
