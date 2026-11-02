@@ -64,3 +64,12 @@ exceptions and observed response times. Unsupported formats and retransmission
 limitations are explicitly separated from successful TShark comparisons.
 A deterministic malformed-capture mutation sweep adds parser robustness checks.
 See docs/pcap-differential-conformance.md for results and reproduction.
+
+## TCP/OT analysis product family and next agent offerings
+
+The `@awc/tcp-analysis` executor extracts bounded TCP flow evidence from explicitly public classic PCAPs, including observed endpoints, repeated sequence-range candidates, possible gaps, reset flags and zero-window advertisements. It makes **no loss-attribution, causal-diagnosis, or full-TCP-reassembly claim**. The new `offering:tcp-flow-evidence` is available for **sandbox and Stripe TEST** routing through human-approved R2 custody, signed remote execution, deterministic report recomputation and a provisional broker-signed observation.
+
+The [TCP evidence product family](docs/tcp-analysis-product-family.md) defines nine product tiers from free intake to human-reviewed investigations, with acceptance/verification rules, rollout gates and hypothetical prices; [TCP offering manifest](specs/tcp-offering-family-v1.json) is machine-readable.
+
+The [next twelve agent-work domains](docs/agent-offering-domains.md) and their [structured map](specs/agent-opportunity-map-v1.json) identify independently checkable SaaS, OT, medical, education, financial and operational work opportunities. These are ideas, **not active marketplace products**.
+

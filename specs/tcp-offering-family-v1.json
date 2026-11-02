@@ -43,7 +43,7 @@
     {
       "id": "offering:tcp-flow-evidence",
       "title": "TCP Flow Evidence Report",
-      "stage": "in-progress-test-only",
+      "stage": "implemented-test-only",
       "taskTypeId": "task:tcp-flow-evidence",
       "buyer": "Network engineering / platform SRE / OT support",
       "input": [
