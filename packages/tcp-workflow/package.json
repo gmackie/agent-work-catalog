@@ -17,6 +17,10 @@
     "@awc/contracts": "workspace:*",
     "@awc/dispatch": "workspace:*",
     "@awc/tcp-pcap": "workspace:*",
-    "effect": "^4.0.6"
+    "effect": "^4.0.6",
+    "@awc/modbus-pcap": "workspace:*"
+  },
+  "devDependencies": {
+    "jose": "^6.1.0"
   }
 }
