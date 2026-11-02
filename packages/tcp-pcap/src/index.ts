@@ -29,6 +29,14 @@ export interface TcpObservation {
   readonly frames:readonly number[];
   readonly description:string;
 }
+export interface TcpSegmentEvidence {
+  readonly frame:number; readonly timestampMicros:number;
+  readonly source:string; readonly destination:string;
+  readonly sourcePort:number; readonly destinationPort:number;
+  readonly flowId:string; readonly sequence:number; readonly acknowledgment:number;
+  readonly syn:boolean; readonly ack:boolean; readonly fin:boolean; readonly rst:boolean;
+  readonly advertisedWindow:number; readonly payloadBytes:number;
+}
 export interface TcpFlow {
   readonly id:string;
   readonly endpointA:string;readonly endpointB:string;
@@ -50,6 +58,7 @@ export interface TcpReport {
     readonly captureStartMidstreamPossible:boolean;
   };
   readonly flows:readonly TcpFlow[];
+  readonly segments:readonly TcpSegmentEvidence[];
   readonly observations:readonly TcpObservation[];
   readonly limitations:readonly string[];
 }
@@ -102,6 +111,7 @@ export async function analyzeTcpPcap(raw:Uint8Array):Promise<TcpReport>{
   if(snaplen<14||snaplen>65535)throw new TcpCaptureError("invalid","Invalid PCAP snaplen");
   let cursor=24,totalFrames=0,tcpFrames=0,skippedFrames=0,truncatedFrames=0;
   const seen=new Map<string,MutableFlow>(),observations:TcpObservation[]=[];
+  const segments:TcpSegmentEvidence[]=[];
   const add=(ob:TcpObservation)=>{
     if(observations.length>=MAX_OBSERVATIONS)throw new TcpCaptureError("too_large","Too many TCP observations");
     observations.push(ob);
@@ -166,6 +176,12 @@ export async function analyzeTcpPcap(raw:Uint8Array):Promise<TcpReport>{
     const window=u16(packet,tcp+14),seq=u32(packet,tcp+4),ackNo=u32(packet,tcp+8);
     const payloadLength=ipEnd-tcp-header;
     flow.payloadBytesObserved+=payloadLength;
+    segments.push({
+      frame:totalFrames,timestampMicros:timestamp,source:src.ip,destination:dst.ip,
+      sourcePort:src.port,destinationPort:dst.port,flowId:flow.id,
+      sequence:seq,acknowledgment:ackNo,syn,ack,fin,rst,
+      advertisedWindow:window,payloadBytes:payloadLength,
+    });
     if(syn){
       flow.synPackets++;
       flow.seenSyn=true;
@@ -237,7 +253,7 @@ export async function analyzeTcpPcap(raw:Uint8Array):Promise<TcpReport>{
     captureSha256:await hash(raw),
     coverage:{totalFrames,tcpFrames,skippedFrames,truncatedFrames,flows:flows.length,
       captureStartMidstreamPossible:[...seen.values()].some(f=>!f.seenSyn)},
-    flows,observations,limitations:[...LIMITATIONS]};
+    flows,segments,observations,limitations:[...LIMITATIONS]};
 }
 /** Version-bound consistency check. Same implementation is NOT independent professional review. */
 export async function evaluateTcpReport(input:Uint8Array,untrusted:unknown){
