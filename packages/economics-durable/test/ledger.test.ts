@@ -82,7 +82,7 @@ describe("SQLite-backed transactional account authority",()=>{
   try{
    ledger.initialize("account:a","org:owner","USD");
    ledger.recordVerifiedFunding("verified:receipt:1","10000");
-   const root=mandate("root");
+   const root=mandate("root",undefined,"10000");
    ledger.registerMandate(root);
    const child=mandate("child",root,"6000");
    ledger.registerMandate(child);
