@@ -126,6 +126,60 @@ describe("AWC MCP server", () => {
     }finally{await f.close();}
   });
 
+
+  it("checks AuthZEN tool admission before every private call and resource read",async()=>{
+    const marketplace=makeMarketplace(inMemoryMarketplaceStore());
+    const checks:string[]=[];
+    const server=createCatalogMcpServer({
+      marketplace,buyerId:"buyer-1",
+      buyerScopes:["quotes:write","work:prepare","work:read","billing:checkout"],
+      appHtml:"<!doctype html><html>Marketplace</html>",
+      authorizationMode:"authzen-required",
+      authorizePrivateTool:async(tool)=>{
+        checks.push(tool);
+        return tool==="quotes.request";
+      },
+    });
+    const client=new Client({name:"awc-authzen-gate-test",version:"0.1.0"});
+    const [a,b]=InMemoryTransport.createLinkedPair();
+    await Promise.all([server.connect(b),client.connect(a)]);
+    try{
+      const quote=await client.callTool({name:"quotes.request",arguments:{
+        offeringId:"offering:modbus-report",scope:"Diagnose repeated Modbus TCP timeouts",
+        idempotencyKey:"authzen_gate_quote_001"
+      }});
+      expect(quote.isError).not.toBe(true);
+      const id=(quote.structuredContent as {id:string}).id;
+      const denied=await client.callTool({name:"work.prepare",arguments:{
+        quoteId:id,idempotencyKey:"authzen_gate_work_001",
+        inputs:[{name:"input",kind:"inline",mediaType:"text/plain",data:"hello"}]
+      }});
+      expect(denied.isError).toBe(true);
+      const balance=await client.callTool({name:"billing.options",arguments:{}});
+      expect(balance.isError).toBe(true);
+      expect(checks).toEqual(["quotes.request","work.prepare","billing.options"]);
+      await expect(client.readResource({uri:"awc://work-orders/work_does_not_exist"})).rejects.toThrow();
+      expect(checks).toContain("work.get");
+    }finally{await client.close();await server.close();}
+  });
+
+  it("defaults to denying private actions when AuthZEN is required but unavailable",async()=>{
+    const marketplace=makeMarketplace(inMemoryMarketplaceStore());
+    const server=createCatalogMcpServer({
+      marketplace,buyerId:"buyer-1",buyerScopes:["quotes:write"],
+      appHtml:"",authorizationMode:"authzen-required",
+    });
+    const client=new Client({name:"awc-no-pdp",version:"0.1.0"});
+    const [a,b]=InMemoryTransport.createLinkedPair();
+    await Promise.all([server.connect(b),client.connect(a)]);
+    try{
+      const result=await client.callTool({name:"quotes.request",arguments:{
+        offeringId:"offering:modbus-report",scope:"Diagnose repeated Modbus TCP timeouts",
+        idempotencyKey:"authzen_gate_quote_002"
+      }});
+      expect(result.isError).toBe(true);
+    }finally{await client.close();await server.close();}
+  });
   it("serves the modern 2026-07-28 stateless HTTP protocol without sockets", async () => {
     const marketplace = makeMarketplace(inMemoryMarketplaceStore());
     const handler = createMcpHandler(() => createCatalogMcpServer({
