@@ -50,6 +50,7 @@ export function exportUblOrder(order:AWCOrder):string {
  <cbc:UBLVersionID>2.4</cbc:UBLVersionID>
  <cbc:ID>${esc(order.id)}</cbc:ID>
  <cbc:IssueDate>${order.issueDate}</cbc:IssueDate>
+ <cbc:Note>AWC contract commitment sha256:${order.contractDigest}</cbc:Note>
  <cbc:DocumentCurrencyCode>${order.currency}</cbc:DocumentCurrencyCode>
  <cac:BuyerCustomerParty><cac:Party><cac:PartyName><cbc:Name>${esc(order.buyerName)}</cbc:Name></cac:PartyName></cac:Party></cac:BuyerCustomerParty>
  <cac:SellerSupplierParty><cac:Party><cac:PartyName><cbc:Name>${esc(order.sellerName)}</cbc:Name></cac:PartyName></cac:Party></cac:SellerSupplierParty>
