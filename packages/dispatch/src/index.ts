@@ -7,6 +7,7 @@ import { validateResult, assertArtifactShape, type WorkResult, type WorkArtifact
 import type { Commerce, WorkSnapshot } from "@awc/commerce";
 import type { PreparedWork, Quote } from "@awc/marketplace";
 import { analyzeClassicPcap, captureSha256, MAX_CAPTURE_BYTES, PCAP_MEDIA_TYPE } from "@awc/modbus-pcap";
+import { analyzeTcpPcap } from "@awc/tcp-pcap";
 
 /** This contract is administrator-installed, never inferred from a discovered manifest. */
 export interface TrustedExecutorBinding {
@@ -159,7 +160,8 @@ async function buildRequest(
     }
     // Validate the format before the only allowed disclosure. The original remains
     // in a private R2 bucket; bounded BASE64 crosses the pinned signed HTTP channel.
-    await analyzeClassicPcap(bytes);
+    if(binding.executionMode==="bounded-tcp-pcap/v1")await analyzeTcpPcap(bytes);
+    else await analyzeClassicPcap(bytes);
     const encoded=btoa(String.fromCharCode(...bytes));
     executionInputs=[{name:"capture",kind:"inline",mediaType:PCAP_MEDIA_TYPE,
       data:encoded,sha256:source.sha256}];
