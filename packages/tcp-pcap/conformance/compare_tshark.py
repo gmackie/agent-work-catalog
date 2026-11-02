@@ -13,13 +13,18 @@ def tshark(path:Path):
     result=subprocess.run(cmd,text=True,capture_output=True,check=False)
     if result.returncode:raise AssertionError("TShark failed: "+result.stderr[-900:])
     rows=[]
+    def bit(value:str)->bool:
+        normalized=value.strip().lower()
+        if normalized in ("1","true","set"):return True
+        if normalized in ("0","false","not set",""):return False
+        raise AssertionError("Unexpected TShark boolean field: "+repr(value))
     for line in result.stdout.splitlines():
         fields=line.split("\t")
         if len(fields)!=len(FIELDS):raise AssertionError("Unexpected oracle data: "+repr(line))
         frame,src,dst,sp,dp,seq,ack,syn,ackf,fin,rst,window,n=fields
         rows.append({"frame":int(frame),"source":src,"destination":dst,
           "sport":int(sp),"dport":int(dp),"sequence":int(seq),"ack":int(ack),
-          "syn":syn=="1","ackFlag":ackf=="1","fin":fin=="1","rst":rst=="1",
+          "syn":bit(syn),"ackFlag":bit(ackf),"fin":bit(fin),"rst":bit(rst),
           "window":int(window),"payload":int(n)})
     return rows
 def check(root:Path,case):
