@@ -225,7 +225,7 @@ export interface DispatchPlan {
   readonly disclosureDigest:string;
   readonly dataClassification:"public";
   readonly allowedEffects:readonly [];
-  readonly mode:"synthetic-test-only" | "bounded-modbus-pcap/v1";
+  readonly mode:"synthetic-test-only" | "bounded-modbus-pcap/v1" | "bounded-tcp-flow/v1";
 }
 export interface TrustedDispatcher {
   readonly appliesTo: (offeringId:string) => boolean;
