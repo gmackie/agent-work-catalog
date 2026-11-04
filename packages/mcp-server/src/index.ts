@@ -6,6 +6,7 @@ import { z } from "zod/v4";
 import { MarketplaceError, type Marketplace } from "@awc/marketplace";
 import { CommerceError, type Commerce, type WorkRunMessage } from "@awc/commerce";
 import type { StoredOpportunity } from "@awc/source-inbox";
+import type { TrustedDispatcher } from "@awc/dispatch";
 
 export const MARKETPLACE_APP_URI = "ui://awc/marketplace.html";
 export const CONTRACT_APP_URI = "ui://awc/contract.html";
@@ -24,6 +25,7 @@ export interface McpServerConfig {
   readonly commerce?: Commerce;
   readonly enqueue?: (work:WorkRunMessage)=>Promise<void>;
   readonly stripeCheckoutAvailable?: boolean;
+  readonly remoteDispatcher?: TrustedDispatcher;
   readonly paidSandbox?: PaidSandboxConfig;
   /** Authorized buyer-scoped work from verified sources; never automatically funded. */
   readonly listOpportunities?: (buyerId: string, limit: number) => Promise<readonly StoredOpportunity[]>;
@@ -120,6 +122,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       description:"Prepare UNFUNDED work under an existing quote. Opens a separate human-facing review.",
       inputSchema:z.object({
         quoteId:z.string().min(3).max(150),
+        dataClassification:z.enum(["public","internal","confidential"]).optional(),
         idempotencyKey:z.string().min(8).max(100),
         inputs:z.array(z.object({
           name:z.string().min(1).max(100),mediaType:z.string().min(3).max(120),
@@ -132,6 +135,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
     },async(args)=>{
       const prepare=config.marketplace.prepareWork(buyerId,{
         quoteId:args.quoteId,idempotencyKey:args.idempotencyKey,
+        ...(args.dataClassification!==undefined ? {dataClassification:args.dataClassification} : {}),
         inputs:args.inputs.map(i=>({
           name:i.name,mediaType:i.mediaType,kind:i.kind,
           ...(i.data!==undefined?{data:i.data}:{}),
@@ -180,7 +184,15 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
         const commerce=config.commerce
           ? (await Effect.runPromise(config.commerce.preview(buyerId,workId))).state
           : undefined;
-        return reply({...work,quote,commerce,reviewUrl:reviewUrl(work.id)},
+        const dispatch=config.remoteDispatcher?.appliesTo(work.offeringId)
+          ? await Effect.runPromise(config.remoteDispatcher.get(buyerId,workId)) : null;
+        const remoteStatus=dispatch?{
+          status:dispatch.status,executorId:dispatch.executorId,
+          providerExecutionId:dispatch.handle?.providerExecutionId??null,
+          resultDigest:dispatch.resultDigest??null,
+          updatedAt:dispatch.updatedAt,lastError:dispatch.lastError??null,
+        }:null;
+        return reply({...work,quote,commerce,remoteStatus,reviewUrl:reviewUrl(work.id)},
           "Work "+work.id+" is "+(commerce?.status??work.state));
       }catch(error){return failure(error);}
     });
@@ -194,7 +206,15 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       const commerce=config.commerce
         ? (await Effect.runPromise(config.commerce.preview(buyerId,work.id))).state
         : undefined;
-      return {contents:[{uri:uri.href,mimeType:"application/json",text:JSON.stringify({work,quote,commerce})}]};
+      const dispatch=config.remoteDispatcher?.appliesTo(work.offeringId)
+        ? await Effect.runPromise(config.remoteDispatcher.get(buyerId,work.id)) : null;
+      return {contents:[{uri:uri.href,mimeType:"application/json",text:JSON.stringify({
+        work,quote,commerce,remoteStatus:dispatch?{
+          status:dispatch.status,executorId:dispatch.executorId,
+          providerExecutionId:dispatch.handle?.providerExecutionId??null,
+          resultDigest:dispatch.resultDigest??null,
+        }:null,
+      })}]};
     });
   }
   if(buyerId&&scope("billing:checkout")){

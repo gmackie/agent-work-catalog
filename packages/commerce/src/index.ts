@@ -8,7 +8,7 @@ import { MarketplaceError, type Marketplace, type PreparedWork, type Quote } fro
  */
 export type CommercialStatus =
   | "prepared_unfunded" | "approved" | "checkout_pending" | "funded"
-  | "queued" | "running" | "submitted" | "failed";
+  | "queued" | "running" | "external_running" | "submitted" | "failed";
 
 export class CommerceError extends Error {
   readonly _tag = "CommerceError";
@@ -58,6 +58,8 @@ export interface WorkSnapshot {
   readonly paymentRail?: VerifiedFunding["rail"] | undefined;
   readonly checkoutSessionId?: string | undefined;
   readonly checkoutUrl?: string | undefined;
+  readonly externalConsentDigest?: string | undefined;
+  readonly externalConsentBy?: string | undefined;
   readonly executionToken?: string | undefined;
   readonly leaseUntil?: number | undefined;
   readonly result?: WorkResult | undefined;
@@ -82,6 +84,11 @@ export interface Commerce {
   readonly reconcileStripe: (buyerId: string, workId: string) => Effect.Effect<WorkSnapshot, CommerceError>;
   /** Restricted to a locally enabled sandbox administrative route; NEVER an MCP tool. */
   readonly sandboxFund: (buyerId: string, workId: string) => Effect.Effect<WorkSnapshot, CommerceError>;
+  /** Human-side confirmation of a separate exact data-disclosure digest. Never an MCP tool. */
+  readonly consentExternal: (buyerId:string,workId:string,proof:ApprovalEvidence) => Effect.Effect<WorkSnapshot,CommerceError>;
+  /** Only trusted Queue dispatcher calls these methods; never expose as MCP mutations. */
+  readonly markExternalRunning: (buyerId:string,workId:string,disclosureDigest:string) => Effect.Effect<WorkSnapshot,CommerceError>;
+  readonly submitExternalResult: (buyerId:string,workId:string,result:WorkResult) => Effect.Effect<WorkSnapshot,CommerceError>;
   readonly start: (buyerId: string, workId: string) => Effect.Effect<{state:WorkSnapshot;enqueue:boolean}, CommerceError>;
   readonly runQueued: (message: WorkRunMessage) => Effect.Effect<WorkSnapshot, CommerceError>;
   readonly recoverable: () => Effect.Effect<readonly WorkRunMessage[], CommerceError>;
@@ -96,7 +103,8 @@ export function makeCommerce(
   marketplace: Marketplace,
   store: WorkStateStore,
   executor: WorkExecutor,
-  options: {readonly now?: () => number;readonly checkout?: CheckoutRail;readonly enableSandboxFunding?: boolean} = {},
+  options: {readonly now?: () => number;readonly checkout?: CheckoutRail;readonly enableSandboxFunding?: boolean;
+    readonly externalDisclosureDigest?: (work:PreparedWork,quote:Quote)=>Promise<string|undefined>} = {},
 ): Commerce {
   const now = options.now ?? Date.now;
   const load = async (buyerId: string, workId: string) => {
@@ -184,12 +192,64 @@ export function makeCommerce(
         currency:quote.price.currency,minorUnits:quote.price.minorUnits,observedAt:new Date(now()).toISOString(),
       });
     }),
+    consentExternal: (buyerId,workId,proof)=>attempt(async()=>{
+      if(!options.externalDisclosureDigest)throw new CommerceError("unsupported","External dispatch is not configured");
+      const {work,quote,state}=await load(buyerId,workId);
+      const expected=await options.externalDisclosureDigest(work,quote);
+      if(!expected || !/^[a-f0-9]{64}$/.test(expected) ||
+         proof.buyerId!==buyerId || proof.reviewedDigest!==expected ||
+         !proof.approverSubject.trim() ||
+         !["interactive-oidc","local-sandbox-only"].includes(proof.ceremony)) {
+        throw new CommerceError("unauthorized","Exact outside-data disclosure was not approved");
+      }
+      if(state.externalConsentDigest===expected && state.externalConsentBy===proof.approverSubject)return state;
+      if(!["approved","funded"].includes(state.status) || !state.approvedBy) {
+        throw new CommerceError("invalid_state","Approve the commercial terms before external data disclosure");
+      }
+      return change(state,{externalConsentDigest:expected,externalConsentBy:proof.approverSubject});
+    }),
+    markExternalRunning: (buyerId,workId,disclosureDigest)=>attempt(async()=>{
+      const {work,quote,state}=await load(buyerId,workId);
+      const expected=await options.externalDisclosureDigest?.(work,quote);
+      if(!expected||expected!==disclosureDigest||state.externalConsentDigest!==expected||
+         !state.approvedBy||!state.externalConsentBy||
+         !["sandbox","stripe-test"].includes(state.paymentRail??"")) {
+        throw new CommerceError("unauthorized","External execution requires matching approval, consent and funding");
+      }
+      if(state.status==="external_running"||state.status==="submitted")return state;
+      if(state.status!=="queued")throw new CommerceError("invalid_state","Remote work must be queued first");
+      return change(state,{status:"external_running"});
+    }),
+    submitExternalResult: (buyerId,workId,result)=>attempt(async()=>{
+      const {work,quote,state}=await load(buyerId,workId);
+      const expected=await options.externalDisclosureDigest?.(work,quote);
+      if(!expected||state.externalConsentDigest!==expected||!state.externalConsentBy||
+         !state.approvedBy||!["sandbox","stripe-test"].includes(state.paymentRail??"") ||
+         result.orderId!==workId||result.artifacts.length>6||JSON.stringify(result).length>120_000) {
+        throw new CommerceError("unauthorized","Validated remote result not bound to an authorized work order");
+      }
+      if(state.status==="submitted") {
+        if(JSON.stringify(state.result)!==JSON.stringify(result)){
+          throw new CommerceError("conflict","Work was already submitted with a different result");
+        }
+        return state;
+      }
+      if(state.status!=="external_running")throw new CommerceError("invalid_state","Remote execution is not running");
+      return change(state,{status:"submitted",result});
+    }),
     start: (buyerId,workId)=>attempt(async()=>{
-      const {state}=await load(buyerId,workId);
-      if (state.status==="queued"||state.status==="running"||state.status==="submitted") {
+      const {work,quote,state}=await load(buyerId,workId);
+      if (state.status==="queued"||state.status==="running"||
+          state.status==="external_running"||state.status==="submitted") {
         return {state,enqueue:false};
       }
       if (state.status!=="funded") throw new CommerceError("funding_required","No matching verified funding");
+      if(options.externalDisclosureDigest){
+        const digest=await options.externalDisclosureDigest(work,quote);
+        if(digest && (state.externalConsentDigest!==digest||!state.externalConsentBy)){
+          throw new CommerceError("unauthorized","Separate human disclosure authorization required");
+        }
+      }
       return {state:await change(state,{status:"queued"}),enqueue:true};
     }),
     runQueued: (message)=>attempt(async()=>{

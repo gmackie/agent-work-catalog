@@ -42,3 +42,11 @@ The new `@awc/adapter-sdk` introduces separate `WorkSource` and `WorkExecutor` r
 These adapters are **not** automatically connected to real-money commerce. GitHub issues never create approved WorkOrders just by receiving a label; remote execution needs a trusted broker registration and scope checks.
 
 See [adapter SDK and buildable integrations](docs/adapters.md) for code samples, GitHub App enrollment, Cloudflare setup, security boundaries and conformance tests.
+
+## Trusted remote dispatch (experimental)
+
+The newest `@awc/dispatch` package bridges an approved and **test-funded** commercial WorkOrder to a pinned remote WorkExecutor. It requires an additional human-reviewed data-disclosure digest, persists the immutable request and remote handle in D1, and recovers uncertain starts by the same idempotency key. Queue polling validates and digests the returned synthetic artifacts before marking the work submitted.
+
+**Off by default.** Only the fictional `offering:modbus-report` v1, public inline inputs and the read-only synthetic remote executor are eligible. No production payments, arbitrary provider URL selection, external side effects or Attest credential issuance are enabled. The provider's manifest is discovery metadata, not a trust grant.
+
+See [Trusted remote dispatch guide](docs/trusted-remote-dispatch.md) for local Cloudflare setup, consent, D1 migration, tests and remaining release gates.

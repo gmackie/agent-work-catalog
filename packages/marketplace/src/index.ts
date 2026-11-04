@@ -102,6 +102,8 @@ export interface PreparedWork {
   readonly taskTypeId: string;
   readonly quoteDigest: string;
   readonly inputDigest: string;
+  /** Explicitly declared, human-reviewed data classification for outside disclosure. */
+  readonly dataClassification?: "public" | "internal" | "confidential" | undefined;
   readonly inputs: readonly WorkInput[];
   readonly idempotencyKey: string;
   readonly state: "prepared_unfunded";
@@ -115,6 +117,7 @@ export interface QuoteRequest {
   readonly maxPriceMinor?: string | undefined;
 }
 export interface PrepareRequest {
+  readonly dataClassification?: "public" | "internal" | "confidential" | undefined;
   readonly quoteId: string;
   readonly inputs: readonly WorkInput[];
   readonly idempotencyKey: string;
@@ -241,11 +244,12 @@ export function makeMarketplace(store: MarketplaceStore, now: () => number = Dat
         }
         const serialized = JSON.stringify(request.inputs);
         if (serialized.length > 24_000) throw new MarketplaceError("invalid_request", "Input payload too large");
-        const inputDigest = await sha256(serialized);
+        const dataClassification=request.dataClassification??"internal";
+        const inputDigest = await sha256(JSON.stringify({inputs:request.inputs,dataClassification}));
         const work: PreparedWork = {
           id: "work_" + crypto.randomUUID(), buyerId, quoteId: quote.id,
           taskTypeId: quote.taskTypeId, offeringId: quote.offeringId,
-          quoteDigest: quote.termsDigest, inputDigest, inputs: request.inputs,
+          quoteDigest: quote.termsDigest, inputDigest, inputs: request.inputs,dataClassification,
           idempotencyKey: request.idempotencyKey, state: "prepared_unfunded",
           createdAt: new Date(now()).toISOString(),
           funding: { status: "not_authorized", amount: quote.price },

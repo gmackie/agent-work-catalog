@@ -21,7 +21,9 @@
     "stripe": "^23.1.0",
     "@awc/adapter-github": "workspace:*",
     "@awc/adapter-sdk": "workspace:*",
-    "@awc/source-inbox": "workspace:*"
+    "@awc/source-inbox": "workspace:*",
+    "@awc/dispatch": "workspace:*",
+    "@awc/adapter-remote-http": "workspace:*"
   },
   "devDependencies": {
     "wrangler": "^4.148.0",
