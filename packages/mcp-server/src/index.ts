@@ -26,6 +26,10 @@ export interface McpServerConfig {
   readonly enqueue?: (work:WorkRunMessage)=>Promise<void>;
   readonly stripeCheckoutAvailable?: boolean;
   readonly remoteDispatcher?: TrustedDispatcher;
+  readonly readCompletedArtifact?: (buyerId:string,workId:string,ref:string)=>Promise<{
+    ref:string;mediaType:string;value:unknown;integrityVerified:boolean;
+    signatureVerified?:boolean;issuerAuthority?:string;
+  }>;
   readonly paidSandbox?: PaidSandboxConfig;
   /** Authorized buyer-scoped work from verified sources; never automatically funded. */
   readonly listOpportunities?: (buyerId: string, limit: number) => Promise<readonly StoredOpportunity[]>;
@@ -215,6 +219,23 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
           resultDigest:dispatch.resultDigest??null,
         }:null,
       })}]};
+    });
+  }
+  if(buyerId&&scope("work:read")&&config.readCompletedArtifact){
+    server.registerTool("work.artifacts.read",{
+      description:"Read and verify a buyer-scoped completed JSON artifact or broker-signed observation from private R2. No arbitrary URLs.",
+      inputSchema:z.object({
+        workId:z.string().regex(/^work_[a-f0-9-]{36}$/),
+        artifactRef:z.string().regex(/^artifact:sha256:[a-f0-9]{64}$/),
+      }).strict(),
+      annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+    },async({workId,artifactRef})=>{
+      try{
+        const item=await config.readCompletedArtifact!(buyerId,workId,artifactRef);
+        return reply(item,
+          "Verified buyer-scoped "+item.mediaType+" artifact. "+
+          (item.signatureVerified?"Observation signature valid; issuer authority not independently assessed.":"Content SHA-256 matched."));
+      }catch{return failure(new MarketplaceError("not_found","Completed artifact unavailable or failed integrity verification"));}
     });
   }
   if(buyerId&&scope("billing:checkout")){

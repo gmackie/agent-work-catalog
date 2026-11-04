@@ -6,6 +6,7 @@ import {
 import { validateResult, assertArtifactShape, type WorkResult, type WorkArtifact } from "@awc/contracts";
 import type { Commerce, WorkSnapshot } from "@awc/commerce";
 import type { PreparedWork, Quote } from "@awc/marketplace";
+import { analyzeClassicPcap, captureSha256, MAX_CAPTURE_BYTES, PCAP_MEDIA_TYPE } from "@awc/modbus-pcap";
 
 /** This contract is administrator-installed, never inferred from a discovered manifest. */
 export interface TrustedExecutorBinding {
@@ -20,7 +21,7 @@ export interface TrustedExecutorBinding {
   /** V1 can only disclose explicitly public, inline, no-side-effect inputs. */
   readonly dataClassification: "public";
   readonly allowedEffects: readonly [];
-  readonly executionMode: "synthetic-test-only";
+  readonly executionMode: "synthetic-test-only" | "bounded-modbus-pcap/v1";
 }
 export type DispatchStatus =
   "new" | "starting" | "uncertain" | "active" | "polling" |
@@ -75,7 +76,10 @@ function assertBinding(binding:TrustedExecutorBinding,executor:WorkExecutor):voi
       !/^\d+$/.test(binding.offeringVersion) ||
       !/^(0|[1-9]\d*)$/.test(binding.maxCostMinorUnits) ||
       binding.maxDurationSeconds<1 || binding.maxDurationSeconds>300 ||
-      binding.executionMode!=="synthetic-test-only" ||
+      !["synthetic-test-only","bounded-modbus-pcap/v1"].includes(binding.executionMode) ||
+      (binding.executionMode==="bounded-modbus-pcap/v1" &&
+        (binding.offeringId!=="offering:modbus-pcap-analysis" ||
+         binding.taskTypeId!=="task:modbus-pcap")) ||
       binding.dataClassification!=="public" ||
       binding.allowedEffects.length!==0 ||
       !binding.outputMediaTypes.includes("application/json")) {
@@ -105,10 +109,18 @@ export async function externalDisclosureDigest(
     origin:binding.origin,executorId:binding.id,offeringId:binding.offeringId,
     offeringVersion:binding.offeringVersion,taskTypeId:binding.taskTypeId,
     allowedEffects:[],outputMediaTypes:[...binding.outputMediaTypes],
+    executionMode:binding.executionMode,
   }));
 }
-async function buildRequest(work:PreparedWork,quote:Quote,binding:TrustedExecutorBinding):
-  Promise<ExecutionRequest> {
+export interface RemoteInputResolver {
+  readonly readInput: (buyerId:string,reference:string)=>Promise<Uint8Array>;
+}
+export interface RemoteResultProcessor {
+  readonly process: (record:DispatchRecord,result:WorkResult)=>Promise<WorkResult>;
+}
+async function buildRequest(
+  work:PreparedWork,quote:Quote,binding:TrustedExecutorBinding,resolver?:RemoteInputResolver,
+):Promise<ExecutionRequest> {
   if(work.quoteDigest!==quote.termsDigest||quote.buyerId!==work.buyerId ||
       work.taskTypeId!==binding.taskTypeId||work.offeringId!==binding.offeringId ||
       quote.offeringId!==binding.offeringId||quote.offeringVersion!==binding.offeringVersion ||
@@ -126,11 +138,35 @@ async function buildRequest(work:PreparedWork,quote:Quote,binding:TrustedExecuto
   if(actualInputDigest!==work.inputDigest){
     throw new DispatchError("invalid_contract","Prepared input bytes no longer match the human-reviewed commitment");
   }
-  for(const input of work.inputs) {
-    assertArtifactShape(input);
-    if(input.kind!=="inline"||!["text/plain","application/json"].includes(input.mediaType) ||
-       typeof input.data!=="string" || input.data.length>4000) {
-      throw new DispatchError("invalid_contract","Remote sandbox only accepts small public inline strings");
+  let executionInputs:ExecutionRequest["inputs"]=[...work.inputs];
+  if(binding.executionMode==="bounded-modbus-pcap/v1"){
+    if(work.inputs.length!==1 || !resolver) {
+      throw new DispatchError("invalid_contract","Bounded PCAP execution requires one privately stored capture");
+    }
+    const source=work.inputs[0]!;
+    assertArtifactShape(source);
+    if(source.kind!=="reference" || source.mediaType!==PCAP_MEDIA_TYPE ||
+       !source.sha256 || !/^[a-f0-9]{64}$/.test(source.sha256) ||
+       source.reference!=="artifact:sha256:"+source.sha256) {
+      throw new DispatchError("invalid_contract","PCAP input must be a digest-bound private artifact reference");
+    }
+    const bytes=await resolver.readInput(work.buyerId,source.reference);
+    if(bytes.length>MAX_CAPTURE_BYTES || await captureSha256(bytes)!==source.sha256){
+      throw new DispatchError("invalid_contract","PCAP has changed since human approval");
+    }
+    // Validate the format before the only allowed disclosure. The original remains
+    // in a private R2 bucket; bounded BASE64 crosses the pinned signed HTTP channel.
+    await analyzeClassicPcap(bytes);
+    const encoded=btoa(String.fromCharCode(...bytes));
+    executionInputs=[{name:"capture",kind:"inline",mediaType:PCAP_MEDIA_TYPE,
+      data:encoded,sha256:source.sha256}];
+  }else {
+    for(const input of work.inputs) {
+      assertArtifactShape(input);
+      if(input.kind!=="inline"||!["text/plain","application/json"].includes(input.mediaType) ||
+         typeof input.data!=="string" || input.data.length>4000) {
+        throw new DispatchError("invalid_contract","Remote sandbox only accepts small public inline strings");
+      }
     }
   }
   const canonical=JSON.stringify({
@@ -142,7 +178,7 @@ async function buildRequest(work:PreparedWork,quote:Quote,binding:TrustedExecuto
     schemaVersion:"awc.execution/v1",executionId:"exec_"+hash.slice(0,32),
     attemptId:"attempt_1",idempotencyKey:"awc_exec_"+hash,
     workOrderId:work.id,contractDigest:quote.termsDigest,
-    taskTypeId:work.taskTypeId,offeringId:work.offeringId,inputs:work.inputs,
+    taskTypeId:work.taskTypeId,offeringId:work.offeringId,inputs:executionInputs,
     requiredOutputs:binding.outputMediaTypes.map(type=>({role:"result",mediaType:type})),
     constraints:{
       maxCost:quote.price,allowedEffects:[],
@@ -184,7 +220,7 @@ export interface DispatchPlan {
   readonly disclosureDigest:string;
   readonly dataClassification:"public";
   readonly allowedEffects:readonly [];
-  readonly mode:"synthetic-test-only";
+  readonly mode:"synthetic-test-only" | "bounded-modbus-pcap/v1";
 }
 export interface TrustedDispatcher {
   readonly appliesTo: (offeringId:string) => boolean;
@@ -199,11 +235,13 @@ export function makeTrustedDispatcher(
   executor:WorkExecutor,
   binding:TrustedExecutorBinding,
   now:()=>number=Date.now,
+  options:{readonly inputResolver?:RemoteInputResolver;
+    readonly resultProcessor?:RemoteResultProcessor}={},
 ):TrustedDispatcher {
   assertBinding(binding,executor);
   const load=async(buyerId:string,workId:string)=>{
     const {work,quote,state}=await Effect.runPromise(commerce.preview(buyerId,workId));
-    const request=await buildRequest(work,quote,binding);
+    const request=await buildRequest(work,quote,binding,options.inputResolver);
     const disclosureDigest=await externalDisclosureDigest(work,quote,binding);
     return {work,quote,state,request,disclosureDigest};
   };
@@ -236,8 +274,15 @@ export function makeTrustedDispatcher(
       if(snapshot.status==="completed"){
         if(!snapshot.result)throw new DispatchError("invalid_contract","Completed execution omitted result");
         const verified=await validateSubmittedResult(snapshot.result,current.request,binding);
+        let result=verified.result;
+        if(binding.executionMode==="bounded-modbus-pcap/v1"){
+          if(!options.resultProcessor)throw new DispatchError("invalid_contract","Report evaluator and R2 custody required");
+          try { result=await options.resultProcessor.process(current,result); }
+          catch {throw new DispatchError("invalid_contract","Report evaluation, custody or signed evidence failed");}
+        }
+        const storedDigest=await sha256(JSON.stringify(result));
         const saved=await cas(current,{
-          status:"completed",leaseUntil:0,nextCheckAt:0,result:verified.result,resultDigest:verified.digest,
+          status:"completed",leaseUntil:0,nextCheckAt:0,result,resultDigest:storedDigest,
         });
         return commit(saved);
       }
@@ -345,7 +390,7 @@ export function makeTrustedDispatcher(
       const {work,quote,disclosureDigest}=await load(buyerId,workId);
       return {workId,quoteDigest:quote.termsDigest,executorId:binding.id,
         origin:binding.origin,disclosureDigest,dataClassification:"public",
-        allowedEffects:[] as const,mode:"synthetic-test-only" as const};
+        allowedEffects:[] as const,mode:binding.executionMode};
     }),
     advance:(buyerId,workId)=>execute(()=>advance(buyerId,workId)),
     get:(buyerId,workId)=>execute(async()=>{

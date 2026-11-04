@@ -30,6 +30,12 @@ export const seedTaskTypes: readonly TaskType[] = [
     outputMediaTypes: ["application/json", "text/markdown"], permittedEffects: [],
   },
   {
+    id: "task:modbus-pcap", version: "1", name: "Inspect public Modbus/TCP PCAP",
+    description: "Deterministic packet-level classic PCAP analysis with bounded findings, exception codes and packet references; no TCP reassembly or professional diagnosis",
+    inputMediaTypes: ["application/vnd.tcpdump.pcap"],
+    outputMediaTypes: ["application/json"],permittedEffects:[],
+  },
+  {
     id: "task:expert-chat", version: "1", name: "Specialist engineering chat",
     description: "Metered advisory inference, without a deliverable guarantee",
     inputMediaTypes: ["text/plain"], outputMediaTypes: ["text/plain"], permittedEffects: [],
@@ -50,6 +56,13 @@ export const seedOfferings: readonly Offering[] = [
     description: "Sample report based on packet observations and PLC/HMI communication symptoms",
     pricing: { mode: "fixed", fixedAmount: { currency: "USD", minorUnits: "3500" } },
     execution: [{ protocol: "openai-responses", endpoint: "https://example.invalid/v1/responses" }],
+  },
+  {
+    id:"offering:modbus-pcap-analysis",version:"1",providerId:"example-provider:controls",
+    taskTypeId:"task:modbus-pcap",title:"Classic Modbus PCAP Evidence Report (TEST ONLY)",
+    description:"Actual bounded parser for public sanitized Ethernet/IPv4/TCP captures. Reports observed exception responses and unmatched transactions; not a comprehensive network assessment.",
+    pricing:{mode:"fixed",fixedAmount:{currency:"USD",minorUnits:"3500"}},
+    execution:[{protocol:"custom",endpoint:"https://example.invalid/v1/executions"}],
   },
   {
     id: "offering:expert-inference", version: "1", providerId: "example-provider:controls",

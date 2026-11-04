@@ -17,6 +17,33 @@ async function fixture(authenticated: boolean) {
   return {client,server,close:async()=>{await client.close();await server.close();}};
 }
 describe("AWC MCP server", () => {
+  it("exposes authenticated work artifact reading without advertising it to anonymous clients",async()=>{
+    const marketplace=makeMarketplace(inMemoryMarketplaceStore());
+    const valid="artifact:sha256:"+"a".repeat(64);
+    const server=createCatalogMcpServer({
+      marketplace,buyerId:"buyer-1",buyerScopes:["work:read"],appHtml:"",
+      readCompletedArtifact:async(buyerId,workId,ref)=>{
+        if(buyerId!=="buyer-1"||workId!=="work_00000000-0000-0000-0000-000000000001"||ref!==valid)throw Error("denied");
+        return {ref,mediaType:"application/json",integrityVerified:true,value:{findings:[]}};
+      },
+    });
+    const client=new Client({name:"artifact-test",version:"0.1.0"});
+    const [a,b]=InMemoryTransport.createLinkedPair();
+    await Promise.all([server.connect(b),client.connect(a)]);
+    try{
+      const tools=await client.listTools();
+      expect(tools.tools.some(t=>t.name==="work.artifacts.read")).toBe(true);
+      const result=await client.callTool({name:"work.artifacts.read",arguments:{
+        workId:"work_00000000-0000-0000-0000-000000000001",artifactRef:valid,
+      }});
+      expect((result.structuredContent as {integrityVerified:boolean}).integrityVerified).toBe(true);
+      const denied=await client.callTool({name:"work.artifacts.read",arguments:{
+        workId:"work_00000000-0000-0000-0000-000000000002",artifactRef:valid,
+      }});
+      expect(denied.isError).toBe(true);
+    }finally{await client.close();await server.close();}
+  });
+
   it("lists signed opportunities without confusing them with authorized WorkOrders",async()=>{
     const marketplace=makeMarketplace(inMemoryMarketplaceStore());
     const sample={buyerId:"buyer-1",sourceId:"github.source",firstSeenAt:"2026-10-31T18:00:00Z",
