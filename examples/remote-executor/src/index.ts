@@ -2,6 +2,7 @@ import { validateExecutionRequest, AdapterError, type ExecutionSnapshot, type Ex
 import { digest, verifyAwcRequest } from "@awc/adapter-remote-http";
 import { analyzeClassicPcap,captureSha256,MAX_CAPTURE_BYTES,PCAP_MEDIA_TYPE } from "@awc/modbus-pcap";
 import { analyzeTcpCapture } from "@awc/tcp-analysis";
+import { analyzeTcpPcap } from "@awc/tcp-pcap";
 export interface D1Statement {
   bind(...values:(string|number|null)[]):D1Statement;
   run():Promise<unknown>;
@@ -14,6 +15,7 @@ export interface Env {
   readonly ENABLE_EXAMPLE_EXECUTOR?:string;
   readonly ENABLE_MODBUS_PCAP?:string;
   readonly ENABLE_TCP_FLOW?:string;
+  readonly ENABLE_TCP_PCAP?:string;
 }
 type StoredRow={provider_id:string;client_id:string;idempotency_key:string;
   request_digest:string;snapshot_json:string};
@@ -49,7 +51,8 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
       roles:["work-executor"],transport:"remote-http",
       supportedTaskTypes:["task:example","task:modbus-diagnostics",
         ...(env.ENABLE_MODBUS_PCAP==="true"?["task:modbus-pcap"]:[]),
-        ...(env.ENABLE_TCP_FLOW==="true"?["task:tcp-flow-evidence"]:[])],
+        ...(env.ENABLE_TCP_FLOW==="true"?["task:tcp-flow-evidence"]:[]),
+        ...(env.ENABLE_TCP_PCAP==="true"?["task:tcp-pcap"]:[])],
       capabilities:["start","inspect","recover","cancel"],
       endpointPaths:{
         start:"/v1/executions",
@@ -71,11 +74,12 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
     if(request.method==="POST"&&path==="/v1/executions"){
       const input=validateExecutionRequest(JSON.parse(signed.body) as unknown);
       const realModbus=input.taskTypeId==="task:modbus-pcap";
-      const realTcp=input.taskTypeId==="task:tcp-flow-evidence";
-      const realCapture=realModbus||realTcp;
-      if(!(realModbus&&env.ENABLE_MODBUS_PCAP==="true") &&
-         !(realTcp&&env.ENABLE_TCP_FLOW==="true") &&
-         !["task:example","task:modbus-diagnostics"].includes(input.taskTypeId) ||
+      const realTcpFlow=input.taskTypeId==="task:tcp-flow-evidence";
+      const realTcpPcap=input.taskTypeId==="task:tcp-pcap";
+      if(!((realModbus&&env.ENABLE_MODBUS_PCAP==="true") ||
+           (realTcpFlow&&env.ENABLE_TCP_FLOW==="true") ||
+           (realTcpPcap&&env.ENABLE_TCP_PCAP==="true") ||
+           ["task:example","task:modbus-diagnostics"].includes(input.taskTypeId)) ||
          input.constraints.allowedEffects.length ||
          input.constraints.dataClassification!=="public" ||
          !input.requiredOutputs.some(x=>x.mediaType==="application/json")) {
@@ -83,9 +87,10 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
       }
       if(input.idempotencyKey!==signed.idempotencyKey)
         throw new AdapterError("unauthorized","Idempotency header and work request differ");
-      let captureReport:Awaited<ReturnType<typeof analyzeClassicPcap>> |
-        Awaited<ReturnType<typeof analyzeTcpCapture>> | undefined;
-      if(realCapture){
+      let modbusReport:Awaited<ReturnType<typeof analyzeClassicPcap>>|undefined;
+      let tcpFlowReport:Awaited<ReturnType<typeof analyzeTcpCapture>>|undefined;
+      let tcpPcapReport:Awaited<ReturnType<typeof analyzeTcpPcap>>|undefined;
+      if(realModbus||realTcpFlow||realTcpPcap){
         if(input.inputs.length!==1 || input.constraints.maxDurationSeconds>300)
           throw new AdapterError("invalid_input","Modbus capture input contract invalid");
         const capture=input.inputs[0]!;
@@ -100,7 +105,9 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
           const raw=Uint8Array.from(atob(capture.data),ch=>ch.charCodeAt(0));
           if(raw.length>MAX_CAPTURE_BYTES || await captureSha256(raw)!==capture.sha256)
             throw new Error("Capture digest mismatch");
-          captureReport=realModbus?await analyzeClassicPcap(raw):await analyzeTcpCapture(raw);
+          if(realModbus)modbusReport=await analyzeClassicPcap(raw);
+          if(realTcpFlow)tcpFlowReport=await analyzeTcpCapture(raw);
+          if(realTcpPcap)tcpPcapReport=await analyzeTcpPcap(raw);
         }catch{throw new AdapterError("invalid_input","Capture is malformed, unsupported or altered");}
       }
       const checksum=await digest(signed.body);
@@ -112,14 +119,19 @@ export async function handleRequest(request:Request,env:Env):Promise<Response>{
         updatedAt:new Date().toISOString(),
         result:{
           orderId:input.workOrderId,producedAt:new Date().toISOString(),
-          summary:realCapture
-            ? realModbus
-              ? "Parsed observable Modbus/TCP transactions, not a professional certification"
-              : "Parsed observable TCP flows and flags; no packet-loss or causal diagnosis"
+          summary:realModbus
+            ? "Parsed classic PCAP and identified observable Modbus/TCP transactions; not a professional certification"
+            : realTcpFlow
+            ? "Parsed observable TCP flows and flags; no packet-loss or causal diagnosis"
+            : realTcpPcap
+            ? "Analyzed observed TCP frame-level evidence; no inferred network loss or root cause"
             : "Synthetic read-only remote adapter response; no external work was performed",
-          artifacts:realCapture
-            ? [{name:realModbus?"modbus-findings.json":"tcp-flow-evidence.json",
-              kind:"inline",mediaType:"application/json",data:captureReport!}]
+          artifacts:realModbus
+            ? [{name:"modbus-findings.json",kind:"inline",mediaType:"application/json",data:modbusReport!}]
+            : realTcpFlow
+            ? [{name:"tcp-flow-evidence.json",kind:"inline",mediaType:"application/json",data:tcpFlowReport!}]
+            : realTcpPcap
+            ? [{name:"tcp-packet-evidence.json",kind:"inline",mediaType:"application/json",data:tcpPcapReport!}]
             : [{name:"example-result.json",kind:"inline",mediaType:"application/json",data:{
               notice:"Demo result only. Not a verified report, evaluation, or paid professional service.",
               suppliedInputNames:input.inputs.map(x=>x.name),workOrderId:input.workOrderId,

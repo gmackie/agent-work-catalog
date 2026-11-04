@@ -29,6 +29,7 @@
     "@awc/modbus-pcap": "workspace:*",
     "@awc/attest-receipts": "workspace:*",
     "@awc/tcp-analysis": "workspace:*",
+    "@awc/tcp-pcap": "workspace:*",
     "@awc/tcp-workflow": "workspace:*"
   },
   "devDependencies": {

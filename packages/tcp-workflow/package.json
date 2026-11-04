@@ -13,14 +13,15 @@
   },
   "dependencies": {
     "@awc/tcp-analysis": "workspace:*",
+    "@awc/tcp-pcap": "workspace:*",
     "@awc/artifact-custody": "workspace:*",
     "@awc/attest-receipts": "workspace:*",
     "@awc/dispatch": "workspace:*",
     "@awc/contracts": "workspace:*",
-    "effect": "^4.0.6"
+    "effect": "^4.0.6",
+    "@awc/modbus-pcap": "workspace:*"
   },
   "devDependencies": {
-    "@awc/modbus-pcap": "workspace:*",
     "jose": "^6.1.0"
   }
 }
