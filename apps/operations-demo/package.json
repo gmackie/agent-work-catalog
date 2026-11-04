@@ -1,0 +1,15 @@
+{
+  "name": "@awc/operations-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/main.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "check": "pnpm typecheck"
+  },
+  "dependencies": {
+    "@awc/simulations": "workspace:*",
+    "effect": "^4.0.6"
+  }
+}

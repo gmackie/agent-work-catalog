@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "awc.action/v1",
+  "id": "proposal:example:restock",
+  "revision": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "mandateId": "mandate:sample:vending",
+  "operationId": "operation:example-fleet",
+  "actorId": "agent:example-fleet-manager",
+  "entityId": "vending:042",
+  "action": "inventory.replenishment.request",
+  "risk": "commercial",
+  "dataClassification": "internal",
+  "requestedAt": "2026-11-01T18:00:00Z",
+  "effects": [
+    "purchase"
+  ],
+  "expectedStateVersion": "stock:v4",
+  "commitment": {
+    "accountId": "account:example-operator",
+    "currency": "USD",
+    "maximumMinor": "3500",
+    "pricingReference": "quote:sample:restock"
+  }
+}

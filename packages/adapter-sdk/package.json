@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./conformance": "./src/conformance.ts"
+    "./conformance": "./src/conformance.ts",
+    "./managed": "./src/managed-systems.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
@@ -14,6 +15,8 @@
   },
   "dependencies": {
     "@awc/contracts": "workspace:*",
+    "@awc/operations": "workspace:*",
+    "@awc/responsibility": "workspace:*",
     "effect": "^4.0.6"
   }
 }

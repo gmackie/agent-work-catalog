@@ -14,4 +14,6 @@ coverage/
 .wrangler/
 apps/server/public/marketplace.html
 apps/server/public/contract.html
+dist-operations/
+apps/server/public/operations.html
 apps/server/public/tcp-report.html

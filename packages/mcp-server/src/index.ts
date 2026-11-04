@@ -5,6 +5,7 @@ import { withX402 } from "agents/x402";
 import { z } from "zod/v4";
 import { MarketplaceError, type Marketplace } from "@awc/marketplace";
 import { CommerceError, type Commerce, type WorkRunMessage } from "@awc/commerce";
+import { SCENARIOS, runScenario } from "@awc/simulations";
 import type { StoredOpportunity } from "@awc/source-inbox";
 import type { TrustedDispatcher } from "@awc/dispatch";
 import { listTcpServiceProfiles } from "@awc/offering-profiles";
@@ -12,6 +13,7 @@ import { listCandidateDomains } from "@awc/domain-opportunities";
 
 export const MARKETPLACE_APP_URI = "ui://awc/marketplace.html";
 export const CONTRACT_APP_URI = "ui://awc/contract.html";
+export const OPERATIONS_APP_URI = "ui://awc/operations.html";
 export const TCP_REPORT_APP_URI = "ui://awc/tcp-report.html";
 export interface PaidSandboxConfig {
   readonly network: "base-sepolia";
@@ -24,6 +26,7 @@ export interface McpServerConfig {
   readonly buyerScopes?: readonly string[];
   readonly appHtml: string;
   readonly contractAppHtml?: string;
+  readonly operationsAppHtml?: string;
   readonly tcpReportAppHtml?: string;
   readonly approvalBaseUrl?: string;
   readonly commerce?: Commerce;
@@ -122,6 +125,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
   for (const [name,uri,html] of [
     ["Marketplace Explorer",MARKETPLACE_APP_URI,config.appHtml],
     ["Contract Review",CONTRACT_APP_URI,config.contractAppHtml??""],
+    ["Operations Sandbox",OPERATIONS_APP_URI,config.operationsAppHtml??""],
     ["TCP Evidence Inspector",TCP_REPORT_APP_URI,config.tcpReportAppHtml??""],
   ] as const){
     registerAppResource(server,name,uri,{
@@ -147,6 +151,31 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
     if(String(vars.version)!==match.offering.version)throw new Error("Offering version unknown");
     return {contents:[{uri:uri.href,mimeType:"application/json",text:JSON.stringify(match)}]};
   });
+
+
+  // Three bounded, completely in-memory simulations. Never route to OT, public cloud,
+  // payment signers or production WorkOrders. These are NOT physical-control tools.
+  server.registerTool("operations.scenarios",{
+    description:"List fictional operating environments used to test delegated responsibility. No real actions.",
+    inputSchema:z.object({}).strict(),
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false},
+  },async()=>reply({mode:"strictly-simulated",scenarios:SCENARIOS},
+    "Three synthetic operations are available: vending, cloud and production cell."));
+
+  registerAppTool(server,"operations.simulate",{
+    description:"Run an isolated simulation of mandate, budget and safety checks. No external calls, billing or physical control.",
+    inputSchema:z.object({scenario:z.enum(["vending","cloud","plant"])}).strict(),
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false},
+    _meta:{ui:{resourceUri:OPERATIONS_APP_URI}},
+  },async({scenario})=>guarded(runScenario(scenario),report=>
+    "DEMO ONLY: "+report.scenario+" evaluated "+report.attemptedActions.length+
+    " proposals; no real machine, cloud resource or payment was touched."));
+
+  server.registerResource("Operations simulation catalog","awc://operations/scenarios",{
+    title:"AWC operating responsibility simulation definitions",
+    mimeType:"application/json",
+  },async(uri)=>({contents:[{uri:uri.href,mimeType:"application/json",
+    text:JSON.stringify({schemaVersion:"awc.simulation/v1",mode:"strictly-simulated",scenarios:SCENARIOS})}]}));
 
   const buyerId=config.buyerId;
   if(buyerId&&scope("quotes:write")){
