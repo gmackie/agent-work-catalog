@@ -1,0 +1,56 @@
+name: Modbus PCAP differential conformance
+
+on:
+  push:
+    branches: [main, "feat/**", "design/**"]
+    paths:
+      - "packages/modbus-pcap/**"
+      - "packages/modbus-workflow/**"
+      - ".github/workflows/pcap-differential.yml"
+  pull_request:
+    paths:
+      - "packages/modbus-pcap/**"
+      - "packages/modbus-workflow/**"
+      - ".github/workflows/pcap-differential.yml"
+  workflow_dispatch:
+
+jobs:
+  tshark-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      PCAP_CONFORMANCE_DIR: /tmp/awc-pcap-conformance
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install an independent packet dissector and generator
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y tshark
+          python -m pip install --disable-pip-version-check scapy==2.6.1
+          tshark --version | head -n 1
+          python -c "import scapy.all; print('Scapy ready')"
+      - name: Install TypeScript dependencies
+        run: pnpm install --no-frozen-lockfile
+      - name: Generate public synthetic packet corpus with Scapy
+        run: python packages/modbus-pcap/conformance/generate_corpus.py --out "$PCAP_CONFORMANCE_DIR"
+      - name: Run AWC packet parser independently
+        run: pnpm exec tsx packages/modbus-pcap/conformance/analyze_corpus.ts "$PCAP_CONFORMANCE_DIR"
+      - name: Compare AWC results to TShark dissection and Scapy intents
+        run: python packages/modbus-pcap/conformance/compare_tshark.py --dir "$PCAP_CONFORMANCE_DIR"
+      - name: Preserve synthetic failing captures for reproducibility
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failed-public-synthetic-modbus-corpus
+          path: /tmp/awc-pcap-conformance
+          retention-days: 7

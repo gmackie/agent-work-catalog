@@ -54,3 +54,13 @@ See [Trusted remote dispatch guide](docs/trusted-remote-dispatch.md) for local C
 ## Real Modbus/TCP pilot (private R2, evidence checks, draft Attest observations)
 
 The optional, bounded `offering:modbus-pcap-analysis` now runs a real classic-PCAP Modbus/TCP packet parser instead of synthetic output. Uploaded **public-only** captures are stored in private R2; a human separately approves disclosure to an operator-pinned remote worker. The broker recomputes findings, stores report and evaluation evidence in R2, and issues a **provisional broker-signed Attest-shaped observation JWS** (not an independent Attest VC, evaluation or payment receipt). Test/fake funding only; execution disabled by default. See [the packet-evidence pilot](docs/modbus-evidence-pilot.md) for setup, scope and limitations.
+
+## Independent Modbus/TCP oracle
+
+The bounded PCAP pilot now has a separate Scapy + TShark differential CI gate.
+Public synthetic captures are generated independently from the TypeScript
+parser; the oracle checks decoded Modbus fields, request/response pairing,
+exceptions and observed response times. Unsupported formats and retransmission
+limitations are explicitly separated from successful TShark comparisons.
+A deterministic malformed-capture mutation sweep adds parser robustness checks.
+See docs/pcap-differential-conformance.md for results and reproduction.
