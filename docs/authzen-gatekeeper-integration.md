@@ -40,8 +40,8 @@ A `decision:true` for a tool allows invoking the **domain service**; it never gr
 | `@awc/authzen-finance` | Exact reserved economic commitment as one component of the authenticated conditional authorization |
 | `@awc/economics-durable` | SQLite transactionSync treasury, integer-minor funds, reservations, idempotent captures/releases and nested mandate attenuation |
 | `apps/server/src/treasury.ts` | Private SQLite-backed Durable Object class with no public mutation RPC |
-| `apps/server/migrations/0003_trusted_mandates.sql` | Tenant-scoped proposals, mandate chain, owner grants, asset/telemetry state, action descriptors and authenticated approvals |
-| `apps/server/migrations/0004_authzen_tool_policies.sql` | Tenant/client/tool-specific PEP authorization records |
+| `apps/server/migrations/0005_trusted_mandates.sql` | Tenant-scoped proposals, mandate chain, owner grants, asset/telemetry state, action descriptors and authenticated approvals |
+| `apps/server/migrations/0006_authzen_tool_policies.sql` | Tenant/client/tool-specific PEP authorization records |
 
 The source registry has **no public write API**. Production mandate issuance needs a separate service that verifies issuer signatures and administrator authorization before updating these tables. Until then, the production PDP returns denial for unregistered subjects/proposals.
 

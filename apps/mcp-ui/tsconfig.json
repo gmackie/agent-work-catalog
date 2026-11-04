@@ -15,6 +15,7 @@
     "src/**/*.ts",
     "vite.config.ts",
     "vite.contract.config.ts",
-    "vite.operations.config.ts"
+    "vite.operations.config.ts",
+    "vite.tcp.config.ts"
   ]
 }
