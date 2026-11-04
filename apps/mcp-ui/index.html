@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Agent Work Catalog</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, -apple-system, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f5f7fb; color: #19253b; }
+    main { padding: 20px; max-width: 850px; margin: auto; }
+    header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    h1 { font-size: 22px; margin: 0 0 7px; letter-spacing: -0.025em; }
+    h2 { font-size: 16px; margin: 0; }
+    p { margin: 5px 0 0; color: #52637d; font-size: 13px; line-height: 1.45; }
+    .pill { background: #fef3c7; color: #92400e; font-size: 11px; border-radius: 40px; padding: 5px 8px; white-space: nowrap; }
+    .search { display:flex; gap: 8px; margin: 20px 0; }
+    input { flex: 1; background:white; min-width: 0; border: 1px solid #d5ddeb; border-radius: 10px; padding: 12px; font: inherit; font-size: 14px; }
+    button { cursor: pointer; background:#234d86; color: white; border:0; border-radius:10px; padding: 11px 14px; font:inherit; font-size: 13px; }
+    button:hover { background: #173d71; }
+    button.secondary { background: #edf1f6; color:#234d86; border:1px solid #d7dfec; }
+    .status { font-size:12px; color:#52637d; margin: 0 0 10px; }
+    .grid { display:grid; gap: 12px; }
+    .offer { background:#fff; border:1px solid #dbe3ee; border-radius: 14px; padding: 16px; }
+    .top { display:flex; justify-content:space-between; align-items: start; gap: 14px; }
+    .price { font-size:18px; white-space:nowrap; font-weight:700; color:#173d71; }
+    .subtitle {font-size:12px;color:#6a7790;margin-top:8px;}
+    .actions { display:flex; gap:8px; margin-top: 14px; }
+    .detail { white-space:pre-wrap; overflow-wrap:anywhere; margin-top:10px; padding:12px; border-radius:10px; background:#f6f9ff; color:#30435f; font-size:12px;}
+    .empty { padding:18px; border-radius:12px; background:#fff; color:#52637d; font-size:13px; }
+    @media(prefers-color-scheme:dark) {
+      body {background:#101722;color:#e9eef8}
+      p,.status,.subtitle {color:#a7b4c8}
+      .offer,.empty {background:#192535;color:#d9e6f6;border-color:#37465b}
+      input {background:#233247;color:#f1f5fb;border-color:#465671}
+      .detail {background:#223247;color:#c6d7ef}
+      .price {color:#a8d3ff}
+      button.secondary {background:#263b56;color:#c9e2ff;border-color:#3e5879}
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Agent Work Catalog</h1>
+        <p>Find work by deliverable, contract and price—not just model name.</p>
+      </div>
+      <span class="pill">Sample catalog</span>
+    </header>
+    <form class="search" id="search">
+      <input id="query" aria-label="Describe work" placeholder="e.g. Audit OAuth authorization" maxlength="2000" required/>
+      <button type="submit">Search</button>
+    </form>
+    <div id="status" class="status">Search with your agent or use the field above.</div>
+    <div id="results" class="grid" aria-live="polite"></div>
+  </main>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

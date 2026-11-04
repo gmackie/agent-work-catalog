@@ -1,0 +1,24 @@
+{
+  "name": "@awc/server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "bundle": "wrangler deploy --dry-run --outdir .wrangler/dry-run",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check": "pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "@awc/marketplace": "workspace:*",
+    "@awc/mcp-server": "workspace:*",
+    "effect": "^4.0.6",
+    "agents": "^0.27.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.148.0",
+    "@cloudflare/workers-types": "5.20261018.1"
+  }
+}

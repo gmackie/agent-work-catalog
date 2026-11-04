@@ -15,5 +15,7 @@ jobs:
         with:
           node-version: 24
       - run: pnpm install --no-frozen-lockfile
+      - run: pnpm --filter @awc/mcp-ui build
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm --filter @awc/server bundle
