@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TCP Packet Evidence</title>
+<style>
+:root{color-scheme:light dark;font:14px system-ui}*{box-sizing:border-box}
+body{margin:0;background:#f4f7fb;color:#1d304b}
+main{padding:20px;max-width:950px;margin:auto}
+h1{font-size:21px;margin:0 0 6px}h2{font-size:16px;margin:0 0 8px}
+p{color:#566781;line-height:1.5;margin:5px 0 12px}
+section{margin-top:16px;background:#fff;border:1px solid #dce4ee;border-radius:12px;padding:15px}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:17px}
+.metric{padding:11px;border-radius:10px;background:#e9f1fa}
+.metric strong{font-size:18px;display:block}
+.metric small,.tag{font-size:11px;color:#536c89}
+.banner{padding:10px;border-left:4px solid #be8b2d;background:#fff6e4;border-radius:6px}
+ul{margin:9px 0;padding-left:20px}
+li{margin:5px 0;line-height:1.45}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;text-align:left;font-size:12px}
+th,td{padding:8px;border-bottom:1px solid #dae3f0;white-space:nowrap}
+th{color:#667995}
+code{font:11px ui-monospace,monospace;overflow-wrap:anywhere}
+.status{font-weight:600} .tag{display:inline-block;border-radius:16px;background:#edf2f9;padding:4px 7px}
+#limitations{color:#865916}
+@media(prefers-color-scheme:dark){
+ body{background:#0e1621;color:#e3eafa}section{background:#1a2939;border-color:#35475c}
+ .metric{background:#26394e}.banner{background:#352b1b}th{color:#a2b5cf}
+ td,th{border-color:#35475c}p,.metric small,.tag{color:#b7c4d9}
+ .tag{background:#253a52}#limitations{color:#f0c680}
+}
+</style></head><body>
+<main>
+<h1>TCP packet evidence</h1>
+<p>Evidence from a bounded capture—not a network-loss verdict or root-cause diagnosis.</p>
+<div class="banner" id="assurance" role="status">Load a validated TCP report through the MCP tool <code>work.artifacts.read</code>.</div>
+<div class="metrics" id="metrics"></div>
+<section><h2>Observed connections</h2><div class="table-wrap" id="flows"></div></section>
+<section><h2>Packet observations</h2><div id="observations"></div></section>
+<section><h2>Frame evidence</h2><div class="table-wrap" id="segments"></div></section>
+<section><h2>Measurement limitations</h2><ul id="limitations"></ul><p id="commitment"></p></section>
+</main><script type="module" src="/src/tcp-report.ts"></script></body></html>

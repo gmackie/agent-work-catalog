@@ -25,6 +25,10 @@
     "@x402/core": "^2.29.0",
     "@x402/evm": "^2.29.0",
     "@awc/simulations": "workspace:*",
-    "@awc/standards-demo": "workspace:*"
+    "@awc/standards-demo": "workspace:*",
+    "@awc/source-inbox": "workspace:*",
+    "@awc/dispatch": "workspace:*",
+    "@awc/offering-profiles": "workspace:*",
+    "@awc/domain-opportunities": "workspace:*"
   }
 }

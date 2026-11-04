@@ -25,10 +25,23 @@
     "@awc/mandate-registry": "workspace:*",
     "@awc/coaz-mcp": "workspace:*",
     "@awc/economics-durable": "workspace:*",
-    "@awc/authzen-client": "workspace:*"
+    "@awc/authzen-client": "workspace:*",
+    "@awc/adapter-github": "workspace:*",
+    "@awc/adapter-sdk": "workspace:*",
+    "@awc/source-inbox": "workspace:*",
+    "@awc/dispatch": "workspace:*",
+    "@awc/adapter-remote-http": "workspace:*",
+    "@awc/artifact-custody": "workspace:*",
+    "@awc/modbus-workflow": "workspace:*",
+    "@awc/modbus-pcap": "workspace:*",
+    "@awc/attest-receipts": "workspace:*",
+    "@awc/tcp-analysis": "workspace:*",
+    "@awc/tcp-pcap": "workspace:*",
+    "@awc/tcp-workflow": "workspace:*"
   },
   "devDependencies": {
     "wrangler": "^4.148.0",
-    "@cloudflare/workers-types": "5.20261018.1"
+    "@cloudflare/workers-types": "5.20261018.1",
+    "jose": "^6.1.0"
   }
 }
