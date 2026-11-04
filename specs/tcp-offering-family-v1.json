@@ -1,0 +1,240 @@
+{
+  "schemaVersion": "awc.tcp-offering-family/v1",
+  "priceDisclaimer": "Illustrative USD willingness-to-pay hypotheses only. Not actual quotes, tested market prices, or authorized Stripe/x402 charges.",
+  "defaultRiskProfile": "public sanitized pilot only; nonpublic traces require customer-controlled execution and a separate legal/security release",
+  "evidenceAssuranceTiers": [
+    "raw-measurement",
+    "deterministic-consistency",
+    "independent-tool-comparison",
+    "human-reviewed-attestation"
+  ],
+  "productRules": [
+    "Outcome, evidence and acceptance policies are versioned separately from invocation transport.",
+    "Never mark a packet-data claim as causal proof without corroborating vantage and independent evaluation.",
+    "No automatic worker spending, production asset control, or payment from a discovery call.",
+    "Attest signature does not imply independent authority or settlement.",
+    "Long-running/container offerings require separate budgets, runtime and data-location controls."
+  ],
+  "offerings": [
+    {
+      "id": "offering:tcp-capture-preflight",
+      "title": "Capture Readiness & Evidence Limits",
+      "stage": "proposed",
+      "taskTypeId": "task:tcp.capture.preflight/v1",
+      "buyer": "SRE / field technician / security analyst",
+      "input": [
+        "public classic PCAP",
+        "capture provenance/context optional"
+      ],
+      "output": [
+        "capture-quality.json",
+        "supported-coverage.json",
+        "evidence-limits.md"
+      ],
+      "testPriceUSD": "0-5",
+      "engine": "Worker / small TypeScript parser",
+      "verifier": "Independent header/record validation, file hash, byte/frame counts",
+      "exclusions": [
+        "Does not validate capture point completeness",
+        "No TCP diagnosis"
+      ],
+      "value": "Fewer bad troubleshooting escalations"
+    },
+    {
+      "id": "offering:tcp-flow-evidence",
+      "title": "TCP Flow Evidence Report",
+      "stage": "implemented-test-only",
+      "taskTypeId": "task:tcp-flow-evidence",
+      "buyer": "Network engineering / platform SRE / OT support",
+      "input": [
+        "explicitly public, sanitized classic PCAP (<=48KiB)"
+      ],
+      "output": [
+        "flow-evidence.json",
+        "evaluation.json",
+        "signed-observation.jws"
+      ],
+      "testPriceUSD": "15-35",
+      "engine": "Bounded TypeScript Worker + R2 + broker recomputation",
+      "verifier": "TShark field differential on synthetic corpus; R2 SHA and broker consistency; provisional issuer signature",
+      "exclusions": [
+        "No stream reassembly or real packet-loss attribution",
+        "No causal root-cause guarantee"
+      ],
+      "value": "Structured packet-number evidence and auditable delivery"
+    },
+    {
+      "id": "offering:modbus-pcap-analysis",
+      "title": "Modbus/TCP Transaction Evidence",
+      "stage": "implemented-test-only",
+      "taskTypeId": "task:modbus-pcap",
+      "buyer": "Controls engineer / OT integrator / plant maintenance",
+      "input": [
+        "explicitly public, sanitized classic PCAP (<=48KiB)"
+      ],
+      "output": [
+        "modbus-findings.json",
+        "packet-evaluation.json",
+        "attest-observation.jws"
+      ],
+      "testPriceUSD": "25-75",
+      "engine": "Existing bounded Modbus parser and trusted remote Worker",
+      "verifier": "Scapy/TShark corpus plus broker recomputation and provisional signed observation",
+      "exclusions": [
+        "No inferred PLC hardware faults",
+        "No active scanning or industrial command execution"
+      ],
+      "value": "Supportable exception and transaction references"
+    },
+    {
+      "id": "offering:tcp-performance-triage",
+      "title": "TCP Reliability Triage",
+      "stage": "proposed",
+      "taskTypeId": "task:tcp.performance.triage/v1",
+      "buyer": "SRE / network operations",
+      "input": [
+        "PCAP with both directions (capture point declared)",
+        "network endpoint/topology context"
+      ],
+      "output": [
+        "flow-health.json",
+        "retransmission-candidates.json",
+        "causal-hypotheses.md"
+      ],
+      "testPriceUSD": "35-85",
+      "engine": "Version-pinned TShark + Zeek in sandboxed container",
+      "verifier": "Correlated sequence/ACK state, independent TShark flags, Karn-safe RTT sampling",
+      "exclusions": [
+        "No guaranteed loss attribution without vantage corroboration",
+        "No encrypted payload reconstruction"
+      ],
+      "value": "Evidence-linked explanation of connection stalls"
+    },
+    {
+      "id": "offering:tcp-baseline-diff",
+      "title": "Before/After Network Change Evidence",
+      "stage": "proposed",
+      "taskTypeId": "task:tcp.baseline.diff/v1",
+      "buyer": "DevOps release engineer / OT change board",
+      "input": [
+        "baseline and after PCAPs",
+        "declared test window",
+        "flow equivalence rules"
+      ],
+      "output": [
+        "change-diff.json",
+        "confidence-and-confounders.md",
+        "comparison-evidence.json"
+      ],
+      "testPriceUSD": "60-160",
+      "engine": "Container/Zeek + statistical feature comparison",
+      "verifier": "Immutable paired inputs, disjoint change windows, matched flow populations, confounder checklist",
+      "exclusions": [
+        "No causal claim from a two-sample comparison",
+        "No normalized rates without appropriate time-window control"
+      ],
+      "value": "Evidence for go/no-go and rollback decisions"
+    },
+    {
+      "id": "offering:ot-protocol-regression",
+      "title": "Industrial Protocol Regression Test",
+      "stage": "proposed",
+      "taskTypeId": "task:ot.protocol.regression/v1",
+      "buyer": "PLC system integrator / OEM / factory QA",
+      "input": [
+        "captured test fixture",
+        "protocol version",
+        "allowed functions/register maps"
+      ],
+      "output": [
+        "protocol-violations.json",
+        "transaction-timeline.json",
+        "test-report.pdf"
+      ],
+      "testPriceUSD": "80-250",
+      "engine": "Protocol-specific container plugins",
+      "verifier": "Protocol conformance fixtures, schema checks, deterministic replay of stored trace",
+      "exclusions": [
+        "No safety certification",
+        "No assumption that device behavior matches captured trace"
+      ],
+      "value": "Repeatable vendor acceptance evidence"
+    },
+    {
+      "id": "offering:incident-evidence-bundle",
+      "title": "Network Incident Evidence Bundle",
+      "stage": "proposed",
+      "taskTypeId": "task:network.incident.bundle/v1",
+      "buyer": "MSP / MDR / incident responder",
+      "input": [
+        "PCAP",
+        "Zeek/Suricata logs",
+        "bounded system/app logs"
+      ],
+      "output": [
+        "timeline.json",
+        "flow-graph.json",
+        "competing-hypotheses.md",
+        "evidence-manifest.json"
+      ],
+      "testPriceUSD": "150-500",
+      "engine": "Isolated container workflow + optional LLM narrative",
+      "verifier": "Multi-source chronology, hash-and-source provenance, contradictory-evidence checks",
+      "exclusions": [
+        "No unsupported attribution to attacker/cause",
+        "No automatic destructive response"
+      ],
+      "value": "Case-ready auditable investigation artifacts"
+    },
+    {
+      "id": "offering:ot-change-monitor",
+      "title": "Continuous Passive OT Change Monitoring",
+      "stage": "proposed",
+      "taskTypeId": "task:ot.change.monitor/v1",
+      "buyer": "Municipality / managed OT security / plant ops",
+      "input": [
+        "customer-operated passive sensor metadata",
+        "versioned baseline",
+        "approved retention configuration"
+      ],
+      "output": [
+        "versioned asset-flow baseline",
+        "new-connection alerts",
+        "weekly evidence summary"
+      ],
+      "testPriceUSD": "150-1000 per monitored site/month",
+      "engine": "On-prem collector + private stream, policy-backed cloud control plane",
+      "verifier": "Sensor provenance, temporal baselines, false-positive review, site owner approval",
+      "exclusions": [
+        "Not a substitute for OT NDR platform",
+        "No active polling or cloud export by default"
+      ],
+      "value": "Recurring visibility without full sensor-platform replacement"
+    },
+    {
+      "id": "offering:expert-network-review",
+      "title": "Human-Reviewed Network Root Cause Investigation",
+      "stage": "proposed",
+      "taskTypeId": "task:tcp.expert-investigation/v1",
+      "buyer": "SMB MSP / OEM support team / OT plant engineer",
+      "input": [
+        "consented traces and logs",
+        "asset/topology description",
+        "symptoms and maintenance notes"
+      ],
+      "output": [
+        "signed engineering report",
+        "evidence appendix",
+        "risk-ranked next tests"
+      ],
+      "testPriceUSD": "250-1500 per case",
+      "engine": "Specialist agent with supervised licensed engineer/technician workflow",
+      "verifier": "Named reviewer approval, bounded conclusion grading, evidence citation, dispute/revision policy",
+      "exclusions": [
+        "Reviewer qualifications must be verified",
+        "Not a functional safety determination"
+      ],
+      "value": "Escalation-grade report rather than raw packet output"
+    }
+  ]
+}

@@ -24,6 +24,10 @@
     "zod": "^4.2.0",
     "@x402/core": "^2.29.0",
     "@x402/evm": "^2.29.0",
-    "@awc/simulations": "workspace:*"
+    "@awc/simulations": "workspace:*",
+    "@awc/source-inbox": "workspace:*",
+    "@awc/dispatch": "workspace:*",
+    "@awc/offering-profiles": "workspace:*",
+    "@awc/domain-opportunities": "workspace:*"
   }
 }

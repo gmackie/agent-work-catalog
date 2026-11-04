@@ -30,6 +30,24 @@ export const seedTaskTypes: readonly TaskType[] = [
     outputMediaTypes: ["application/json", "text/markdown"], permittedEffects: [],
   },
   {
+    id: "task:modbus-pcap", version: "1", name: "Inspect public Modbus/TCP PCAP",
+    description: "Deterministic packet-level classic PCAP analysis with bounded findings, exception codes and packet references; no TCP reassembly or professional diagnosis",
+    inputMediaTypes: ["application/vnd.tcpdump.pcap"],
+    outputMediaTypes: ["application/json"],permittedEffects:[],
+  },
+  {
+    id: "task:tcp-flow-evidence", version: "1", name: "TCP Flow Evidence Report",
+    description: "Extract limited, observable TCP flow, sequence-range, window and reset evidence from a public sanitized classic PCAP. No guaranteed packet-loss or root-cause attribution.",
+    inputMediaTypes: ["application/vnd.tcpdump.pcap"],
+    outputMediaTypes: ["application/json"], permittedEffects: [],
+  },
+  {
+    id:"task:tcp-pcap",version:"1",name:"Analyze bounded TCP packet evidence",
+    description:"Parse public classic Ethernet/IPv4/TCP captures for flows, handshake observations, sequence ambiguity, zero windows and RST without claiming root cause",
+    inputMediaTypes:["application/vnd.tcpdump.pcap"],outputMediaTypes:["application/json"],
+    permittedEffects:[],
+  },
+  {
     id: "task:expert-chat", version: "1", name: "Specialist engineering chat",
     description: "Metered advisory inference, without a deliverable guarantee",
     inputMediaTypes: ["text/plain"], outputMediaTypes: ["text/plain"], permittedEffects: [],
@@ -50,6 +68,27 @@ export const seedOfferings: readonly Offering[] = [
     description: "Sample report based on packet observations and PLC/HMI communication symptoms",
     pricing: { mode: "fixed", fixedAmount: { currency: "USD", minorUnits: "3500" } },
     execution: [{ protocol: "openai-responses", endpoint: "https://example.invalid/v1/responses" }],
+  },
+  {
+    id:"offering:modbus-pcap-analysis",version:"1",providerId:"example-provider:controls",
+    taskTypeId:"task:modbus-pcap",title:"Classic Modbus PCAP Evidence Report (TEST ONLY)",
+    description:"Actual bounded parser for public sanitized Ethernet/IPv4/TCP captures. Reports observed exception responses and unmatched transactions; not a comprehensive network assessment.",
+    pricing:{mode:"fixed",fixedAmount:{currency:"USD",minorUnits:"3500"}},
+    execution:[{protocol:"custom",endpoint:"https://example.invalid/v1/executions"}],
+  },
+  {
+    id:"offering:tcp-flow-evidence",version:"1",providerId:"example-provider:network",
+    taskTypeId:"task:tcp-flow-evidence",title:"TCP Flow Evidence (PUBLIC TEST ONLY)",
+    description:"Real bounded passive parser with evidence-tagged flow metrics, signed broker observation and deterministic R2 artifacts. 48KiB classic PCAP only; no loss attribution or stream reassembly.",
+    pricing:{mode:"fixed",fixedAmount:{currency:"USD",minorUnits:"2500"}},
+    execution:[{protocol:"custom",endpoint:"https://example.invalid/v1/executions"}],
+  },
+  {
+    id:"offering:tcp-pcap-evidence",version:"1",providerId:"example-provider:network",
+    taskTypeId:"task:tcp-pcap",title:"TCP Packet Evidence Report (TEST ONLY)",
+    description:"Actual bounded public PCAP parser. Reports handshake delay, resets, raw zero windows and sequence-range ambiguity with capture limitations, no diagnosis or live commerce.",
+    pricing:{mode:"fixed",fixedAmount:{currency:"USD",minorUnits:"900"}},
+    execution:[{protocol:"custom",endpoint:"https://example.invalid/v1/executions"}],
   },
   {
     id: "offering:expert-inference", version: "1", providerId: "example-provider:controls",
@@ -102,6 +141,8 @@ export interface PreparedWork {
   readonly taskTypeId: string;
   readonly quoteDigest: string;
   readonly inputDigest: string;
+  /** Explicitly declared, human-reviewed data classification for outside disclosure. */
+  readonly dataClassification?: "public" | "internal" | "confidential" | undefined;
   readonly inputs: readonly WorkInput[];
   readonly idempotencyKey: string;
   readonly state: "prepared_unfunded";
@@ -115,6 +156,7 @@ export interface QuoteRequest {
   readonly maxPriceMinor?: string | undefined;
 }
 export interface PrepareRequest {
+  readonly dataClassification?: "public" | "internal" | "confidential" | undefined;
   readonly quoteId: string;
   readonly inputs: readonly WorkInput[];
   readonly idempotencyKey: string;
@@ -241,11 +283,12 @@ export function makeMarketplace(store: MarketplaceStore, now: () => number = Dat
         }
         const serialized = JSON.stringify(request.inputs);
         if (serialized.length > 24_000) throw new MarketplaceError("invalid_request", "Input payload too large");
-        const inputDigest = await sha256(serialized);
+        const dataClassification=request.dataClassification??"internal";
+        const inputDigest = await sha256(JSON.stringify({inputs:request.inputs,dataClassification}));
         const work: PreparedWork = {
           id: "work_" + crypto.randomUUID(), buyerId, quoteId: quote.id,
           taskTypeId: quote.taskTypeId, offeringId: quote.offeringId,
-          quoteDigest: quote.termsDigest, inputDigest, inputs: request.inputs,
+          quoteDigest: quote.termsDigest, inputDigest, inputs: request.inputs,dataClassification,
           idempotencyKey: request.idempotencyKey, state: "prepared_unfunded",
           createdAt: new Date(now()).toISOString(),
           funding: { status: "not_authorized", amount: quote.price },
