@@ -5,6 +5,7 @@ import { withX402 } from "agents/x402";
 import { z } from "zod/v4";
 import { MarketplaceError, type Marketplace } from "@awc/marketplace";
 import { CommerceError, type Commerce, type WorkRunMessage } from "@awc/commerce";
+import type { StoredOpportunity } from "@awc/source-inbox";
 
 export const MARKETPLACE_APP_URI = "ui://awc/marketplace.html";
 export const CONTRACT_APP_URI = "ui://awc/contract.html";
@@ -24,6 +25,8 @@ export interface McpServerConfig {
   readonly enqueue?: (work:WorkRunMessage)=>Promise<void>;
   readonly stripeCheckoutAvailable?: boolean;
   readonly paidSandbox?: PaidSandboxConfig;
+  /** Authorized buyer-scoped work from verified sources; never automatically funded. */
+  readonly listOpportunities?: (buyerId: string, limit: number) => Promise<readonly StoredOpportunity[]>;
 }
 
 const reply = (value:Record<string,unknown>,message:string) => ({
@@ -142,6 +145,27 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
         return reply({...work,quote,reviewUrl:reviewUrl(work.id)},
           "Work "+work.id+" is UNFUNDED. The human must review terms outside the agent before payment.");
       }catch(error){return failure(error);}
+    });
+  }
+  if(buyerId&&scope("work:read")&&config.listOpportunities){
+    server.registerTool("work.opportunities.list",{
+      description:"List verified incoming work OPPORTUNITIES, not contracts or authorized executions.",
+      inputSchema:z.object({limit:z.number().int().min(1).max(20).optional()}).strict(),
+      annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+    },async({limit})=>{
+      try {
+        const records=await config.listOpportunities!(buyerId,limit??10);
+        return reply({
+          kind:"awc.opportunities/v1",source:"authenticated-inbox",
+          opportunities:records.map(({opportunity})=>({
+            id:opportunity.id,title:opportunity.title,
+            descriptionPreview:opportunity.description.slice(0,500),
+            status:opportunity.status,sourceId:opportunity.external.sourceId,
+            originUrl:opportunity.external.originUrl,observedAt:opportunity.observedAt,
+            commercialStatus:"not_authorized",
+          })),
+        },"Received "+records.length+" potential assignments. None are authorized WorkOrders.");
+      } catch(error) { return failure(error); }
     });
   }
   if(buyerId&&scope("work:read")){

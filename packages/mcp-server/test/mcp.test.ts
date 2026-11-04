@@ -17,6 +17,36 @@ async function fixture(authenticated: boolean) {
   return {client,server,close:async()=>{await client.close();await server.close();}};
 }
 describe("AWC MCP server", () => {
+  it("lists signed opportunities without confusing them with authorized WorkOrders",async()=>{
+    const marketplace=makeMarketplace(inMemoryMarketplaceStore());
+    const sample={buyerId:"buyer-1",sourceId:"github.source",firstSeenAt:"2026-10-31T18:00:00Z",
+      opportunity:{
+        schemaVersion:"awc.opportunity/v1" as const,id:"github:123:456",
+        eventId:"aabbccdd-1122-3344-5566-778899aabbcc",
+        title:"Review auth",description:"Create report",observedAt:"2026-10-31T18:00:00Z",
+        status:"open" as const,
+        external:{sourceId:"github.source",externalId:"github:123:456",
+          originUrl:"https://github.com/testorg/fixture/issues/7",
+          repositoryId:"123",installationId:"987",issueNumber:7},
+      }};
+    const server=createCatalogMcpServer({
+      marketplace,buyerId:"buyer-1",buyerScopes:["work:read"],appHtml:"",
+      listOpportunities:async(buyerId)=>buyerId==="buyer-1"?[sample]:[],
+    });
+    const client=new Client({name:"opportunity-test",version:"0.1.0"});
+    const [a,b]=InMemoryTransport.createLinkedPair();
+    await Promise.all([server.connect(b),client.connect(a)]);
+    try{
+      const tools=await client.listTools();
+      expect(tools.tools.some(t=>t.name==="work.opportunities.list")).toBe(true);
+      const result=await client.callTool({name:"work.opportunities.list",arguments:{}});
+      const data=result.structuredContent as {opportunities:Array<{commercialStatus:string;id:string}>};
+      expect(data.opportunities[0]?.id).toBe("github:123:456");
+      expect(data.opportunities[0]?.commercialStatus).toBe("not_authorized");
+      expect(tools.tools.some(t=>t.name==="work.start")).toBe(false);
+    }finally{await client.close();await server.close();}
+  });
+
 
   it("refuses MCP execution until separately approved and funded, then queues once",async()=>{
     const marketplace=makeMarketplace(inMemoryMarketplaceStore());

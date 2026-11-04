@@ -19,3 +19,4 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm --filter @awc/server bundle
+      - run: pnpm --filter @awc/example-remote-executor bundle
