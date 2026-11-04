@@ -7,9 +7,12 @@ import { MarketplaceError, type Marketplace } from "@awc/marketplace";
 import { CommerceError, type Commerce, type WorkRunMessage } from "@awc/commerce";
 import type { StoredOpportunity } from "@awc/source-inbox";
 import type { TrustedDispatcher } from "@awc/dispatch";
+import { listTcpServiceProfiles } from "@awc/offering-profiles";
+import { listCandidateDomains } from "@awc/domain-opportunities";
 
 export const MARKETPLACE_APP_URI = "ui://awc/marketplace.html";
 export const CONTRACT_APP_URI = "ui://awc/contract.html";
+export const TCP_REPORT_APP_URI = "ui://awc/tcp-report.html";
 export interface PaidSandboxConfig {
   readonly network: "base-sepolia";
   readonly recipient: `0x${string}`;
@@ -21,6 +24,7 @@ export interface McpServerConfig {
   readonly buyerScopes?: readonly string[];
   readonly appHtml: string;
   readonly contractAppHtml?: string;
+  readonly tcpReportAppHtml?: string;
   readonly approvalBaseUrl?: string;
   readonly commerce?: Commerce;
   readonly enqueue?: (work:WorkRunMessage)=>Promise<void>;
@@ -80,9 +84,45 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
   },async({offeringId})=>guarded(config.marketplace.getOffering(offeringId),
     x=>"Illustrative offering: "+x.offering.title));
 
+  server.registerTool("catalog.list_tcp_services",{
+    description:"Explore the versioned TCP/OT service family, its evidence contracts and example pricing. Only pilot-test-only profiles have a sandbox implementation; other tiers are NOT purchasable.",
+    inputSchema:z.object({}).strict(),
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+  },async()=>reply({
+    kind:"awc.tcp-service-catalog/v1",actualBillingEnabled:false,
+    profiles:listTcpServiceProfiles(),
+    note:"Illustrative prices, no market validation. Planned profiles cannot be ordered.",
+  },"Nine TCP/OT service profiles, explicitly marked pilot or planned. No real payments."));
+
+  server.registerResource("TCP/OT service profiles","awc://catalog/tcp-service-tiers",{
+    description:"Public versioned service taxonomy with implementation readiness and outcome evidence requirements.",
+    mimeType:"application/json",
+  },async(uri)=>({contents:[{
+    uri:uri.href,mimeType:"application/json",
+    text:JSON.stringify({version:"awc.tcp-service-catalog/v1",profiles:listTcpServiceProfiles()}),
+  }]}));
+
+  server.registerTool("catalog.list_domain_opportunities",{
+    description:"Explore twelve research-only agent work domains with concrete sources, execution pipelines, deliverables, verification criteria and illustrative pricing. None are currently purchasable.",
+    inputSchema:z.object({}).strict(),
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+  },async()=>reply({
+    kind:"awc.domain-opportunities/v1",readiness:"design-only",
+    opportunities:listCandidateDomains(),actualBillingEnabled:false,
+  },"Twelve design-only domain opportunities, not executable or priced live listings."));
+
+  server.registerResource("Agent work opportunity map","awc://catalog/domain-opportunities",{
+    description:"Research-only work domains and measurable output contracts",
+    mimeType:"application/json",
+  },async(uri)=>({contents:[{
+    uri:uri.href,mimeType:"application/json",
+    text:JSON.stringify({schema:"awc.domain-opportunities/v1",items:listCandidateDomains()}),
+  }]}));
+
   for (const [name,uri,html] of [
     ["Marketplace Explorer",MARKETPLACE_APP_URI,config.appHtml],
     ["Contract Review",CONTRACT_APP_URI,config.contractAppHtml??""],
+    ["TCP Evidence Inspector",TCP_REPORT_APP_URI,config.tcpReportAppHtml??""],
   ] as const){
     registerAppResource(server,name,uri,{
       description:name+" interface, optional in clients without MCP Apps",
@@ -222,13 +262,14 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
     });
   }
   if(buyerId&&scope("work:read")&&config.readCompletedArtifact){
-    server.registerTool("work.artifacts.read",{
+    registerAppTool(server,"work.artifacts.read",{
       description:"Read and verify a buyer-scoped completed JSON artifact or broker-signed observation from private R2. No arbitrary URLs.",
       inputSchema:z.object({
         workId:z.string().regex(/^work_[a-f0-9-]{36}$/),
         artifactRef:z.string().regex(/^artifact:sha256:[a-f0-9]{64}$/),
       }).strict(),
       annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+      _meta:{ui:{resourceUri:TCP_REPORT_APP_URI}},
     },async({workId,artifactRef})=>{
       try{
         const item=await config.readCompletedArtifact!(buyerId,workId,artifactRef);

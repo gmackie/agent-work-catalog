@@ -64,3 +64,26 @@ exceptions and observed response times. Unsupported formats and retransmission
 limitations are explicitly separated from successful TShark comparisons.
 A deterministic malformed-capture mutation sweep adds parser robustness checks.
 See docs/pcap-differential-conformance.md for results and reproduction.
+
+## TCP analysis agents and twelve adjacent marketplace domains
+
+The **real but bounded** `@awc/tcp-pcap` analyzer handles declared-public
+classic PCAP captures and reports TCP packet facts, handshakes, receive-window
+advertisements and ambiguous sequence-range observations. It does **not**
+prove packet loss or root cause, perform stream reassembly, or interpret
+encrypted payloads. The existing approved/test-funded WorkOrder path can route
+`offering:tcp-pcap-evidence` to a pinned remote Worker, recompute evidence,
+store private R2 outputs and emit a **provisional broker-signed observation**.
+
+The `@awc/offering-profiles` package describes nine tiered TCP/OT services;
+only the TCP evidence pilot and earlier Modbus pilot are test-implemented.
+`@awc/domain-opportunities` defines twelve additional **research-only**
+verticals (engineering, IaC, OT, CAN/J1939, BACnet, water, SPC, food,
+restaurant throughput, education, healthcare, and procurement).
+
+Both are inspectable through read-only MCP catalog tools:
+`catalog.list_tcp_services` and `catalog.list_domain_opportunities`.
+No live prices, active providers or regulated-data handling are implied.
+
+See [TCP product family](docs/tcp-agent-offerings.md) and
+[twelve adjacent domains](docs/adjacent-agent-opportunities.md).

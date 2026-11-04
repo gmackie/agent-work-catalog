@@ -14,7 +14,8 @@
     "@awc/adapter-sdk": "workspace:*",
     "@awc/adapter-remote-http": "workspace:*",
     "effect": "^4.0.6",
-    "@awc/modbus-pcap": "workspace:*"
+    "@awc/modbus-pcap": "workspace:*",
+    "@awc/tcp-pcap": "workspace:*"
   },
   "devDependencies": {
     "wrangler": "^4.148.0",

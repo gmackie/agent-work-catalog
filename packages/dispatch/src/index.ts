@@ -7,6 +7,7 @@ import { validateResult, assertArtifactShape, type WorkResult, type WorkArtifact
 import type { Commerce, WorkSnapshot } from "@awc/commerce";
 import type { PreparedWork, Quote } from "@awc/marketplace";
 import { analyzeClassicPcap, captureSha256, MAX_CAPTURE_BYTES, PCAP_MEDIA_TYPE } from "@awc/modbus-pcap";
+import { analyzeTcpPcap } from "@awc/tcp-pcap";
 
 /** This contract is administrator-installed, never inferred from a discovered manifest. */
 export interface TrustedExecutorBinding {
@@ -21,7 +22,7 @@ export interface TrustedExecutorBinding {
   /** V1 can only disclose explicitly public, inline, no-side-effect inputs. */
   readonly dataClassification: "public";
   readonly allowedEffects: readonly [];
-  readonly executionMode: "synthetic-test-only" | "bounded-modbus-pcap/v1";
+  readonly executionMode: "synthetic-test-only" | "bounded-modbus-pcap/v1" | "bounded-tcp-pcap/v1";
 }
 export type DispatchStatus =
   "new" | "starting" | "uncertain" | "active" | "polling" |
@@ -76,10 +77,13 @@ function assertBinding(binding:TrustedExecutorBinding,executor:WorkExecutor):voi
       !/^\d+$/.test(binding.offeringVersion) ||
       !/^(0|[1-9]\d*)$/.test(binding.maxCostMinorUnits) ||
       binding.maxDurationSeconds<1 || binding.maxDurationSeconds>300 ||
-      !["synthetic-test-only","bounded-modbus-pcap/v1"].includes(binding.executionMode) ||
+      !["synthetic-test-only","bounded-modbus-pcap/v1","bounded-tcp-pcap/v1"].includes(binding.executionMode) ||
       (binding.executionMode==="bounded-modbus-pcap/v1" &&
         (binding.offeringId!=="offering:modbus-pcap-analysis" ||
          binding.taskTypeId!=="task:modbus-pcap")) ||
+      (binding.executionMode==="bounded-tcp-pcap/v1" &&
+        (binding.offeringId!=="offering:tcp-pcap-evidence" ||
+         binding.taskTypeId!=="task:tcp-pcap")) ||
       binding.dataClassification!=="public" ||
       binding.allowedEffects.length!==0 ||
       !binding.outputMediaTypes.includes("application/json")) {
@@ -139,7 +143,7 @@ async function buildRequest(
     throw new DispatchError("invalid_contract","Prepared input bytes no longer match the human-reviewed commitment");
   }
   let executionInputs:ExecutionRequest["inputs"]=[...work.inputs];
-  if(binding.executionMode==="bounded-modbus-pcap/v1"){
+  if(["bounded-modbus-pcap/v1","bounded-tcp-pcap/v1"].includes(binding.executionMode)){
     if(work.inputs.length!==1 || !resolver) {
       throw new DispatchError("invalid_contract","Bounded PCAP execution requires one privately stored capture");
     }
@@ -156,7 +160,8 @@ async function buildRequest(
     }
     // Validate the format before the only allowed disclosure. The original remains
     // in a private R2 bucket; bounded BASE64 crosses the pinned signed HTTP channel.
-    await analyzeClassicPcap(bytes);
+    if(binding.executionMode==="bounded-tcp-pcap/v1")await analyzeTcpPcap(bytes);
+    else await analyzeClassicPcap(bytes);
     const encoded=btoa(String.fromCharCode(...bytes));
     executionInputs=[{name:"capture",kind:"inline",mediaType:PCAP_MEDIA_TYPE,
       data:encoded,sha256:source.sha256}];
@@ -220,7 +225,7 @@ export interface DispatchPlan {
   readonly disclosureDigest:string;
   readonly dataClassification:"public";
   readonly allowedEffects:readonly [];
-  readonly mode:"synthetic-test-only" | "bounded-modbus-pcap/v1";
+  readonly mode:"synthetic-test-only" | "bounded-modbus-pcap/v1" | "bounded-tcp-pcap/v1";
 }
 export interface TrustedDispatcher {
   readonly appliesTo: (offeringId:string) => boolean;
@@ -275,7 +280,7 @@ export function makeTrustedDispatcher(
         if(!snapshot.result)throw new DispatchError("invalid_contract","Completed execution omitted result");
         const verified=await validateSubmittedResult(snapshot.result,current.request,binding);
         let result=verified.result;
-        if(binding.executionMode==="bounded-modbus-pcap/v1"){
+        if(["bounded-modbus-pcap/v1","bounded-tcp-pcap/v1"].includes(binding.executionMode)){
           if(!options.resultProcessor)throw new DispatchError("invalid_contract","Report evaluator and R2 custody required");
           try { result=await options.resultProcessor.process(current,result); }
           catch {throw new DispatchError("invalid_contract","Report evaluation, custody or signed evidence failed");}

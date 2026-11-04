@@ -4,7 +4,7 @@ import { createMcpHandler } from "@modelcontextprotocol/server";
 import { makeMarketplace, inMemoryMarketplaceStore } from "@awc/marketplace";
 import { makeCommerce, sandboxExecutor, type WorkRunMessage, type WorkSnapshot, type WorkStateStore } from "@awc/commerce";
 import { Effect } from "effect";
-import { createCatalogMcpServer, MARKETPLACE_APP_URI, CONTRACT_APP_URI } from "../src/index.ts";
+import { createCatalogMcpServer, MARKETPLACE_APP_URI, CONTRACT_APP_URI, TCP_REPORT_APP_URI } from "../src/index.ts";
 
 async function fixture(authenticated: boolean) {
   const marketplace = makeMarketplace(inMemoryMarketplaceStore());
@@ -17,6 +17,25 @@ async function fixture(authenticated: boolean) {
   return {client,server,close:async()=>{await client.close();await server.close();}};
 }
 describe("AWC MCP server", () => {
+  it("exposes readiness-labeled TCP services and twelve non-purchasable domains",async()=>{
+    const f=await fixture(false);
+    try {
+      const services=await f.client.callTool({name:"catalog.list_tcp_services",arguments:{}});
+      const profiles=(services.structuredContent as {
+        profiles:Array<{id:string;readiness:string}>}).profiles;
+      expect(profiles).toHaveLength(9);
+      expect(profiles.find(x=>x.id==="tcp.packet-evidence.v1")?.readiness).toBe("pilot-test-only");
+      expect(profiles.find(x=>x.id==="tcp.enterprise-incident.v1")?.readiness).toBe("planned");
+      const domains=await f.client.callTool({name:"catalog.list_domain_opportunities",arguments:{}});
+      const items=(domains.structuredContent as {
+        opportunities:Array<{readiness:string}>}).opportunities;
+      expect(items).toHaveLength(12);
+      expect(items.every(x=>x.readiness==="design-only")).toBe(true);
+      const resource=await f.client.readResource({uri:"awc://catalog/tcp-service-tiers"});
+      expect(resource.contents.length).toBe(1);
+    }finally{await f.close();}
+  });
+
   it("exposes authenticated work artifact reading without advertising it to anonymous clients",async()=>{
     const marketplace=makeMarketplace(inMemoryMarketplaceStore());
     const valid="artifact:sha256:"+"a".repeat(64);
@@ -197,6 +216,8 @@ describe("AWC MCP server", () => {
       expect(work.isError).not.toBe(true);
       const w=work.structuredContent as {id:string;state:string;funding:{status:string}};
       expect(w.state).toBe("prepared_unfunded");
+      const tcpReport=await f.client.readResource({uri:TCP_REPORT_APP_URI});
+      expect(tcpReport.contents.length).toBeGreaterThan(0);
       const contract=await f.client.readResource({uri:CONTRACT_APP_URI});
       expect(contract.contents[0]&&"text" in contract.contents[0]?contract.contents[0].text:"").toContain("Secure terms");
       expect((work.structuredContent as {reviewUrl:string}).reviewUrl).toBe("https://awc.example/review?work="+encodeURIComponent(w.id));

@@ -36,6 +36,12 @@ export const seedTaskTypes: readonly TaskType[] = [
     outputMediaTypes: ["application/json"],permittedEffects:[],
   },
   {
+    id:"task:tcp-pcap",version:"1",name:"Analyze bounded TCP packet evidence",
+    description:"Parse public classic Ethernet/IPv4/TCP captures for flows, handshake observations, sequence ambiguity, zero windows and RST without claiming root cause",
+    inputMediaTypes:["application/vnd.tcpdump.pcap"],outputMediaTypes:["application/json"],
+    permittedEffects:[],
+  },
+  {
     id: "task:expert-chat", version: "1", name: "Specialist engineering chat",
     description: "Metered advisory inference, without a deliverable guarantee",
     inputMediaTypes: ["text/plain"], outputMediaTypes: ["text/plain"], permittedEffects: [],
@@ -62,6 +68,13 @@ export const seedOfferings: readonly Offering[] = [
     taskTypeId:"task:modbus-pcap",title:"Classic Modbus PCAP Evidence Report (TEST ONLY)",
     description:"Actual bounded parser for public sanitized Ethernet/IPv4/TCP captures. Reports observed exception responses and unmatched transactions; not a comprehensive network assessment.",
     pricing:{mode:"fixed",fixedAmount:{currency:"USD",minorUnits:"3500"}},
+    execution:[{protocol:"custom",endpoint:"https://example.invalid/v1/executions"}],
+  },
+  {
+    id:"offering:tcp-pcap-evidence",version:"1",providerId:"example-provider:network",
+    taskTypeId:"task:tcp-pcap",title:"TCP Packet Evidence Report (TEST ONLY)",
+    description:"Actual bounded public PCAP parser. Reports handshake delay, resets, raw zero windows and sequence-range ambiguity with capture limitations, no diagnosis or live commerce.",
+    pricing:{mode:"fixed",fixedAmount:{currency:"USD",minorUnits:"900"}},
     execution:[{protocol:"custom",endpoint:"https://example.invalid/v1/executions"}],
   },
   {

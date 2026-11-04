@@ -1,0 +1,47 @@
+name: TCP Scapy-TShark differential
+
+on:
+  push:
+    branches: [main, "feat/**", "design/**"]
+    paths: ["packages/tcp-pcap/**", ".github/workflows/tcp-differential.yml"]
+  pull_request:
+    paths: ["packages/tcp-pcap/**", ".github/workflows/tcp-differential.yml"]
+  workflow_dispatch:
+
+jobs:
+  tcp-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      TCP_CORPUS: /tmp/awc-tcp-corpus
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install packet oracle
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y tshark
+          python -m pip install scapy==2.6.1
+          tshark --version | head -1
+      - run: pnpm install --no-frozen-lockfile
+      - name: Generate independent Scapy captures
+        run: python packages/tcp-pcap/conformance/generate_corpus.py --out "$TCP_CORPUS"
+      - name: Analyze with AWC TCP parser
+        run: pnpm exec tsx packages/tcp-pcap/conformance/analyze_corpus.ts "$TCP_CORPUS"
+      - name: Compare TShark packet field observations
+        run: python packages/tcp-pcap/conformance/compare_tshark.py --dir "$TCP_CORPUS"
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-tcp-failing-corpus
+          path: /tmp/awc-tcp-corpus
+          retention-days: 7
