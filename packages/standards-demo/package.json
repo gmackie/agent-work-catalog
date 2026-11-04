@@ -1,0 +1,28 @@
+{
+  "name": "@awc/standards-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check": "pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "@awc/simulations": "workspace:*",
+    "@awc/authzen": "workspace:*",
+    "@awc/odrl-profile": "workspace:*",
+    "@awc/events": "workspace:*",
+    "@awc/provenance": "workspace:*",
+    "@awc/openslo": "workspace:*",
+    "@awc/osb-adapter": "workspace:*",
+    "@awc/ubl-adapter": "workspace:*",
+    "@awc/responsibility": "workspace:*",
+    "effect": "^4.0.6",
+    "@awc/oauth-rar": "workspace:*",
+    "@awc/epcis-adapter": "workspace:*"
+  }
+}

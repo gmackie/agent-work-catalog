@@ -21,3 +21,12 @@ This is an open Effect 4 monorepo defining machine-readable work contracts and i
 - Mandates and observations supplied in MCP arguments are untrusted; trust sources must be configured by the server, not by user-provided metadata.
 - No public deployment may use `makeSimulatedEconomicLedger` to represent actual payment funding or `ActionReceipt.simulation` as evidence of production execution.
 - Revocation blocks new authority. Cleanup, existing liabilities and handing over ongoing operational responsibility require explicit reconciliation.
+
+## Standards-first interop
+
+- Do not introduce proprietary replacement protocols for ODRL, AuthZEN, OAuth, CloudEvents, PROV-O, OpenSLO, OSB or UBL when a supported normative mapping exists.
+- Keep importing ODRL and other external documents **non-authoritative** until issuer, signature, profile, tenant and exact constraints are verified independently.
+- AuthZEN's boolean allow means unconditional permission **only**. AWC conditional approvals and spending reservations belong to a separate commit-time service.
+- COAZ-MCP is a working draft: unknown tools and unsupported CEL mappings must fail closed; tool annotations and server-provided schemas aren't authorization.
+- Never treat an OSB provisioning preview or UBL purchase order as a charge, held escrow, deployed resource or verified delivery.
+- Never present CloudEvents/PROV-O projections as signed evidence. Attest/VC verification is independent.

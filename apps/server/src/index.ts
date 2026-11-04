@@ -8,6 +8,8 @@ import { d1WorkStateStore, type D1Database as CommerceD1 } from "@awc/commerce/d
 import { makeCommerce, sandboxExecutor, type WorkRunMessage } from "@awc/commerce";
 import { stripeTestCheckout } from "@awc/commerce/stripe";
 import { identifyActor, requireScope, AuthError, type VerifiedActor } from "@awc/auth";
+import { authzenMetadata, createAuthzenPdp, parseAuthzenEvaluation } from "@awc/authzen";
+import { runStandardsScenario } from "@awc/standards-demo";
 import { createGitHubIssueSource, type AllowedRepo } from "@awc/adapter-github";
 import { AdapterError } from "@awc/adapter-sdk";
 import { d1SourceInbox, type D1Database as SourceD1 } from "@awc/source-inbox/d1";
@@ -344,6 +346,49 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
     status:"ok",service:"awc-mcp",money:"Stripe TEST or disabled",
     executor:"synthetic sandbox",livePayments:false,
   });
+
+  // AuthZEN demo endpoints are available ONLY in a local sandbox. No production PDP
+  // is exposed until an authenticated authoritative proposal/mandate registry exists.
+  if(url.pathname==="/.well-known/authzen-configuration" ||
+     url.pathname==="/access/v1/evaluation"){
+    if(!localSandbox(request,env))return json({error:"not_enabled"},404);
+    if(!allowedOrigin(request,env))return json({error:"origin_not_allowed"},403);
+    if(url.pathname==="/.well-known/authzen-configuration"){
+      if(request.method!=="GET")return json({error:"method_not_allowed"},405);
+      return json({...authzenMetadata(url.origin),awc_demo_only:true});
+    }
+    if(request.method!=="POST")return json({error:"method_not_allowed"},405);
+    if(request.headers.get("content-type")?.split(";")[0]!=="application/json"){
+      return json({error:"invalid_content_type"},415);
+    }
+    try{
+      const actor=await principal(request,env,"mcp");
+      if(!actor||actor.subject!=="sandbox-agent")return json({error:"unauthorized"},401);
+      const text=await request.text();
+      if(text.length>16_384)return json({error:"request_too_large"},413);
+      const parsed=parseAuthzenEvaluation(JSON.parse(text) as unknown);
+      const ref=parsed.context?.awc_proposal_id;
+      const match=typeof ref==="string"
+        ? /^proposal:demo:(vending|cloud|plant):(?:read|[0-9]+)$/.exec(ref)
+        : null;
+      if(!match)return json({decision:false,context:{awc_reason_codes:["NO_DEMO_REGISTRY_MATCH"]}});
+      const scenario=match[1] as "vending"|"cloud"|"plant";
+      const fixture=await runStandardsScenario(scenario);
+      const proposals=[fixture.syntheticReadProposal,
+        ...fixture.simulation.attemptedActions.map(a=>a.proposal)];
+      const pdp=createAuthzenPdp({resolve:async(id)=>{
+        const proposal=proposals.find(x=>x.id===id);
+        return proposal?{proposal,policy:fixture.simulation.trustedPolicyContext}:undefined;
+      }});
+      // The only authenticated local buyer token represents the *synthetic*
+      // fleet manager in this fixture. This alias is never used outside localhost.
+      return json(await pdp.evaluate(parsed,{
+        subjectId:fixture.simulation.mandate.delegateId,clientId:actor.subject,
+      }));
+    }catch{
+      return json({error:"invalid_request"},400);
+    }
+  }
   if(request.method==="GET"&&(url.pathname==="/"||url.pathname==="/connect")){
     return new Response(connectPage,{headers:{"content-type":"text/html;charset=UTF-8","cache-control":"no-store"}});
   }

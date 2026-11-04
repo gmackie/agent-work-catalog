@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { sealActionProposal, type ActionProposal, type OperatingMandate, type OwnerPermission, type PolicyDecision } from "@awc/responsibility";
+import { sealActionProposal, type ActionProposal, type OperatingMandate, type OwnerPermission, type PolicyContext, type PolicyDecision } from "@awc/responsibility";
 import { makeSimulatedEconomicLedger } from "@awc/economics";
 import { makeSimulatedOperations, assessObligations, type ActionReceipt, type OperationEvent } from "@awc/operations";
 import { createSimulatedEnvironment } from "@awc/operations/simulated";
@@ -12,7 +12,7 @@ export const SCENARIOS=[
 ] as const;
 export type ScenarioId=typeof SCENARIOS[number]["id"];
 export interface SimulationAttempt {
- readonly action:string;readonly risk:string;
+ readonly action:string;readonly risk:string;readonly proposal:ActionProposal;
  readonly decision:PolicyDecision;
  readonly status:"simulated"|"escalated"|"denied";
  readonly receipt?:ActionReceipt;
@@ -24,6 +24,9 @@ export interface SimulationReport {
  readonly mode:"strictly-simulated";
  readonly managedEntityId:string;
  readonly mandateId:string;
+ readonly mandate:OperatingMandate;
+ /** Synthetic authenticated policy registry snapshot used exclusively in conformance tests. */
+ readonly trustedPolicyContext:PolicyContext;
  readonly before:Readonly<Record<string,number>>;
  readonly after:Readonly<Record<string,number>>;
  readonly account:{readonly fundedMinor:string;readonly spentMinor:string;readonly reservedMinor:string;readonly availableMinor:string};
@@ -92,6 +95,11 @@ export function runScenario(id:ScenarioId):Effect.Effect<SimulationReport,Error>
   const before=env.snapshot();
   const ownerPermissions:OwnerPermission[]=[{ownerId:"org:asset-owner",
    granteePrincipalId:m.principalId,entityId,actions:p.actions,validUntil:"2026-12-01T00:00:00Z"}];
+  const trustedPolicyContext:PolicyContext={
+    now:NOW,mandates:[m],revokedMandateIds:[],
+    ownerPermissions,assetOwnerId:env.entity.ownerId,
+    actionPolicies,observation:env.observe(NOW),approvals:[],
+  };
   const controller=makeSimulatedOperations(env,m,[m],ownerPermissions,ledger);
   const attempts:SimulationAttempt[]=[];
   for(const [index,action] of p.intent.entries()){
@@ -112,19 +120,19 @@ export function runScenario(id:ScenarioId):Effect.Effect<SimulationReport,Error>
    });
    const decision=yield* controller.evaluate(request,NOW);
    if(decision.kind==="deny"||decision.kind==="escalate"){
-    attempts.push({action:request.action,risk:request.risk,decision,
+    attempts.push({action:request.action,risk:request.risk,proposal:request,decision,
      status:decision.kind==="deny"?"denied":"escalated"});continue;
    }
    const effect=controller.commit(request,NOW);
    const receipt=yield* effect;
-   attempts.push({action:request.action,risk:request.risk,decision,status:"simulated",receipt});
+    attempts.push({action:request.action,risk:request.risk,proposal:request,decision,status:"simulated",receipt});
   }
   const account=yield* ledger.account(m.economics.accountId);
   const obligations=assessObligations(m,[{metric:"availability",value:p.metrics.availability,
    sourceId:"simulated:"+p.kind,observedAt:NOW,windowSeconds:3600}],NOW);
   return {
    version:"awc.simulation/v1" as const,scenario:id,mode:"strictly-simulated" as const,
-   managedEntityId:entityId,mandateId:m.id,before,after:env.snapshot(),
+   managedEntityId:entityId,mandateId:m.id,mandate:m,trustedPolicyContext,before,after:env.snapshot(),
    account:{fundedMinor:account.fundedMinor,spentMinor:account.spentMinor,
     reservedMinor:account.reservedMinor,availableMinor:account.availableMinor},
    obligations,attemptedActions:attempts,events:env.events,
