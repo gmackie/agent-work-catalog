@@ -41,6 +41,12 @@ export interface McpServerConfig {
   readonly paidSandbox?: PaidSandboxConfig;
   /** Production private-tool requests MUST pass trusted AuthZEN tool admission. */
   readonly authorizationMode?: "legacy-sandbox"|"authzen-required";
+  readonly requestAccess?:(
+    name:string,
+    argumentsJson:Readonly<Record<string,unknown>>,
+    idempotencyKey:string
+  )=>Promise<Record<string,unknown>>;
+  readonly getAccessRequest?:(id:string)=>Promise<Record<string,unknown>>;
   readonly authorizePrivateTool?:(
     name:string,
     argumentsJson:Readonly<Record<string,unknown>>
@@ -214,6 +220,36 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
     tool:"operations.standards",
     productionConformance:false
   })}]}));
+
+
+  // This tool requests independent human review, NOT permission to execute.
+  // Gatekeeper owns the denial binding and approval task; agent credentials
+  // cannot call the separate human review route.
+  if(config.authorizationMode==="authzen-required"&&config.buyerId&&
+     config.buyerScopes?.includes("catalog:read")&&config.requestAccess&&config.getAccessRequest){
+    server.registerTool("authorization.request_access",{
+      description:"Request independent human approval for a previously denied reviewed action. No payment, approval, or work execution occurs.",
+      inputSchema:z.object({
+        toolName:z.enum(["work.start","work.prepare","work.get","quotes.request",
+          "billing.checkout","billing.reconcile","billing.options"]),
+        argumentsJson:z.record(z.string(),z.unknown()).refine(x=>JSON.stringify(x).length<8000),
+        idempotencyKey:z.string().regex(/^[A-Za-z0-9_-]{12,128}$/),
+      }).strict(),
+      annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
+    },async({toolName,argumentsJson,idempotencyKey})=>{
+      try{return reply(await config.requestAccess!(toolName,argumentsJson,idempotencyKey),
+        "Approval requested from a separate authenticated reviewer. The agent cannot approve its own task.");
+      }catch{return failure(new CommerceError("unauthorized","Approval request unavailable or not requestable"));}
+    });
+    server.registerTool("authorization.get_request",{
+      description:"Read the status of this caller's existing AuthZEN approval task. Approved tasks still require current-policy re-evaluation.",
+      inputSchema:z.object({requestId:z.string().regex(/^arq_[a-f0-9]{32}$/)}).strict(),
+      annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+    },async({requestId})=>{
+      try{return reply(await config.getAccessRequest!(requestId),"Approval task status retrieved.");}
+      catch{return failure(new CommerceError("unauthorized","Approval task unavailable"));}
+    });
+  }
 
   const buyerId=config.buyerId;
   if(buyerId&&scope("quotes:write")){
@@ -392,10 +428,11 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
   if(buyerId&&scope("work:execute")&&config.commerce&&config.enqueue){
     server.registerTool("work.start",{
       description:"Enqueue an approved AND independently funded work order. This sandbox runs synthetic work only.",
-      inputSchema:z.object({workId:z.string().min(3).max(160)}).strict(),
+      inputSchema:z.object({workId:z.string().min(3).max(160),
+        approvalId:z.string().regex(/^apr_[0-9a-f]{32}$/).optional()}).strict(),
       annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
-    },async({workId})=>{
-      if(!await authorized("work.start",{workId}))return denied();
+    },async({workId,approvalId})=>{
+      if(!await authorized("work.start",{workId,...(approvalId?{approvalId}:{})}))return denied();
       try {
         const scheduled=await Effect.runPromise(config.commerce!.start(buyerId,workId));
         if(scheduled.enqueue) await config.enqueue!({buyerId,workId});

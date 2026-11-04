@@ -55,3 +55,63 @@ export async function authorizeToolCall(
     "Object-level authorization/commit must occur in the domain service");
   return response;
 }
+
+/**
+ * COAZ-MCP reviewed declared-mapping subset. Mapping belongs to an operator,
+ * not to caller arguments or an unreviewed tool schema. The source/args are
+ * normalized before selecting the action/resource to prevent target confusion.
+ */
+export interface ReviewedToolMapping {
+  readonly toolName:string;
+  readonly action:string;
+  readonly resourceParam?:string;
+  readonly fixedResource?:string;
+  readonly resourceType:"gatekeeper-resource";
+}
+const actionKey=/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$/;
+const safeName=(s:string)=>s.length>0&&s.length<=256&&!/[\u0000-\u001f]/.test(s);
+export function mapReviewedToolCall(
+  invocation:McpInvocation,
+  actor:VerifiedMcpActor,
+  mappings:readonly ReviewedToolMapping[],
+):AuthzenEvaluationRequest {
+  if(!actor.subjectId||!actor.clientId||!actor.audience)throw new CoazError("unmapped","Unverified MCP caller");
+  const matching=mappings.filter(m=>m.toolName===invocation.params.name);
+  if(matching.length!==1)throw new CoazError("unmapped","Tool has no unique reviewed COAZ mapping");
+  const rule=matching[0]!;
+  if(!actionKey.test(rule.action)||!!rule.resourceParam===!!rule.fixedResource){
+    throw new CoazError("unmapped","Reviewed tool mapping invalid");
+  }
+  const resource=rule.resourceParam?invocation.params.arguments?.[rule.resourceParam]:rule.fixedResource;
+  if(typeof resource!=="string"||!safeName(resource))throw new CoazError("unmapped","No valid mapped resource");
+  return {
+    subject:{type:"identity",id:actor.subjectId},
+    action:{name:rule.action},
+    resource:{type:rule.resourceType,id:resource},
+    // Only purpose is admitted by first Gatekeeper AuthZEN profile.
+    // Client/tenant are verified independently by the PDP token and PIP.
+    context:{purpose:"awc-mcp:"+rule.toolName,
+      ...(typeof invocation.params.arguments?.approvalId==="string" &&
+        /^apr_[0-9a-f]{32}$/.test(invocation.params.arguments.approvalId)
+        ? {approval:{id:invocation.params.arguments.approvalId}}:{}),
+    },
+  };
+}
+/** These are safe initial mappings, not Gatekeeper policy grants.
+ * Policies must be installed in the Gatekeeper reviewed action catalog. */
+export const AWC_REVIEWED_TOOL_MAPPINGS:readonly ReviewedToolMapping[]=[
+  {toolName:"quotes.request",action:"awc.quotes.request",
+   resourceParam:"offeringId",resourceType:"gatekeeper-resource"},
+  {toolName:"work.prepare",action:"awc.work.prepare",
+   resourceParam:"quoteId",resourceType:"gatekeeper-resource"},
+  {toolName:"work.get",action:"awc.work.read",
+   resourceParam:"workId",resourceType:"gatekeeper-resource"},
+  {toolName:"work.start",action:"awc.work.start",
+   resourceParam:"workId",resourceType:"gatekeeper-resource"},
+  {toolName:"billing.options",action:"awc.billing.options",
+   fixedResource:"awc-billing-options",resourceType:"gatekeeper-resource"},
+  {toolName:"billing.checkout",action:"awc.billing.checkout",
+   resourceParam:"workId",resourceType:"gatekeeper-resource"},
+  {toolName:"billing.reconcile",action:"awc.billing.reconcile",
+   resourceParam:"workId",resourceType:"gatekeeper-resource"},
+];
