@@ -1,7 +1,7 @@
 import { describe,expect,it } from "vitest";
 import { Effect } from "effect";
 import { adapterRegistryLayer, inspectThingDescription, validateAdapterManifest,
- type AdapterManifest } from "../src/index.ts";
+ type AdapterManifest } from "../src/managed-systems.ts";
 const manifest:AdapterManifest={
  schemaVersion:"awc.managed-adapter/v1",id:"example:vending",version:"1",name:"Vending observation",
  role:"managed-system",transport:"remote-read-only",entityKinds:["vending-machine"],

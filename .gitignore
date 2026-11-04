@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-contract/
+dist-tcp/
 coverage/
 .env
 .env.*
@@ -15,3 +16,4 @@ apps/server/public/marketplace.html
 apps/server/public/contract.html
 dist-operations/
 apps/server/public/operations.html
+apps/server/public/tcp-report.html

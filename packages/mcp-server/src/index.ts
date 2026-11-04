@@ -7,10 +7,15 @@ import { MarketplaceError, type Marketplace } from "@awc/marketplace";
 import { CommerceError, type Commerce, type WorkRunMessage } from "@awc/commerce";
 import { SCENARIOS, runScenario } from "@awc/simulations";
 import { runStandardsScenario } from "@awc/standards-demo";
+import type { StoredOpportunity } from "@awc/source-inbox";
+import type { TrustedDispatcher } from "@awc/dispatch";
+import { listTcpServiceProfiles } from "@awc/offering-profiles";
+import { listCandidateDomains } from "@awc/domain-opportunities";
 
 export const MARKETPLACE_APP_URI = "ui://awc/marketplace.html";
 export const CONTRACT_APP_URI = "ui://awc/contract.html";
 export const OPERATIONS_APP_URI = "ui://awc/operations.html";
+export const TCP_REPORT_APP_URI = "ui://awc/tcp-report.html";
 export interface PaidSandboxConfig {
   readonly network: "base-sepolia";
   readonly recipient: `0x${string}`;
@@ -23,11 +28,19 @@ export interface McpServerConfig {
   readonly appHtml: string;
   readonly contractAppHtml?: string;
   readonly operationsAppHtml?: string;
+  readonly tcpReportAppHtml?: string;
   readonly approvalBaseUrl?: string;
   readonly commerce?: Commerce;
   readonly enqueue?: (work:WorkRunMessage)=>Promise<void>;
   readonly stripeCheckoutAvailable?: boolean;
+  readonly remoteDispatcher?: TrustedDispatcher;
+  readonly readCompletedArtifact?: (buyerId:string,workId:string,ref:string)=>Promise<{
+    ref:string;mediaType:string;value:unknown;integrityVerified:boolean;
+    signatureVerified?:boolean;issuerAuthority?:string;
+  }>;
   readonly paidSandbox?: PaidSandboxConfig;
+  /** Authorized buyer-scoped work from verified sources; never automatically funded. */
+  readonly listOpportunities?: (buyerId: string, limit: number) => Promise<readonly StoredOpportunity[]>;
 }
 
 const reply = (value:Record<string,unknown>,message:string) => ({
@@ -75,10 +88,46 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
   },async({offeringId})=>guarded(config.marketplace.getOffering(offeringId),
     x=>"Illustrative offering: "+x.offering.title));
 
+  server.registerTool("catalog.list_tcp_services",{
+    description:"Explore the versioned TCP/OT service family, its evidence contracts and example pricing. Only pilot-test-only profiles have a sandbox implementation; other tiers are NOT purchasable.",
+    inputSchema:z.object({}).strict(),
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+  },async()=>reply({
+    kind:"awc.tcp-service-catalog/v1",actualBillingEnabled:false,
+    profiles:listTcpServiceProfiles(),
+    note:"Illustrative prices, no market validation. Planned profiles cannot be ordered.",
+  },"Nine TCP/OT service profiles, explicitly marked pilot or planned. No real payments."));
+
+  server.registerResource("TCP/OT service profiles","awc://catalog/tcp-service-tiers",{
+    description:"Public versioned service taxonomy with implementation readiness and outcome evidence requirements.",
+    mimeType:"application/json",
+  },async(uri)=>({contents:[{
+    uri:uri.href,mimeType:"application/json",
+    text:JSON.stringify({version:"awc.tcp-service-catalog/v1",profiles:listTcpServiceProfiles()}),
+  }]}));
+
+  server.registerTool("catalog.list_domain_opportunities",{
+    description:"Explore twelve research-only agent work domains with concrete sources, execution pipelines, deliverables, verification criteria and illustrative pricing. None are currently purchasable.",
+    inputSchema:z.object({}).strict(),
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+  },async()=>reply({
+    kind:"awc.domain-opportunities/v1",readiness:"design-only",
+    opportunities:listCandidateDomains(),actualBillingEnabled:false,
+  },"Twelve design-only domain opportunities, not executable or priced live listings."));
+
+  server.registerResource("Agent work opportunity map","awc://catalog/domain-opportunities",{
+    description:"Research-only work domains and measurable output contracts",
+    mimeType:"application/json",
+  },async(uri)=>({contents:[{
+    uri:uri.href,mimeType:"application/json",
+    text:JSON.stringify({schema:"awc.domain-opportunities/v1",items:listCandidateDomains()}),
+  }]}));
+
   for (const [name,uri,html] of [
     ["Marketplace Explorer",MARKETPLACE_APP_URI,config.appHtml],
     ["Contract Review",CONTRACT_APP_URI,config.contractAppHtml??""],
     ["Operations Sandbox",OPERATIONS_APP_URI,config.operationsAppHtml??""],
+    ["TCP Evidence Inspector",TCP_REPORT_APP_URI,config.tcpReportAppHtml??""],
   ] as const){
     registerAppResource(server,name,uri,{
       description:name+" interface, optional in clients without MCP Apps",
@@ -172,6 +221,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       description:"Prepare UNFUNDED work under an existing quote. Opens a separate human-facing review.",
       inputSchema:z.object({
         quoteId:z.string().min(3).max(150),
+        dataClassification:z.enum(["public","internal","confidential"]).optional(),
         idempotencyKey:z.string().min(8).max(100),
         inputs:z.array(z.object({
           name:z.string().min(1).max(100),mediaType:z.string().min(3).max(120),
@@ -184,6 +234,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
     },async(args)=>{
       const prepare=config.marketplace.prepareWork(buyerId,{
         quoteId:args.quoteId,idempotencyKey:args.idempotencyKey,
+        ...(args.dataClassification!==undefined ? {dataClassification:args.dataClassification} : {}),
         inputs:args.inputs.map(i=>({
           name:i.name,mediaType:i.mediaType,kind:i.kind,
           ...(i.data!==undefined?{data:i.data}:{}),
@@ -199,6 +250,27 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       }catch(error){return failure(error);}
     });
   }
+  if(buyerId&&scope("work:read")&&config.listOpportunities){
+    server.registerTool("work.opportunities.list",{
+      description:"List verified incoming work OPPORTUNITIES, not contracts or authorized executions.",
+      inputSchema:z.object({limit:z.number().int().min(1).max(20).optional()}).strict(),
+      annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+    },async({limit})=>{
+      try {
+        const records=await config.listOpportunities!(buyerId,limit??10);
+        return reply({
+          kind:"awc.opportunities/v1",source:"authenticated-inbox",
+          opportunities:records.map(({opportunity})=>({
+            id:opportunity.id,title:opportunity.title,
+            descriptionPreview:opportunity.description.slice(0,500),
+            status:opportunity.status,sourceId:opportunity.external.sourceId,
+            originUrl:opportunity.external.originUrl,observedAt:opportunity.observedAt,
+            commercialStatus:"not_authorized",
+          })),
+        },"Received "+records.length+" potential assignments. None are authorized WorkOrders.");
+      } catch(error) { return failure(error); }
+    });
+  }
   if(buyerId&&scope("work:read")){
     server.registerTool("work.get",{
       description:"Read this buyer's work and any approval, funding, execution status. Not an MCP Task.",
@@ -211,7 +283,15 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
         const commerce=config.commerce
           ? (await Effect.runPromise(config.commerce.preview(buyerId,workId))).state
           : undefined;
-        return reply({...work,quote,commerce,reviewUrl:reviewUrl(work.id)},
+        const dispatch=config.remoteDispatcher?.appliesTo(work.offeringId)
+          ? await Effect.runPromise(config.remoteDispatcher.get(buyerId,workId)) : null;
+        const remoteStatus=dispatch?{
+          status:dispatch.status,executorId:dispatch.executorId,
+          providerExecutionId:dispatch.handle?.providerExecutionId??null,
+          resultDigest:dispatch.resultDigest??null,
+          updatedAt:dispatch.updatedAt,lastError:dispatch.lastError??null,
+        }:null;
+        return reply({...work,quote,commerce,remoteStatus,reviewUrl:reviewUrl(work.id)},
           "Work "+work.id+" is "+(commerce?.status??work.state));
       }catch(error){return failure(error);}
     });
@@ -225,7 +305,33 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       const commerce=config.commerce
         ? (await Effect.runPromise(config.commerce.preview(buyerId,work.id))).state
         : undefined;
-      return {contents:[{uri:uri.href,mimeType:"application/json",text:JSON.stringify({work,quote,commerce})}]};
+      const dispatch=config.remoteDispatcher?.appliesTo(work.offeringId)
+        ? await Effect.runPromise(config.remoteDispatcher.get(buyerId,work.id)) : null;
+      return {contents:[{uri:uri.href,mimeType:"application/json",text:JSON.stringify({
+        work,quote,commerce,remoteStatus:dispatch?{
+          status:dispatch.status,executorId:dispatch.executorId,
+          providerExecutionId:dispatch.handle?.providerExecutionId??null,
+          resultDigest:dispatch.resultDigest??null,
+        }:null,
+      })}]};
+    });
+  }
+  if(buyerId&&scope("work:read")&&config.readCompletedArtifact){
+    registerAppTool(server,"work.artifacts.read",{
+      description:"Read and verify a buyer-scoped completed JSON artifact or broker-signed observation from private R2. No arbitrary URLs.",
+      inputSchema:z.object({
+        workId:z.string().regex(/^work_[a-f0-9-]{36}$/),
+        artifactRef:z.string().regex(/^artifact:sha256:[a-f0-9]{64}$/),
+      }).strict(),
+      annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+      _meta:{ui:{resourceUri:TCP_REPORT_APP_URI}},
+    },async({workId,artifactRef})=>{
+      try{
+        const item=await config.readCompletedArtifact!(buyerId,workId,artifactRef);
+        return reply(item,
+          "Verified buyer-scoped "+item.mediaType+" artifact. "+
+          (item.signatureVerified?"Observation signature valid; issuer authority not independently assessed.":"Content SHA-256 matched."));
+      }catch{return failure(new MarketplaceError("not_found","Completed artifact unavailable or failed integrity verification"));}
     });
   }
   if(buyerId&&scope("billing:checkout")){

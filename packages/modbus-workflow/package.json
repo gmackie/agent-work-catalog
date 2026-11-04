@@ -1,0 +1,23 @@
+{
+  "name": "@awc/modbus-workflow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check": "pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "@awc/modbus-pcap": "workspace:*",
+    "@awc/artifact-custody": "workspace:*",
+    "@awc/attest-receipts": "workspace:*",
+    "@awc/dispatch": "workspace:*",
+    "@awc/contracts": "workspace:*",
+    "effect": "^4.0.6",
+    "jose": "^6.1.0"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@awc/tcp-workflow",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check": "pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "@awc/tcp-analysis": "workspace:*",
+    "@awc/tcp-pcap": "workspace:*",
+    "@awc/artifact-custody": "workspace:*",
+    "@awc/attest-receipts": "workspace:*",
+    "@awc/dispatch": "workspace:*",
+    "@awc/contracts": "workspace:*",
+    "effect": "^4.0.6",
+    "@awc/modbus-pcap": "workspace:*"
+  },
+  "devDependencies": {
+    "jose": "^6.1.0"
+  }
+}
