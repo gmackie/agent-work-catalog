@@ -39,6 +39,12 @@ export interface McpServerConfig {
     signatureVerified?:boolean;issuerAuthority?:string;
   }>;
   readonly paidSandbox?: PaidSandboxConfig;
+  /** Production private-tool requests MUST pass trusted AuthZEN tool admission. */
+  readonly authorizationMode?: "legacy-sandbox"|"authzen-required";
+  readonly authorizePrivateTool?:(
+    name:string,
+    argumentsJson:Readonly<Record<string,unknown>>
+  )=>Promise<boolean>;
   /** Authorized buyer-scoped work from verified sources; never automatically funded. */
   readonly listOpportunities?: (buyerId: string, limit: number) => Promise<readonly StoredOpportunity[]>;
 }
@@ -62,6 +68,12 @@ async function guarded<T extends object>(effect:Effect.Effect<T,any>,summary:(va
 export function createCatalogMcpServer(config:McpServerConfig):McpServer {
   const server=new McpServer({name:"Agent Work Catalog",version:"0.2.0"});
   const scope=(name:string)=>!!config.buyerId&&!!config.buyerScopes?.includes(name);
+  const authorized=async(name:string,args:Readonly<Record<string,unknown>>):Promise<boolean>=>{
+    if(config.authorizationMode!=="authzen-required")return true; // legacy local demo only
+    if(!config.authorizePrivateTool)return false;
+    try{return (await config.authorizePrivateTool(name,args))===true;}catch{return false;}
+  };
+  const denied=()=>failure(new CommerceError("unauthorized","AuthZEN tool admission denied"));
   const reviewUrl=(id:string)=>config.approvalBaseUrl
     ? new URL("/review?work="+encodeURIComponent(id),config.approvalBaseUrl).toString()
     : undefined;
@@ -213,8 +225,11 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
         maxPriceMinor:z.string().regex(/^(0|[1-9][0-9]*)$/).optional(),
       }).strict(),
       annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
-    },async(args)=>guarded(config.marketplace.requestQuote(buyerId,args),
-      q=>"Quote "+q.id+" proposed; no money or permission to execute."));
+    },async(args)=>{
+      if(!await authorized("quotes.request",args))return denied();
+      return guarded(config.marketplace.requestQuote(buyerId,args),
+      q=>"Quote "+q.id+" proposed; no money or permission to execute.");
+    });
   }
   if(buyerId&&scope("work:prepare")){
     registerAppTool(server,"work.prepare",{
@@ -232,6 +247,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
       _meta:{ui:{resourceUri:CONTRACT_APP_URI}},
     },async(args)=>{
+      if(!await authorized("work.prepare",args))return denied();
       const prepare=config.marketplace.prepareWork(buyerId,{
         quoteId:args.quoteId,idempotencyKey:args.idempotencyKey,
         ...(args.dataClassification!==undefined ? {dataClassification:args.dataClassification} : {}),
@@ -277,6 +293,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       inputSchema:z.object({workId:z.string().min(3).max(160)}).strict(),
       annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
     },async({workId})=>{
+      if(!await authorized("work.get",{workId}))return denied();
       try {
         const work=await Effect.runPromise(config.marketplace.getWork(buyerId,workId));
         const quote=await Effect.runPromise(config.marketplace.getQuote(buyerId,work.quoteId));
@@ -300,6 +317,9 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       list:undefined,
     }),{description:"Buyer-private work state and exact quote terms",mimeType:"application/json"},
     async(uri,vars)=>{
+      if(!await authorized("work.get",{workId:String(vars.workId)})){
+        throw new Error("AuthZEN denied private work-order resource");
+      }
       const work=await Effect.runPromise(config.marketplace.getWork(buyerId,String(vars.workId)));
       const quote=await Effect.runPromise(config.marketplace.getQuote(buyerId,work.quoteId));
       const commerce=config.commerce
@@ -339,25 +359,34 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       description:"List safe available payment methods. No authorization or charge is performed.",
       inputSchema:z.object({}).strict(),
       annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
-    },async()=>reply({
+    },async()=>{
+      if(!await authorized("billing.options",{}))return denied();
+      return reply({
       stripeTestMode:!!config.stripeCheckoutAvailable,
       x402RealMoney:false,credits:false,canStartWithoutFunding:false,
       message:"Card checkout requires separately reviewed contract. Test mode only.",
-    },"No live-money payment rail is enabled."));
+    },"No live-money payment rail is enabled.");
+    });
 
     if(config.commerce&&config.stripeCheckoutAvailable){
       server.registerTool("billing.checkout",{
         description:"Create a Stripe TEST Checkout URL only AFTER separately authenticated human approval.",
         inputSchema:z.object({workId:z.string().min(3).max(160)}).strict(),
         annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
-      },async({workId})=>guarded(config.commerce!.checkout(buyerId,workId),r=>
-        "Hosted Stripe TEST checkout ready. It will not authorize execution until settlement is verified."));
+      },async({workId})=>{
+        if(!await authorized("billing.checkout",{workId}))return denied();
+        return guarded(config.commerce!.checkout(buyerId,workId),r=>
+        "Hosted Stripe TEST checkout ready. It will not authorize execution until settlement is verified.");
+      });
       server.registerTool("billing.reconcile",{
         description:"Re-query Stripe TEST settlement for an approved work order. Cannot mark arbitrary payments as verified.",
         inputSchema:z.object({workId:z.string().min(3).max(160)}).strict(),
         annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
-      },async({workId})=>guarded(config.commerce!.reconcileStripe(buyerId,workId),
-        r=>"Stripe TEST funding state: "+r.status));
+      },async({workId})=>{
+        if(!await authorized("billing.reconcile",{workId}))return denied();
+        return guarded(config.commerce!.reconcileStripe(buyerId,workId),
+        r=>"Stripe TEST funding state: "+r.status);
+      });
     }
   }
   if(buyerId&&scope("work:execute")&&config.commerce&&config.enqueue){
@@ -366,6 +395,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       inputSchema:z.object({workId:z.string().min(3).max(160)}).strict(),
       annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
     },async({workId})=>{
+      if(!await authorized("work.start",{workId}))return denied();
       try {
         const scheduled=await Effect.runPromise(config.commerce!.start(buyerId,workId));
         if(scheduled.enqueue) await config.enqueue!({buyerId,workId});

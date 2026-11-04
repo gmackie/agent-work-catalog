@@ -50,6 +50,28 @@ describe("AuthZEN 1.0 AWC policy adapter",()=>{
   expect(result.decision).toBe(false);
   expect(result.context?.awc_decision_kind).toBe("permit-with-conditions");
  });
+
+ it("allows conditional purchases ONLY after a trusted exact-revision authorization",async()=>{
+  const {proposal,context}=await make("capacity.acquire");
+  const resolver={resolve:async()=>({proposal,policy:context})};
+  const verified={proposalId:proposal.id,revision:proposal.revision,
+    actorId:proposal.actorId,entityId:proposal.entityId,action:proposal.action,
+    expiresAt:"2026-11-01T16:00:30Z"};
+  const pdp=createAuthzenPdp(resolver,{conditionalVerifier:{verify:async()=>verified}});
+  const decision=await pdp.evaluate(actionToAuthzen(proposal),ACTOR);
+  expect(decision.decision).toBe(true);
+  expect(decision.context?.awc_decision_kind).toBe("verified-conditional-authorization");
+  const forged=createAuthzenPdp(resolver,{conditionalVerifier:{verify:async()=>({
+    ...verified,revision:"f".repeat(64)
+  })}});
+  expect((await forged.evaluate(actionToAuthzen(proposal),ACTOR)).decision).toBe(false);
+  const expired=createAuthzenPdp(resolver,{conditionalVerifier:{verify:async()=>({
+    ...verified,expiresAt:"2026-11-01T15:59:59Z"
+  })}});
+  expect((await expired.evaluate(actionToAuthzen(proposal),ACTOR)).decision).toBe(false);
+  const down=createAuthzenPdp(resolver,{conditionalVerifier:{verify:async()=>{throw Error("down");}}});
+  expect((await down.evaluate(actionToAuthzen(proposal),ACTOR)).decision).toBe(false);
+ });
  it("fails closed on forged caller, resource, scope, revision and unknown proposal",async()=>{
   const {proposal,context}=await make("telemetry.read");
   const pdp=createAuthzenPdp({resolve:async()=>({proposal,policy:context})});

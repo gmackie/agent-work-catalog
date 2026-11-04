@@ -31,6 +31,22 @@ export interface AuthoritativeProposal {
   readonly proposal: ActionProposal;
   readonly policy: PolicyContext;
 }
+export interface TrustedConditionalAuthorization {
+  readonly proposalId:string;
+  readonly revision:string;
+  readonly actorId:string;
+  readonly entityId:string;
+  readonly action:string;
+  readonly expiresAt:string;
+}
+/** Implemented only by a trusted, durable economic/operations authorization gateway,
+ * not by a model input, unsigned grant, or external provider claim. */
+export interface ConditionalAuthorizationVerifier {
+  verify(
+    trusted:AuthoritativeProposal,
+    caller:VerifiedPdpCaller
+  ):Promise<TrustedConditionalAuthorization|undefined>;
+}
 export interface AuthzenResolver {
   resolve(
     proposalId: string,
@@ -99,7 +115,10 @@ const refuse=(reason:string,detail?:PolicyDecision):AuthzenDecision => ({
  * Only an unconditionally permitted read/plan can return true. Conditional
  * writes require a separate reviewed transaction/commit path and return deny.
  */
-export function createAuthzenPdp(resolver:AuthzenResolver) {
+export function createAuthzenPdp(
+  resolver:AuthzenResolver,
+  options:{readonly conditionalVerifier?:ConditionalAuthorizationVerifier}={}
+) {
   return {
     async evaluate(raw:unknown,caller:VerifiedPdpCaller):Promise<AuthzenDecision> {
       const request=parseAuthzenEvaluation(raw);
@@ -121,6 +140,28 @@ export function createAuthzenPdp(resolver:AuthzenResolver) {
       try {await assertActionRevision(proposal);}catch{return refuse("PROPOSAL_DIGEST_MISMATCH");}
       let outcome:PolicyDecision;
       try{outcome=evaluateAction(proposal,policy);}catch{return refuse("POLICY_EVALUATION_FAILED");}
+      // A conditional authorization may turn into allow only when a trusted,
+      // separately authenticated resource/financial gateway verifies that ALL
+      // conditions are already fulfilled for this exact action revision.
+      if(outcome.kind==="permit-with-conditions" && options.conditionalVerifier){
+        let proof:TrustedConditionalAuthorization|undefined;
+        try{proof=await options.conditionalVerifier.verify(trusted,caller);}catch{
+          return refuse("CONDITIONAL_VERIFIER_UNAVAILABLE",outcome);
+        }
+        if(proof&&proof.proposalId===proposal.id&&proof.revision===proposal.revision &&
+          proof.actorId===proposal.actorId&&proof.entityId===proposal.entityId &&
+          proof.action===proposal.action&&Number.isFinite(Date.parse(proof.expiresAt)) &&
+          Date.parse(proof.expiresAt)>Date.parse(policy.now) &&
+          Date.parse(proof.expiresAt)<=Date.parse(outcome.validUntil)){
+          return {decision:true,context:{
+            awc_decision_kind:"verified-conditional-authorization",
+            awc_action_revision:proposal.revision,
+            awc_expires_at:proof.expiresAt,
+            awc_note:"PEP must atomically recheck and consume one-time external authority",
+          }};
+        }
+        return refuse("CONDITIONS_NOT_VERIFIED",outcome);
+      }
       // "permit-with-conditions" is *not* equivalent to unconditional AuthZEN allow.
       if(outcome.kind!=="permit")return refuse(
         outcome.kind==="permit-with-conditions"?"AWC_CONDITIONAL_COMMIT_REQUIRED":"AUTHORIZATION_DENIED",

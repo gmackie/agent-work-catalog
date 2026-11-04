@@ -36,6 +36,10 @@
       }
     ]
   },
+  "durable_objects": {
+    "bindings": [{"name":"AWC_ACCOUNT_TREASURY","class_name":"AWCEconomicAccount"}]
+  },
+  "migrations": [{"tag":"v1-sql-treasury","new_sqlite_classes":["AWCEconomicAccount"]}],
   "triggers": {
     "crons": [
       "*/5 * * * *"

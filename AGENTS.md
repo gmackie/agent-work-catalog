@@ -30,3 +30,13 @@ This is an open Effect 4 monorepo defining machine-readable work contracts and i
 - COAZ-MCP is a working draft: unknown tools and unsupported CEL mappings must fail closed; tool annotations and server-provided schemas aren't authorization.
 - Never treat an OSB provisioning preview or UBL purchase order as a charge, held escrow, deployed resource or verified delivery.
 - Never present CloudEvents/PROV-O projections as signed evidence. Attest/VC verification is independent.
+
+## AuthZEN-first enforcement requirements
+
+- Every production MCP private tool and private resource read MUST pass a registered AuthZEN tool-admission policy and its domain's independent owner/state/funding check. Missing PDP and network failures fail closed, not open.
+- AuthZEN PDP access tokens use their own audience, issuer/JWKS, client allowlist, scope and server-trusted tenant identity; never reuse an MCP buyer or human approval token as the PDP access token.
+- Only trusted issuer and site-control services can write mandate/asset/approval records. Every proposal revision is hash bound; JSON from an agent is not a trusted mandate.
+- If a remote Gatekeeper PDP is configured, it is authoritative; never silently fall back to local grants.
+- AuthZEN's boolean decision is unconditional only after all independently verified conditions hold. Spending authority must be backed by actual reserved funds, and consumption/settlement still requires a separate commit-time transaction check.
+- SQLite Durable Object treasury is one account + descendant mandate graph per instance. It must never be exposed through public RPC/fetch before an authenticated issuer/treasury bridge exists.
+- Do not state "production-ready" until issuer signature verification, fund settlement finality, database concurrency, audit, migration and deployment tests succeed.

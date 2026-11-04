@@ -9,6 +9,13 @@ import { makeCommerce, sandboxExecutor, type WorkRunMessage } from "@awc/commerc
 import { stripeTestCheckout } from "@awc/commerce/stripe";
 import { identifyActor, requireScope, AuthError, type VerifiedActor } from "@awc/auth";
 import { authzenMetadata, createAuthzenPdp, parseAuthzenEvaluation } from "@awc/authzen";
+import { verifyPdpBearer, PdpAuthenticationError } from "@awc/pdp-auth";
+import { createRegistryBackedPdp } from "@awc/mandate-registry";
+import { d1TrustedMandateRegistry } from "@awc/mandate-registry/d1";
+import { createTrustedMcpToolPdp } from "@awc/mandate-registry/tools";
+import { d1McpToolPolicies } from "@awc/mandate-registry/d1-tools";
+import { mapToolCall } from "@awc/coaz-mcp";
+import { createRemoteAuthzenPdp } from "@awc/authzen-client";
 import { runStandardsScenario } from "@awc/standards-demo";
 import { createGitHubIssueSource, type AllowedRepo } from "@awc/adapter-github";
 import { AdapterError } from "@awc/adapter-sdk";
@@ -46,6 +53,16 @@ export interface Env {
   readonly OIDC_APPROVAL_CLIENT_ID?:string;
   readonly OIDC_APPROVAL_ACR?:string;
   readonly ALLOWED_ORIGINS?:string;
+  /** Explicit opt-in to the AuthZEN PDP, separate from local synthetic demo mode. */
+  readonly ENABLE_AUTHZEN_PDP?:string;
+  readonly AUTHZEN_PUBLIC_ORIGIN?:string;
+  readonly AUTHZEN_PDP_ISSUER?:string;
+  readonly AUTHZEN_PDP_AUDIENCE?:string;
+  readonly AUTHZEN_PDP_JWKS_URL?:string;
+  readonly AUTHZEN_PDP_CLIENT_IDS?:string;
+  /** Alternative: existing Gatekeeper AuthZEN PDP, authenticated via service token. */
+  readonly GATEKEEPER_AUTHZEN_ORIGIN?:string;
+  readonly GATEKEEPER_PDP_SERVICE_TOKEN?:string;
   readonly ENABLE_GITHUB_SOURCE?:string;
   readonly GITHUB_WEBHOOK_SECRET?:string;
   /** JSON array of explicit {repositoryId,fullName,installationId}, approved by admin. */
@@ -334,6 +351,27 @@ document.querySelector("#fund").onclick=async()=>{
  await read();
 };
 </script></body></html>`;
+/**
+ * Public PDP deployment is opt-in and host-bound: there are no implicit
+ * defaults to a test token, sandbox buyer, or caller-selected identity.
+ */
+function authzenPublicEnabled(url:URL,env:Env):boolean {
+  if(env.ENABLE_AUTHZEN_PDP!=="true"||!env.AUTHZEN_PUBLIC_ORIGIN)return false;
+  try{
+    const origin=new URL(env.AUTHZEN_PUBLIC_ORIGIN);
+    return origin.protocol==="https:" && origin.origin===origin.href.replace(/\/$/,"") &&
+      url.protocol==="https:" && url.origin===origin.origin;
+  }catch{return false;}
+}
+function pdpTokenConfig(env:Env){
+  return {
+    issuer:env.AUTHZEN_PDP_ISSUER??"",
+    audience:env.AUTHZEN_PDP_AUDIENCE??"",
+    jwksUrl:env.AUTHZEN_PDP_JWKS_URL??"",
+    allowedClientIds:(env.AUTHZEN_PDP_CLIENT_IDS??"").split(",").map(x=>x.trim()).filter(Boolean),
+    requiredScope:"awc:pdp:evaluate",
+  };
+}
 const connectPage=`<!doctype html><html lang="en"><meta charset="UTF-8"/><title>AWC</title>
 <body style="max-width:760px;margin:40px auto;font:16px system-ui;line-height:1.5">
 <h1>Agent Work Catalog</h1><p>Experimental MCP server at <code>/mcp</code>.</p>
@@ -351,15 +389,38 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
   // is exposed until an authenticated authoritative proposal/mandate registry exists.
   if(url.pathname==="/.well-known/authzen-configuration" ||
      url.pathname==="/access/v1/evaluation"){
-    if(!localSandbox(request,env))return json({error:"not_enabled"},404);
+    const isDemo=localSandbox(request,env);
+    const isPublic=authzenPublicEnabled(url,env);
+    if(!isDemo&&!isPublic)return json({error:"not_enabled"},404);
     if(!allowedOrigin(request,env))return json({error:"origin_not_allowed"},403);
     if(url.pathname==="/.well-known/authzen-configuration"){
       if(request.method!=="GET")return json({error:"method_not_allowed"},405);
-      return json({...authzenMetadata(url.origin),awc_demo_only:true});
+      return isDemo
+        ? json({...authzenMetadata(url.origin),awc_demo_only:true})
+        : json(authzenMetadata(env.AUTHZEN_PUBLIC_ORIGIN!));
     }
     if(request.method!=="POST")return json({error:"method_not_allowed"},405);
     if(request.headers.get("content-type")?.split(";")[0]!=="application/json"){
       return json({error:"invalid_content_type"},415);
+    }
+    if(isPublic&&!isDemo){
+      let caller;
+      try{caller=await verifyPdpBearer(request.headers.get("authorization"),pdpTokenConfig(env));}
+      catch(error){
+        if(error instanceof PdpAuthenticationError){
+          return json({error:error.code},error.code==="unauthorized"?401:503);
+        }
+        return json({error:"configuration_error"},503);
+      }
+      let parsed;
+      try {
+        const raw=await request.text();
+        if(raw.length>16_384)return json({error:"request_too_large"},413);
+        parsed=parseAuthzenEvaluation(JSON.parse(raw) as unknown);
+      }catch{return json({error:"invalid_request"},400);}
+      const trusted=d1TrustedMandateRegistry(env.DB);
+      const decision=await createRegistryBackedPdp(trusted).evaluate(parsed,caller);
+      return json(decision);
     }
     try{
       const actor=await principal(request,env,"mcp");
@@ -533,6 +594,26 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
   try{
     const actor=await principal(request,env,"mcp");
     const {marketplace,commerce,stripe,remoteDispatcher,custody}=services(env,request);
+    const local=localSandbox(request,env);
+    const authzenReady=authzenPublicEnabled(url,env);
+    const verifiedToolActor=actor?.kind==="agent"&&actor.clientId&&actor.tenantId
+      ? {tenantId:actor.tenantId,subjectId:actor.subject,
+          clientId:actor.clientId,scopes:actor.scopes,
+          audience:url.origin+"/mcp"}
+      : null;
+    const toolPdp=authzenReady&&verifiedToolActor
+      ? createTrustedMcpToolPdp(d1McpToolPolicies(env.DB))
+      : null;
+    const remoteConfigured=!!env.GATEKEEPER_AUTHZEN_ORIGIN&&!!env.GATEKEEPER_PDP_SERVICE_TOKEN;
+    const remotePdp=remoteConfigured&&verifiedToolActor
+      ? createRemoteAuthzenPdp({
+          origin:env.GATEKEEPER_AUTHZEN_ORIGIN!,
+          bearerToken:async()=>env.GATEKEEPER_PDP_SERVICE_TOKEN!,
+        })
+      : null;
+    // Upstream is authoritative when configured. Never silently fall back to
+    // local policy if the network/token/provider decision fails.
+    const privateAuthorizationReady=!!(remotePdp||toolPdp);
     const ui=await env.ASSETS.fetch("https://assets.local/marketplace.html");
     const contractUi=await env.ASSETS.fetch("https://assets.local/contract.html");
     const operationsUi=await env.ASSETS.fetch("https://assets.local/operations.html");
@@ -546,8 +627,22 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
       tcpUi.ok?tcpUi.text():Promise.resolve(""),
     ]);
     const configured=createMcpHandler(()=>createCatalogMcpServer({
-      marketplace,commerce,buyerId:actor?.kind==="agent"?actor.buyerId:null,
+      marketplace,commerce,
+      buyerId:actor?.kind==="agent"&&(local||privateAuthorizationReady)?actor.buyerId:null,
       buyerScopes:actor?.scopes??[],approvalBaseUrl:url.origin,
+      authorizationMode:local?"legacy-sandbox":"authzen-required",
+      ...(privateAuthorizationReady&&verifiedToolActor?{authorizePrivateTool:async(name:string,args:Readonly<Record<string,unknown>>)=>{
+        const invocation={method:"tools/call" as const,params:{name,arguments:args}};
+        const mapped=mapToolCall(invocation,verifiedToolActor);
+        const decision=remotePdp
+          ? await remotePdp.evaluate({
+              ...mapped,
+              context:{...mapped.context,awc_tenant_id:verifiedToolActor.tenantId,
+                awc_pep_resource:verifiedToolActor.audience},
+            })
+          : await toolPdp!.evaluate(mapped,verifiedToolActor);
+        return decision.decision===true;
+      }}:{}),
       appHtml:html,contractAppHtml:contract,operationsAppHtml:operations,tcpReportAppHtml:tcpReport,
       ...(env.AWC_JOBS ? {enqueue:async (msg:WorkRunMessage)=>{await env.AWC_JOBS!.send(msg);}} : {}),
       stripeCheckoutAvailable:!!stripe,
@@ -634,6 +729,8 @@ export async function recoverQueued(env:Env):Promise<void>{
     }
   }
 }
+/** Private SQLite-backed Durable Object class; no public treasury write APIs exist yet. */
+export { AWCEconomicAccount } from "./treasury.ts";
 export default {
   fetch:handleRequest,
   queue:consumeWorkQueue,
