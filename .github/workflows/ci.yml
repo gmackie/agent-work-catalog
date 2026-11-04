@@ -18,5 +18,7 @@ jobs:
       - run: pnpm --filter @awc/mcp-ui build
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm operations:demo
+      - run: pnpm standards:demo
       - run: pnpm --filter @awc/server bundle
       - run: pnpm --filter @awc/example-remote-executor bundle

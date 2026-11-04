@@ -12,11 +12,12 @@
     "check": "pnpm typecheck && pnpm test"
   },
   "dependencies": {
+    "@awc/tcp-analysis": "workspace:*",
+    "@awc/tcp-pcap": "workspace:*",
     "@awc/artifact-custody": "workspace:*",
     "@awc/attest-receipts": "workspace:*",
-    "@awc/contracts": "workspace:*",
     "@awc/dispatch": "workspace:*",
-    "@awc/tcp-pcap": "workspace:*",
+    "@awc/contracts": "workspace:*",
     "effect": "^4.0.6",
     "@awc/modbus-pcap": "workspace:*"
   },

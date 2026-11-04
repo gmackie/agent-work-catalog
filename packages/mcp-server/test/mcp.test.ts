@@ -161,6 +161,101 @@ describe("AWC MCP server", () => {
     }finally{await client.close();await server.close();}
   });
 
+
+  it("exposes simulated operating mandates with separate commercial and safety outcomes",async()=>{
+    const f=await fixture(false);
+    try{
+      const list=await f.client.listTools();
+      expect(list.tools.some(t=>t.name==="operations.simulate")).toBe(true);
+      expect(list.tools.some(t=>t.name==="mandates.activate")).toBe(false);
+      const result=await f.client.callTool({name:"operations.simulate",arguments:{scenario:"plant"}});
+      expect(result.isError).not.toBe(true);
+      const report=result.structuredContent as {
+        mode:string;attemptedActions:{status:string}[];account:{spentMinor:string};
+      };
+      expect(report.mode).toBe("strictly-simulated");
+      expect(report.attemptedActions.map(a=>a.status)).toEqual(["simulated","escalated","denied"]);
+      expect(report.account.spentMinor).toBe("0");
+      const resource=await f.client.readResource({uri:"awc://operations/scenarios"});
+      expect(resource.contents.length).toBeGreaterThan(0);
+    }finally{await f.close();}
+  });
+
+
+  it("projects all three fictional operations through standards adapters",async()=>{
+    const f=await fixture(false);
+    try{
+      const tools=await f.client.listTools();
+      expect(tools.tools.some(t=>t.name==="operations.standards")).toBe(true);
+      const result=await f.client.callTool({name:"operations.standards",arguments:{scenario:"vending"}});
+      expect(result.isError).not.toBe(true);
+      const r=result.structuredContent as {
+        mode:string;authzen:{output:{decision:boolean}}[];cloudevents:{type:string}[];ublExampleOrderXml?:string;
+      };
+      expect(r.mode).toBe("strictly-simulated");
+      expect(r.authzen[0]?.output.decision).toBe(true);
+      expect(r.authzen[1]?.output.decision).toBe(false);
+      expect(r.cloudevents).toHaveLength(1);
+      expect(r.ublExampleOrderXml).toContain("UBLVersionID");
+      const manifest=await f.client.readResource({uri:"awc://standards/manifest"});
+      expect(manifest.contents.length).toBe(1);
+    }finally{await f.close();}
+  });
+
+
+  it("checks AuthZEN tool admission before every private call and resource read",async()=>{
+    const marketplace=makeMarketplace(inMemoryMarketplaceStore());
+    const checks:string[]=[];
+    const server=createCatalogMcpServer({
+      marketplace,buyerId:"buyer-1",
+      buyerScopes:["quotes:write","work:prepare","work:read","billing:checkout"],
+      appHtml:"<!doctype html><html>Marketplace</html>",
+      authorizationMode:"authzen-required",
+      authorizePrivateTool:async(tool)=>{
+        checks.push(tool);
+        return tool==="quotes.request";
+      },
+    });
+    const client=new Client({name:"awc-authzen-gate-test",version:"0.1.0"});
+    const [a,b]=InMemoryTransport.createLinkedPair();
+    await Promise.all([server.connect(b),client.connect(a)]);
+    try{
+      const quote=await client.callTool({name:"quotes.request",arguments:{
+        offeringId:"offering:modbus-report",scope:"Diagnose repeated Modbus TCP timeouts",
+        idempotencyKey:"authzen_gate_quote_001"
+      }});
+      expect(quote.isError).not.toBe(true);
+      const id=(quote.structuredContent as {id:string}).id;
+      const denied=await client.callTool({name:"work.prepare",arguments:{
+        quoteId:id,idempotencyKey:"authzen_gate_work_001",
+        inputs:[{name:"input",kind:"inline",mediaType:"text/plain",data:"hello"}]
+      }});
+      expect(denied.isError).toBe(true);
+      const balance=await client.callTool({name:"billing.options",arguments:{}});
+      expect(balance.isError).toBe(true);
+      expect(checks).toEqual(["quotes.request","work.prepare","billing.options"]);
+      await expect(client.readResource({uri:"awc://work-orders/work_does_not_exist"})).rejects.toThrow();
+      expect(checks).toContain("work.get");
+    }finally{await client.close();await server.close();}
+  });
+
+  it("defaults to denying private actions when AuthZEN is required but unavailable",async()=>{
+    const marketplace=makeMarketplace(inMemoryMarketplaceStore());
+    const server=createCatalogMcpServer({
+      marketplace,buyerId:"buyer-1",buyerScopes:["quotes:write"],
+      appHtml:"",authorizationMode:"authzen-required",
+    });
+    const client=new Client({name:"awc-no-pdp",version:"0.1.0"});
+    const [a,b]=InMemoryTransport.createLinkedPair();
+    await Promise.all([server.connect(b),client.connect(a)]);
+    try{
+      const result=await client.callTool({name:"quotes.request",arguments:{
+        offeringId:"offering:modbus-report",scope:"Diagnose repeated Modbus TCP timeouts",
+        idempotencyKey:"authzen_gate_quote_002"
+      }});
+      expect(result.isError).toBe(true);
+    }finally{await client.close();await server.close();}
+  });
   it("serves the modern 2026-07-28 stateless HTTP protocol without sockets", async () => {
     const marketplace = makeMarketplace(inMemoryMarketplaceStore());
     const handler = createMcpHandler(() => createCatalogMcpServer({

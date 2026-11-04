@@ -6,9 +6,10 @@ import { CompactSign,compactVerify,importPKCS8,importSPKI } from "jose";
  * to gmackie/attest#9; this provisional profile is for test-only provenance.
  */
 export const OBSERVATION_SCHEMA="attest.marketplace.modbus-observation/v0" as const;
+export const TCP_OBSERVATION_SCHEMA="attest.marketplace.tcp-observation/v0" as const;
 export interface ObservationAttestation {
   readonly id:string;
-  readonly schema:typeof OBSERVATION_SCHEMA;
+  readonly schema:typeof OBSERVATION_SCHEMA | typeof TCP_OBSERVATION_SCHEMA;
   readonly subject:string;
   readonly issuer:string;
   readonly claims:Readonly<Record<string,
@@ -80,6 +81,36 @@ export async function buildObservation(input:ObservationInput):Promise<Observati
     assurance:"direct-observation",issuedAt:input.issuedAt,status:"active",
   };
 }
+/** Separate TCP-flow evidence profile, not a claim of independently verified causation. */
+export async function buildTcpObservation(input: ObservationInput & {
+  readonly flowCount:number;
+  readonly tcpSegments:number;
+}):Promise<ObservationAttestation>{
+  if(!Number.isSafeInteger(input.flowCount)||input.flowCount<0||
+     !Number.isSafeInteger(input.tcpSegments)||input.tcpSegments<0){
+    throw new ReceiptError("invalid","Invalid TCP observation counts");
+  }
+  const prior=await buildObservation(input);
+  const claims={...prior.claims};
+  delete claims["awc.parser_version"];
+  return {
+    ...prior,
+    id:"awc:tcp-observation:"+await digest(JSON.stringify({
+      domain:TCP_OBSERVATION_SCHEMA,
+      workId:input.workId,issuer:input.issuerId,
+      captureDigest:input.captureDigest,reportDigest:input.reportDigest,
+      evaluationDigest:input.evaluationDigest,
+    })),
+    schema:TCP_OBSERVATION_SCHEMA,
+    claims:{
+      ...claims,
+      "awc.analyzer_version":{kind:"string",value:"awc/tcp-flow-evidence@0.1.0"},
+      "awc.flow_count":{kind:"integer",value:String(input.flowCount),unit:"flows"},
+      "awc.observed_tcp_segments":{kind:"integer",value:String(input.tcpSegments),unit:"segments"},
+      "awc.consistency_checked":{kind:"boolean",value:true},
+    },
+  };
+}
 export interface ReceiptSigner {
   readonly issuerId:string;
   readonly keyId:string;
@@ -91,22 +122,24 @@ export async function signObservation(input:ObservationAttestation, signer:Recei
     throw new ReceiptError("unauthorized","Issuer and local signing key do not match");
   const key=await importPKCS8(signer.privateKeyPem,"EdDSA");
   return new CompactSign(new TextEncoder().encode(JSON.stringify(input)))
-    .setProtectedHeader({alg:"EdDSA",kid:signer.keyId,typ:OBSERVATION_SCHEMA})
+    .setProtectedHeader({alg:"EdDSA",kid:signer.keyId,typ:input.schema})
     .sign(key);
 }
 /** Pinned verifier key, not fetched from a user-supplied JWK/JWKS URL. */
 export async function verifyObservation(
-  jws:string,expected:{issuerId:string;keyId:string;publicKeyPem:string;workId:string;contractDigest:string},
+  jws:string,expected:{issuerId:string;keyId:string;publicKeyPem:string;workId:string;contractDigest:string;
+    schema?:typeof OBSERVATION_SCHEMA | typeof TCP_OBSERVATION_SCHEMA},
 ):Promise<ObservationAttestation>{
   if(jws.length>30_000)throw new ReceiptError("invalid","Receipt too large");
   try{
     const key=await importSPKI(expected.publicKeyPem,"EdDSA");
     const verified=await compactVerify(jws,key,{algorithms:["EdDSA"]});
     const header=verified.protectedHeader;
-    if(header.alg!=="EdDSA"||header.kid!==expected.keyId||header.typ!==OBSERVATION_SCHEMA)
+    const expectedSchema=expected.schema??OBSERVATION_SCHEMA;
+    if(header.alg!=="EdDSA"||header.kid!==expected.keyId||header.typ!==expectedSchema)
       throw new ReceiptError("unauthorized","Unexpected observation signing profile");
     const v=JSON.parse(new TextDecoder().decode(verified.payload)) as ObservationAttestation;
-    if(v.schema!==OBSERVATION_SCHEMA||v.issuer!==expected.issuerId||
+    if(v.schema!==expectedSchema||v.issuer!==expected.issuerId||
       v.status!=="active"||v.assurance!=="direct-observation"||
       v.claims?.["awc.work_order_id"]?.value!==expected.workId||
       v.claims?.["awc.contract_digest"]?.value!==expected.contractDigest||

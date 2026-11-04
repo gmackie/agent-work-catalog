@@ -5,6 +5,8 @@ import { withX402 } from "agents/x402";
 import { z } from "zod/v4";
 import { MarketplaceError, type Marketplace } from "@awc/marketplace";
 import { CommerceError, type Commerce, type WorkRunMessage } from "@awc/commerce";
+import { SCENARIOS, runScenario } from "@awc/simulations";
+import { runStandardsScenario } from "@awc/standards-demo";
 import type { StoredOpportunity } from "@awc/source-inbox";
 import type { TrustedDispatcher } from "@awc/dispatch";
 import { listTcpServiceProfiles } from "@awc/offering-profiles";
@@ -12,6 +14,7 @@ import { listCandidateDomains } from "@awc/domain-opportunities";
 
 export const MARKETPLACE_APP_URI = "ui://awc/marketplace.html";
 export const CONTRACT_APP_URI = "ui://awc/contract.html";
+export const OPERATIONS_APP_URI = "ui://awc/operations.html";
 export const TCP_REPORT_APP_URI = "ui://awc/tcp-report.html";
 export interface PaidSandboxConfig {
   readonly network: "base-sepolia";
@@ -24,6 +27,7 @@ export interface McpServerConfig {
   readonly buyerScopes?: readonly string[];
   readonly appHtml: string;
   readonly contractAppHtml?: string;
+  readonly operationsAppHtml?: string;
   readonly tcpReportAppHtml?: string;
   readonly approvalBaseUrl?: string;
   readonly commerce?: Commerce;
@@ -35,6 +39,12 @@ export interface McpServerConfig {
     signatureVerified?:boolean;issuerAuthority?:string;
   }>;
   readonly paidSandbox?: PaidSandboxConfig;
+  /** Production private-tool requests MUST pass trusted AuthZEN tool admission. */
+  readonly authorizationMode?: "legacy-sandbox"|"authzen-required";
+  readonly authorizePrivateTool?:(
+    name:string,
+    argumentsJson:Readonly<Record<string,unknown>>
+  )=>Promise<boolean>;
   /** Authorized buyer-scoped work from verified sources; never automatically funded. */
   readonly listOpportunities?: (buyerId: string, limit: number) => Promise<readonly StoredOpportunity[]>;
 }
@@ -58,6 +68,12 @@ async function guarded<T extends object>(effect:Effect.Effect<T,any>,summary:(va
 export function createCatalogMcpServer(config:McpServerConfig):McpServer {
   const server=new McpServer({name:"Agent Work Catalog",version:"0.2.0"});
   const scope=(name:string)=>!!config.buyerId&&!!config.buyerScopes?.includes(name);
+  const authorized=async(name:string,args:Readonly<Record<string,unknown>>):Promise<boolean>=>{
+    if(config.authorizationMode!=="authzen-required")return true; // legacy local demo only
+    if(!config.authorizePrivateTool)return false;
+    try{return (await config.authorizePrivateTool(name,args))===true;}catch{return false;}
+  };
+  const denied=()=>failure(new CommerceError("unauthorized","AuthZEN tool admission denied"));
   const reviewUrl=(id:string)=>config.approvalBaseUrl
     ? new URL("/review?work="+encodeURIComponent(id),config.approvalBaseUrl).toString()
     : undefined;
@@ -122,6 +138,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
   for (const [name,uri,html] of [
     ["Marketplace Explorer",MARKETPLACE_APP_URI,config.appHtml],
     ["Contract Review",CONTRACT_APP_URI,config.contractAppHtml??""],
+    ["Operations Sandbox",OPERATIONS_APP_URI,config.operationsAppHtml??""],
     ["TCP Evidence Inspector",TCP_REPORT_APP_URI,config.tcpReportAppHtml??""],
   ] as const){
     registerAppResource(server,name,uri,{
@@ -148,6 +165,56 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
     return {contents:[{uri:uri.href,mimeType:"application/json",text:JSON.stringify(match)}]};
   });
 
+
+  // Three bounded, completely in-memory simulations. Never route to OT, public cloud,
+  // payment signers or production WorkOrders. These are NOT physical-control tools.
+  server.registerTool("operations.scenarios",{
+    description:"List fictional operating environments used to test delegated responsibility. No real actions.",
+    inputSchema:z.object({}).strict(),
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false},
+  },async()=>reply({mode:"strictly-simulated",scenarios:SCENARIOS},
+    "Three synthetic operations are available: vending, cloud and production cell."));
+
+  registerAppTool(server,"operations.simulate",{
+    description:"Run an isolated simulation of mandate, budget and safety checks. No external calls, billing or physical control.",
+    inputSchema:z.object({scenario:z.enum(["vending","cloud","plant"])}).strict(),
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false},
+    _meta:{ui:{resourceUri:OPERATIONS_APP_URI}},
+  },async({scenario})=>guarded(runScenario(scenario),report=>
+    "DEMO ONLY: "+report.scenario+" evaluated "+report.attemptedActions.length+
+    " proposals; no real machine, cloud resource or payment was touched."));
+
+  server.registerResource("Operations simulation catalog","awc://operations/scenarios",{
+    title:"AWC operating responsibility simulation definitions",
+    mimeType:"application/json",
+  },async(uri)=>({contents:[{uri:uri.href,mimeType:"application/json",
+    text:JSON.stringify({schemaVersion:"awc.simulation/v1",mode:"strictly-simulated",scenarios:SCENARIOS})}]}));
+
+
+  // Read-only interoperability export; no authority, credentials or side effects are
+  // created by the returned policy documents.
+  server.registerTool("operations.standards",{
+    description:"Export a synthetic operating scenario as AuthZEN, ODRL, CloudEvents, PROV-O and OpenSLO; optional OSB/UBL previews. NO live actions.",
+    inputSchema:z.object({scenario:z.enum(["vending","cloud","plant"])}).strict(),
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:false},
+  },async({scenario})=>guarded(Effect.tryPromise({
+    try:()=>runStandardsScenario(scenario),
+    catch:()=>new Error("Standards fixture failed")
+  }),r=>"DEMO ONLY: mapped "+r.scenario+" into "+
+    r.authzen.length+" AuthZEN requests, "+r.cloudevents.length+
+    " CloudEvents, and "+r.provenance.length+" PROV-O graphs."));
+
+  server.registerResource("AWC supported standards","awc://standards/manifest",{
+    title:"AWC Interoperability Test Manifest",mimeType:"application/json",
+  },async(uri)=>({contents:[{uri:uri.href,mimeType:"application/json",text:JSON.stringify({
+    mode:"strictly-simulated",
+    packages:["authzen-1.0","odrl-2.2-awc-profile","coaz-mcp-draft-subset",
+      "cloudevents-1.0","prov-o","openslo-v1","oauth-rar-9396-action","epcis-2.0-object-event",
+      "osb-2.17-preview","ubl-2.4-xml-subset"],
+    tool:"operations.standards",
+    productionConformance:false
+  })}]}));
+
   const buyerId=config.buyerId;
   if(buyerId&&scope("quotes:write")){
     server.registerTool("quotes.request",{
@@ -158,8 +225,11 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
         maxPriceMinor:z.string().regex(/^(0|[1-9][0-9]*)$/).optional(),
       }).strict(),
       annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
-    },async(args)=>guarded(config.marketplace.requestQuote(buyerId,args),
-      q=>"Quote "+q.id+" proposed; no money or permission to execute."));
+    },async(args)=>{
+      if(!await authorized("quotes.request",args))return denied();
+      return guarded(config.marketplace.requestQuote(buyerId,args),
+      q=>"Quote "+q.id+" proposed; no money or permission to execute.");
+    });
   }
   if(buyerId&&scope("work:prepare")){
     registerAppTool(server,"work.prepare",{
@@ -177,6 +247,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
       _meta:{ui:{resourceUri:CONTRACT_APP_URI}},
     },async(args)=>{
+      if(!await authorized("work.prepare",args))return denied();
       const prepare=config.marketplace.prepareWork(buyerId,{
         quoteId:args.quoteId,idempotencyKey:args.idempotencyKey,
         ...(args.dataClassification!==undefined ? {dataClassification:args.dataClassification} : {}),
@@ -222,6 +293,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       inputSchema:z.object({workId:z.string().min(3).max(160)}).strict(),
       annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
     },async({workId})=>{
+      if(!await authorized("work.get",{workId}))return denied();
       try {
         const work=await Effect.runPromise(config.marketplace.getWork(buyerId,workId));
         const quote=await Effect.runPromise(config.marketplace.getQuote(buyerId,work.quoteId));
@@ -245,6 +317,9 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       list:undefined,
     }),{description:"Buyer-private work state and exact quote terms",mimeType:"application/json"},
     async(uri,vars)=>{
+      if(!await authorized("work.get",{workId:String(vars.workId)})){
+        throw new Error("AuthZEN denied private work-order resource");
+      }
       const work=await Effect.runPromise(config.marketplace.getWork(buyerId,String(vars.workId)));
       const quote=await Effect.runPromise(config.marketplace.getQuote(buyerId,work.quoteId));
       const commerce=config.commerce
@@ -284,25 +359,34 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       description:"List safe available payment methods. No authorization or charge is performed.",
       inputSchema:z.object({}).strict(),
       annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
-    },async()=>reply({
+    },async()=>{
+      if(!await authorized("billing.options",{}))return denied();
+      return reply({
       stripeTestMode:!!config.stripeCheckoutAvailable,
       x402RealMoney:false,credits:false,canStartWithoutFunding:false,
       message:"Card checkout requires separately reviewed contract. Test mode only.",
-    },"No live-money payment rail is enabled."));
+    },"No live-money payment rail is enabled.");
+    });
 
     if(config.commerce&&config.stripeCheckoutAvailable){
       server.registerTool("billing.checkout",{
         description:"Create a Stripe TEST Checkout URL only AFTER separately authenticated human approval.",
         inputSchema:z.object({workId:z.string().min(3).max(160)}).strict(),
         annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
-      },async({workId})=>guarded(config.commerce!.checkout(buyerId,workId),r=>
-        "Hosted Stripe TEST checkout ready. It will not authorize execution until settlement is verified."));
+      },async({workId})=>{
+        if(!await authorized("billing.checkout",{workId}))return denied();
+        return guarded(config.commerce!.checkout(buyerId,workId),r=>
+        "Hosted Stripe TEST checkout ready. It will not authorize execution until settlement is verified.");
+      });
       server.registerTool("billing.reconcile",{
         description:"Re-query Stripe TEST settlement for an approved work order. Cannot mark arbitrary payments as verified.",
         inputSchema:z.object({workId:z.string().min(3).max(160)}).strict(),
         annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
-      },async({workId})=>guarded(config.commerce!.reconcileStripe(buyerId,workId),
-        r=>"Stripe TEST funding state: "+r.status));
+      },async({workId})=>{
+        if(!await authorized("billing.reconcile",{workId}))return denied();
+        return guarded(config.commerce!.reconcileStripe(buyerId,workId),
+        r=>"Stripe TEST funding state: "+r.status);
+      });
     }
   }
   if(buyerId&&scope("work:execute")&&config.commerce&&config.enqueue){
@@ -311,6 +395,7 @@ export function createCatalogMcpServer(config:McpServerConfig):McpServer {
       inputSchema:z.object({workId:z.string().min(3).max(160)}).strict(),
       annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
     },async({workId})=>{
+      if(!await authorized("work.start",{workId}))return denied();
       try {
         const scheduled=await Effect.runPromise(config.commerce!.start(buyerId,workId));
         if(scheduled.enqueue) await config.enqueue!({buyerId,workId});

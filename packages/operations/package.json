@@ -1,0 +1,21 @@
+{
+  "name": "@awc/operations",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./simulated": "./src/simulated.ts",
+    "./planner": "./src/planner.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check": "pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "@awc/responsibility": "workspace:*",
+    "@awc/economics": "workspace:*",
+    "effect": "^4.0.6"
+  }
+}

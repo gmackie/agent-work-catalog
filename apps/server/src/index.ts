@@ -8,6 +8,15 @@ import { d1WorkStateStore, type D1Database as CommerceD1 } from "@awc/commerce/d
 import { makeCommerce, sandboxExecutor, type WorkRunMessage } from "@awc/commerce";
 import { stripeTestCheckout } from "@awc/commerce/stripe";
 import { identifyActor, requireScope, AuthError, type VerifiedActor } from "@awc/auth";
+import { authzenMetadata, createAuthzenPdp, parseAuthzenEvaluation } from "@awc/authzen";
+import { verifyPdpBearer, PdpAuthenticationError } from "@awc/pdp-auth";
+import { createRegistryBackedPdp } from "@awc/mandate-registry";
+import { d1TrustedMandateRegistry } from "@awc/mandate-registry/d1";
+import { createTrustedMcpToolPdp } from "@awc/mandate-registry/tools";
+import { d1McpToolPolicies } from "@awc/mandate-registry/d1-tools";
+import { mapToolCall } from "@awc/coaz-mcp";
+import { createRemoteAuthzenPdp } from "@awc/authzen-client";
+import { runStandardsScenario } from "@awc/standards-demo";
 import { createGitHubIssueSource, type AllowedRepo } from "@awc/adapter-github";
 import { AdapterError } from "@awc/adapter-sdk";
 import { d1SourceInbox, type D1Database as SourceD1 } from "@awc/source-inbox/d1";
@@ -18,9 +27,11 @@ import { d1DispatchStore,type D1Database as DispatchD1 } from "@awc/dispatch/d1"
 import { createR2ArtifactCustody,type R2BucketLike,type ArtifactCustody } from "@awc/artifact-custody";
 import { createModbusResultProcessor } from "@awc/modbus-workflow";
 import { analyzeClassicPcap, MAX_CAPTURE_BYTES,PCAP_MEDIA_TYPE } from "@awc/modbus-pcap";
-import { verifyObservation } from "@awc/attest-receipts";
+import { analyzeTcpCapture } from "@awc/tcp-analysis";
+import { analyzeTcpPcap } from "@awc/tcp-pcap";
+import { verifyObservation, TCP_OBSERVATION_SCHEMA } from "@awc/attest-receipts";
 import { verifyTcpEvidenceReceipt } from "@awc/attest-receipts/tcp";
-import { createTcpResultProcessor } from "@awc/tcp-workflow";
+import { createTcpResultProcessor, createTcpFlowResultProcessor } from "@awc/tcp-workflow";
 
 export interface Env {
   readonly DB: MarketplaceD1 & CommerceD1 & SourceD1 & DispatchD1;
@@ -42,6 +53,16 @@ export interface Env {
   readonly OIDC_APPROVAL_CLIENT_ID?:string;
   readonly OIDC_APPROVAL_ACR?:string;
   readonly ALLOWED_ORIGINS?:string;
+  /** Explicit opt-in to the AuthZEN PDP, separate from local synthetic demo mode. */
+  readonly ENABLE_AUTHZEN_PDP?:string;
+  readonly AUTHZEN_PUBLIC_ORIGIN?:string;
+  readonly AUTHZEN_PDP_ISSUER?:string;
+  readonly AUTHZEN_PDP_AUDIENCE?:string;
+  readonly AUTHZEN_PDP_JWKS_URL?:string;
+  readonly AUTHZEN_PDP_CLIENT_IDS?:string;
+  /** Alternative: existing Gatekeeper AuthZEN PDP, authenticated via service token. */
+  readonly GATEKEEPER_AUTHZEN_ORIGIN?:string;
+  readonly GATEKEEPER_PDP_SERVICE_TOKEN?:string;
   readonly ENABLE_GITHUB_SOURCE?:string;
   readonly GITHUB_WEBHOOK_SECRET?:string;
   /** JSON array of explicit {repositoryId,fullName,installationId}, approved by admin. */
@@ -54,6 +75,7 @@ export interface Env {
   readonly AWC_REMOTE_EXECUTOR_HOST?:string;
   readonly AWC_REMOTE_EXECUTOR_SHARED_KEY?:string;
   readonly ENABLE_MODBUS_PCAP?:string;
+  readonly ENABLE_TCP_FLOW?:string;
   readonly ENABLE_TCP_PCAP?:string;
   readonly AWC_ATTEST_OBSERVATION_ISSUER?:string;
   readonly AWC_ATTEST_KEY_ID?:string;
@@ -126,10 +148,10 @@ function services(env:Env,request:Request){
   let binding:TrustedExecutorBinding|undefined;
   let remote:ReturnType<typeof createRemoteHttpExecutor>|undefined;
   const boundedPcap=env.ENABLE_MODBUS_PCAP==="true";
-  const boundedTcp=env.ENABLE_TCP_PCAP==="true";
-  if(boundedPcap&&boundedTcp)throw new AdapterError("unavailable",
-    "Only one pinned capture-analysis executor profile may be active per broker deployment");
-  const capturePilot=boundedPcap||boundedTcp;
+  const tcpFlow=env.ENABLE_TCP_FLOW==="true";
+  const tcpPcap=env.ENABLE_TCP_PCAP==="true";
+  if([boundedPcap,tcpFlow,tcpPcap].filter(Boolean).length>1)throw new AdapterError("unavailable","Only one pinned capture-analysis executor profile may be active per broker deployment");
+  const capturePilot=boundedPcap||tcpFlow||tcpPcap;
   const custody=artifactCustody(env);
   if(capturePilot && (!custody || !env.AWC_ATTEST_PRIVATE_KEY_PEM ||
       !env.AWC_ATTEST_PUBLIC_KEY_PEM || !env.AWC_ATTEST_OBSERVATION_ISSUER ||
@@ -145,16 +167,16 @@ function services(env:Env,request:Request){
       id:env.AWC_REMOTE_EXECUTOR_ID,baseUrl:env.AWC_REMOTE_EXECUTOR_ORIGIN,
       allowedHost:env.AWC_REMOTE_EXECUTOR_HOST,
       sharedKey:env.AWC_REMOTE_EXECUTOR_SHARED_KEY,
-      supportedTaskTypes:[boundedTcp?"task:tcp-pcap":boundedPcap?"task:modbus-pcap":"task:modbus-diagnostics"],
+      supportedTaskTypes:[tcpFlow?"task:tcp-flow-evidence":tcpPcap?"task:tcp-pcap":boundedPcap?"task:modbus-pcap":"task:modbus-diagnostics"],
     });
     binding={
       id:env.AWC_REMOTE_EXECUTOR_ID,origin:new URL(env.AWC_REMOTE_EXECUTOR_ORIGIN).origin+"/",
-      offeringId:boundedTcp?"offering:tcp-pcap-evidence":boundedPcap?"offering:modbus-pcap-analysis":"offering:modbus-report",
+      offeringId:tcpFlow?"offering:tcp-flow-evidence":tcpPcap?"offering:tcp-pcap-evidence":boundedPcap?"offering:modbus-pcap-analysis":"offering:modbus-report",
       offeringVersion:"1",
-      taskTypeId:boundedTcp?"task:tcp-pcap":boundedPcap?"task:modbus-pcap":"task:modbus-diagnostics",
-      maxCostMinorUnits:boundedTcp?"900":"3500",outputMediaTypes:["application/json"],
+      taskTypeId:tcpFlow?"task:tcp-flow-evidence":tcpPcap?"task:tcp-pcap":boundedPcap?"task:modbus-pcap":"task:modbus-diagnostics",
+      maxCostMinorUnits:tcpFlow?"2500":tcpPcap?"900":"3500",outputMediaTypes:["application/json"],
       maxDurationSeconds:120,dataClassification:"public",allowedEffects:[],
-      executionMode:boundedTcp?"bounded-tcp-pcap/v1":boundedPcap?"bounded-modbus-pcap/v1":"synthetic-test-only",
+      executionMode:tcpFlow?"bounded-tcp-flow/v1":tcpPcap?"bounded-tcp-pcap/v1":boundedPcap?"bounded-modbus-pcap/v1":"synthetic-test-only",
     };
   }
   const commerce=makeCommerce(marketplace,d1WorkStateStore(env.DB),sandboxExecutor,{
@@ -171,7 +193,8 @@ function services(env:Env,request:Request){
     publicKeyPem:env.AWC_ATTEST_PUBLIC_KEY_PEM!,
   }:undefined;
   const resultProcessor=custody&&signer
-    ? boundedTcp?createTcpResultProcessor(custody,signer):
+    ? tcpFlow?createTcpFlowResultProcessor(custody,signer):
+      tcpPcap?createTcpResultProcessor(custody,signer):
       boundedPcap?createModbusResultProcessor(custody,signer):undefined
     :undefined;
   const remoteDispatcher=remote && binding
@@ -328,6 +351,27 @@ document.querySelector("#fund").onclick=async()=>{
  await read();
 };
 </script></body></html>`;
+/**
+ * Public PDP deployment is opt-in and host-bound: there are no implicit
+ * defaults to a test token, sandbox buyer, or caller-selected identity.
+ */
+function authzenPublicEnabled(url:URL,env:Env):boolean {
+  if(env.ENABLE_AUTHZEN_PDP!=="true"||!env.AUTHZEN_PUBLIC_ORIGIN)return false;
+  try{
+    const origin=new URL(env.AUTHZEN_PUBLIC_ORIGIN);
+    return origin.protocol==="https:" && origin.origin===origin.href.replace(/\/$/,"") &&
+      url.protocol==="https:" && url.origin===origin.origin;
+  }catch{return false;}
+}
+function pdpTokenConfig(env:Env){
+  return {
+    issuer:env.AUTHZEN_PDP_ISSUER??"",
+    audience:env.AUTHZEN_PDP_AUDIENCE??"",
+    jwksUrl:env.AUTHZEN_PDP_JWKS_URL??"",
+    allowedClientIds:(env.AUTHZEN_PDP_CLIENT_IDS??"").split(",").map(x=>x.trim()).filter(Boolean),
+    requiredScope:"awc:pdp:evaluate",
+  };
+}
 const connectPage=`<!doctype html><html lang="en"><meta charset="UTF-8"/><title>AWC</title>
 <body style="max-width:760px;margin:40px auto;font:16px system-ui;line-height:1.5">
 <h1>Agent Work Catalog</h1><p>Experimental MCP server at <code>/mcp</code>.</p>
@@ -340,6 +384,72 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
     status:"ok",service:"awc-mcp",money:"Stripe TEST or disabled",
     executor:"synthetic sandbox",livePayments:false,
   });
+
+  // AuthZEN demo endpoints are available ONLY in a local sandbox. No production PDP
+  // is exposed until an authenticated authoritative proposal/mandate registry exists.
+  if(url.pathname==="/.well-known/authzen-configuration" ||
+     url.pathname==="/access/v1/evaluation"){
+    const isDemo=localSandbox(request,env);
+    const isPublic=authzenPublicEnabled(url,env);
+    if(!isDemo&&!isPublic)return json({error:"not_enabled"},404);
+    if(!allowedOrigin(request,env))return json({error:"origin_not_allowed"},403);
+    if(url.pathname==="/.well-known/authzen-configuration"){
+      if(request.method!=="GET")return json({error:"method_not_allowed"},405);
+      return isDemo
+        ? json({...authzenMetadata(url.origin),awc_demo_only:true})
+        : json(authzenMetadata(env.AUTHZEN_PUBLIC_ORIGIN!));
+    }
+    if(request.method!=="POST")return json({error:"method_not_allowed"},405);
+    if(request.headers.get("content-type")?.split(";")[0]!=="application/json"){
+      return json({error:"invalid_content_type"},415);
+    }
+    if(isPublic&&!isDemo){
+      let caller;
+      try{caller=await verifyPdpBearer(request.headers.get("authorization"),pdpTokenConfig(env));}
+      catch(error){
+        if(error instanceof PdpAuthenticationError){
+          return json({error:error.code},error.code==="unauthorized"?401:503);
+        }
+        return json({error:"configuration_error"},503);
+      }
+      let parsed;
+      try {
+        const raw=await request.text();
+        if(raw.length>16_384)return json({error:"request_too_large"},413);
+        parsed=parseAuthzenEvaluation(JSON.parse(raw) as unknown);
+      }catch{return json({error:"invalid_request"},400);}
+      const trusted=d1TrustedMandateRegistry(env.DB);
+      const decision=await createRegistryBackedPdp(trusted).evaluate(parsed,caller);
+      return json(decision);
+    }
+    try{
+      const actor=await principal(request,env,"mcp");
+      if(!actor||actor.subject!=="sandbox-agent")return json({error:"unauthorized"},401);
+      const text=await request.text();
+      if(text.length>16_384)return json({error:"request_too_large"},413);
+      const parsed=parseAuthzenEvaluation(JSON.parse(text) as unknown);
+      const ref=parsed.context?.awc_proposal_id;
+      const match=typeof ref==="string"
+        ? /^proposal:demo:(vending|cloud|plant):(?:read|[0-9]+)$/.exec(ref)
+        : null;
+      if(!match)return json({decision:false,context:{awc_reason_codes:["NO_DEMO_REGISTRY_MATCH"]}});
+      const scenario=match[1] as "vending"|"cloud"|"plant";
+      const fixture=await runStandardsScenario(scenario);
+      const proposals=[fixture.syntheticReadProposal,
+        ...fixture.simulation.attemptedActions.map(a=>a.proposal)];
+      const pdp=createAuthzenPdp({resolve:async(id)=>{
+        const proposal=proposals.find(x=>x.id===id);
+        return proposal?{proposal,policy:fixture.simulation.trustedPolicyContext}:undefined;
+      }});
+      // The only authenticated local buyer token represents the *synthetic*
+      // fleet manager in this fixture. This alias is never used outside localhost.
+      return json(await pdp.evaluate(parsed,{
+        subjectId:fixture.simulation.mandate.delegateId,clientId:actor.subject,
+      }));
+    }catch{
+      return json({error:"invalid_request"},400);
+    }
+  }
   if(request.method==="GET"&&(url.pathname==="/"||url.pathname==="/connect")){
     return new Response(connectPage,{headers:{"content-type":"text/html;charset=UTF-8","cache-control":"no-store"}});
   }
@@ -350,8 +460,7 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
   }
   if(!allowedOrigin(request,env))return json({error:"origin_not_allowed"},403);
   if(url.pathname==="/api/artifacts/input"&&request.method==="POST"){
-    if(env.ENABLE_MODBUS_PCAP!=="true"&&env.ENABLE_TCP_PCAP!=="true")
-      return json({error:"not_found"},404);
+    if(env.ENABLE_MODBUS_PCAP!=="true"&&env.ENABLE_TCP_FLOW!=="true"&&env.ENABLE_TCP_PCAP!=="true")return json({error:"not_found"},404);
     try{
       const actor=requireScope(await principal(request,env,"mcp"),"work:prepare");
       if(request.headers.get("content-type")?.split(";")[0]!==PCAP_MEDIA_TYPE ||
@@ -359,7 +468,9 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
         return json({error:"public_classic_pcap_only"},415);
       }
       const raw=await bodyUnderLimit(request,MAX_CAPTURE_BYTES);
-      await analyzeClassicPcap(raw);
+      if(env.ENABLE_TCP_FLOW==="true")await analyzeTcpCapture(raw);
+      else if(env.ENABLE_TCP_PCAP==="true")await analyzeTcpPcap(raw);
+      else await analyzeClassicPcap(raw);
       const custody=artifactCustody(env);
       if(!custody)return json({error:"private_r2_not_configured"},503);
       const stored=await custody.putInput(actor.buyerId,raw);
@@ -483,20 +594,56 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
   try{
     const actor=await principal(request,env,"mcp");
     const {marketplace,commerce,stripe,remoteDispatcher,custody}=services(env,request);
+    const local=localSandbox(request,env);
+    const authzenReady=authzenPublicEnabled(url,env);
+    const verifiedToolActor=actor?.kind==="agent"&&actor.clientId&&actor.tenantId
+      ? {tenantId:actor.tenantId,subjectId:actor.subject,
+          clientId:actor.clientId,scopes:actor.scopes,
+          audience:url.origin+"/mcp"}
+      : null;
+    const toolPdp=authzenReady&&verifiedToolActor
+      ? createTrustedMcpToolPdp(d1McpToolPolicies(env.DB))
+      : null;
+    const remoteConfigured=!!env.GATEKEEPER_AUTHZEN_ORIGIN&&!!env.GATEKEEPER_PDP_SERVICE_TOKEN;
+    const remotePdp=remoteConfigured&&verifiedToolActor
+      ? createRemoteAuthzenPdp({
+          origin:env.GATEKEEPER_AUTHZEN_ORIGIN!,
+          bearerToken:async()=>env.GATEKEEPER_PDP_SERVICE_TOKEN!,
+        })
+      : null;
+    // Upstream is authoritative when configured. Never silently fall back to
+    // local policy if the network/token/provider decision fails.
+    const privateAuthorizationReady=!!(remotePdp||toolPdp);
     const ui=await env.ASSETS.fetch("https://assets.local/marketplace.html");
     const contractUi=await env.ASSETS.fetch("https://assets.local/contract.html");
+    const operationsUi=await env.ASSETS.fetch("https://assets.local/operations.html");
     const tcpUi=await env.ASSETS.fetch("https://assets.local/tcp-report.html");
     const paid=paidConfig(env);
     // Load static App bundles once and provide the strings to the stateless MCP factory.
-    const [html,contract,tcpReport]=await Promise.all([
+    const [html,contract,operations,tcpReport]=await Promise.all([
       ui.ok?ui.text():Promise.resolve(""),
       contractUi.ok?contractUi.text():Promise.resolve(""),
+      operationsUi.ok?operationsUi.text():Promise.resolve(""),
       tcpUi.ok?tcpUi.text():Promise.resolve(""),
     ]);
     const configured=createMcpHandler(()=>createCatalogMcpServer({
-      marketplace,commerce,buyerId:actor?.kind==="agent"?actor.buyerId:null,
+      marketplace,commerce,
+      buyerId:actor?.kind==="agent"&&(local||privateAuthorizationReady)?actor.buyerId:null,
       buyerScopes:actor?.scopes??[],approvalBaseUrl:url.origin,
-      appHtml:html,contractAppHtml:contract,tcpReportAppHtml:tcpReport,
+      authorizationMode:local?"legacy-sandbox":"authzen-required",
+      ...(privateAuthorizationReady&&verifiedToolActor?{authorizePrivateTool:async(name:string,args:Readonly<Record<string,unknown>>)=>{
+        const invocation={method:"tools/call" as const,params:{name,arguments:args}};
+        const mapped=mapToolCall(invocation,verifiedToolActor);
+        const decision=remotePdp
+          ? await remotePdp.evaluate({
+              ...mapped,
+              context:{...mapped.context,awc_tenant_id:verifiedToolActor.tenantId,
+                awc_pep_resource:verifiedToolActor.audience},
+            })
+          : await toolPdp!.evaluate(mapped,verifiedToolActor);
+        return decision.decision===true;
+      }}:{}),
+      appHtml:html,contractAppHtml:contract,operationsAppHtml:operations,tcpReportAppHtml:tcpReport,
       ...(env.AWC_JOBS ? {enqueue:async (msg:WorkRunMessage)=>{await env.AWC_JOBS!.send(msg);}} : {}),
       stripeCheckoutAvailable:!!stripe,
       ...(remoteDispatcher?{remoteDispatcher}:{}),
@@ -521,9 +668,11 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
                 workOrderId:workId,contractDigest:preview.quote.termsDigest,
               })
             : await verifyObservation(new TextDecoder().decode(bytes),{
-                issuerId:env.AWC_ATTEST_OBSERVATION_ISSUER,
-                keyId:env.AWC_ATTEST_KEY_ID,publicKeyPem:env.AWC_ATTEST_PUBLIC_KEY_PEM,
+                issuerId:env.AWC_ATTEST_OBSERVATION_ISSUER,keyId:env.AWC_ATTEST_KEY_ID,
+                publicKeyPem:env.AWC_ATTEST_PUBLIC_KEY_PEM,
                 workId,contractDigest:preview.quote.termsDigest,
+                ...(preview.work.taskTypeId==="task:tcp-flow-evidence"
+                  ? {schema:TCP_OBSERVATION_SCHEMA} : {}),
               });
           return {ref,mediaType:artifact.mediaType,value:observation,
             integrityVerified:true,signatureVerified:true,
@@ -580,6 +729,8 @@ export async function recoverQueued(env:Env):Promise<void>{
     }
   }
 }
+/** Private SQLite-backed Durable Object class; no public treasury write APIs exist yet. */
+export { AWCEconomicAccount } from "./treasury.ts";
 export default {
   fetch:handleRequest,
   queue:consumeWorkQueue,

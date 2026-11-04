@@ -19,6 +19,13 @@
     "effect": "^4.0.6",
     "agents": "^0.27.0",
     "stripe": "^23.1.0",
+    "@awc/authzen": "workspace:*",
+    "@awc/standards-demo": "workspace:*",
+    "@awc/pdp-auth": "workspace:*",
+    "@awc/mandate-registry": "workspace:*",
+    "@awc/coaz-mcp": "workspace:*",
+    "@awc/economics-durable": "workspace:*",
+    "@awc/authzen-client": "workspace:*",
     "@awc/adapter-github": "workspace:*",
     "@awc/adapter-sdk": "workspace:*",
     "@awc/source-inbox": "workspace:*",
@@ -28,8 +35,9 @@
     "@awc/modbus-workflow": "workspace:*",
     "@awc/modbus-pcap": "workspace:*",
     "@awc/attest-receipts": "workspace:*",
-    "@awc/tcp-workflow": "workspace:*",
-    "@awc/tcp-pcap": "workspace:*"
+    "@awc/tcp-analysis": "workspace:*",
+    "@awc/tcp-pcap": "workspace:*",
+    "@awc/tcp-workflow": "workspace:*"
   },
   "devDependencies": {
     "wrangler": "^4.148.0",

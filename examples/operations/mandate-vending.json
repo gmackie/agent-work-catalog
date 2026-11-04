@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "awc.operating-mandate/v1",
+  "id": "mandate:sample:vending",
+  "principalId": "org:example-operator",
+  "delegateId": "agent:example-fleet-manager",
+  "accountablePartyId": "org:example-operator",
+  "operationId": "operation:example-fleet",
+  "issuerId": "org:example-operator",
+  "issuedAt": "2026-10-31T00:00:00Z",
+  "validFrom": "2026-10-31T00:00:00Z",
+  "expiresAt": "2026-11-30T00:00:00Z",
+  "scope": {
+    "entityIds": [
+      "vending:042"
+    ],
+    "actions": [
+      "telemetry.read",
+      "inventory.replenishment.request",
+      "maintenance.ticket.create"
+    ],
+    "maximumRisk": "operational",
+    "maximumDataClassification": "internal",
+    "deniedActions": [
+      "plc.write_coil",
+      "machine.safety_override"
+    ],
+    "approvalActions": [
+      "maintenance.ticket.create"
+    ],
+    "maximumObservationAgeMs": 300000,
+    "remainingDelegations": 2
+  },
+  "economics": {
+    "accountId": "account:example-operator",
+    "currency": "USD",
+    "maxTotalMinor": "200000",
+    "maxPerActionMinor": "25000"
+  },
+  "obligations": [
+    {
+      "kind": "metric",
+      "id": "objective:availability",
+      "metric": "fleet.availability",
+      "comparator": ">=",
+      "target": 0.98,
+      "windowSeconds": 2592000,
+      "observationSourceId": "vending:telemetry"
+    },
+    {
+      "kind": "prohibition",
+      "id": "prohibition:safety",
+      "action": "machine.safety_override"
+    }
+  ]
+}

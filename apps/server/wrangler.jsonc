@@ -36,6 +36,10 @@
       }
     ]
   },
+  "durable_objects": {
+    "bindings": [{"name":"AWC_ACCOUNT_TREASURY","class_name":"AWCEconomicAccount"}]
+  },
+  "migrations": [{"tag":"v1-sql-treasury","new_sqlite_classes":["AWCEconomicAccount"]}],
   "triggers": {
     "crons": [
       "*/5 * * * *"
@@ -45,6 +49,7 @@
     "ENABLE_LOCAL_SANDBOX": "false",
     "ENABLE_X402_TESTNET": "false",
     "ENABLE_MODBUS_PCAP": "false",
+    "ENABLE_TCP_FLOW": "false",
     "ENABLE_TCP_PCAP": "false"
   },
   "r2_buckets": [

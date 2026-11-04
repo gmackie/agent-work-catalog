@@ -15,6 +15,8 @@ export interface VerifiedActor {
   readonly subject:string;
   readonly kind:"agent"|"human";
   readonly scopes:readonly string[];
+  readonly clientId?:string;
+  readonly tenantId?:string;
   readonly ceremony?:"interactive-oidc"|"local-sandbox-only";
 }
 export class AuthError extends Error{
@@ -55,7 +57,8 @@ export async function identifyActor(
   const token=bearer(authorization);
   if(!token)return null;
   if(localSandbox && purpose==="mcp" && await equal(token,config.sandboxBuyerToken)) {
-    return {buyerId:"sandbox-buyer",subject:"sandbox-agent",kind:"agent",scopes:[
+    return {buyerId:"sandbox-buyer",subject:"sandbox-agent",kind:"agent",
+      tenantId:"sandbox-buyer",clientId:"awc-sandbox-mcp-client",scopes:[
       "catalog:read","quotes:write","work:prepare","work:read","work:execute","billing:checkout",
     ]};
   }
@@ -89,7 +92,15 @@ export async function identifyActor(
       return {buyerId,subject,kind:"human",scopes,ceremony:"interactive-oidc"};
     }
     if(!scopes.includes("catalog:read"))return null;
-    return {buyerId,subject,kind:"agent",scopes};
+    // Tenant and OAuth client identity are mandatory for AuthZEN-enforced MCP
+    // operations, but older read-only clients may omit them.
+    const client=payload.azp??payload.client_id;
+    const tenant=payload.awc_tenant_id;
+    return {
+      buyerId,subject,kind:"agent",scopes,
+      ...(typeof client==="string" && client.length>0 && client.length<=200?{clientId:client}:{}),
+      ...(typeof tenant==="string" && tenant.length>0 && tenant.length<=200?{tenantId:tenant}:{}),
+    };
   }catch(error){
     if(error instanceof AuthError)throw error;
     return null;
