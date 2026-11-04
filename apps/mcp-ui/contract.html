@@ -1,0 +1,22 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>AWC Contract Review</title>
+<style>
+:root{color-scheme:light dark;font:14px system-ui}*{box-sizing:border-box}
+body{margin:0;background:#f5f7fb;color:#22354b}main{padding:22px;max-width:760px;margin:auto}
+h1{font-size:21px;margin:0 0 8px}p{color:#65758d;line-height:1.55}
+.card{background:#fff;border:1px solid #dce4f0;border-radius:14px;padding:16px;margin-top:15px}
+dl{display:grid;grid-template-columns:minmax(100px,1fr) 2fr;gap:10px;margin:0}
+dt{color:#67788d}dd{margin:0;overflow-wrap:anywhere}
+#terms{white-space:pre-wrap;overflow-wrap:anywhere}
+.warning{border-left:4px solid #ce8c25;padding:11px;background:#fff8e8;border-radius:6px}
+button{background:#2356a0;color:white;padding:12px 16px;border:0;border-radius:9px;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+small{color:#66778c}
+@media(prefers-color-scheme:dark){body{background:#101722;color:#e4ecf9}.card{background:#1e2c3f;border-color:#364963}.warning{background:#352c1c}p,dt,small{color:#a9b9d0}}
+</style></head><body><main>
+<h1>Review the work contract</h1>
+<p>The purchasing agent may prepare an agreement, but it cannot authorize itself to spend.</p>
+<div class="warning">Demo providers and outputs are fictional. This screen does not charge money.</div>
+<section id="card" class="card"><p id="status" role="status">Waiting for prepared work from the MCP host...</p><dl id="terms"></dl></section>
+<div style="margin:15px 0"><button id="review" disabled>Open secure human review</button></div>
+<small>Opens the marketplace's separately authenticated browser page. The MCP App never receives a human approval token or wallet key.</small>
+</main><script type="module" src="/src/contract.ts"></script></body></html>

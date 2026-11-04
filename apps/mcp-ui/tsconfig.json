@@ -7,11 +7,13 @@
       "DOM.Iterable"
     ],
     "types": [
-      "vite/client"
+      "vite/client",
+      "node"
     ]
   },
   "include": [
     "src/**/*.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "vite.contract.config.ts"
   ]
 }

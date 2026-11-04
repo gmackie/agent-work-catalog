@@ -4,9 +4,10 @@ import { registerAppResource, registerAppTool, RESOURCE_MIME_TYPE } from "@model
 import { withX402 } from "agents/x402";
 import { z } from "zod/v4";
 import { MarketplaceError, type Marketplace } from "@awc/marketplace";
+import { CommerceError, type Commerce, type WorkRunMessage } from "@awc/commerce";
 
 export const MARKETPLACE_APP_URI = "ui://awc/marketplace.html";
-
+export const CONTRACT_APP_URI = "ui://awc/contract.html";
 export interface PaidSandboxConfig {
   readonly network: "base-sepolia";
   readonly recipient: `0x${string}`;
@@ -15,189 +16,217 @@ export interface PaidSandboxConfig {
 export interface McpServerConfig {
   readonly marketplace: Marketplace;
   readonly buyerId: string | null;
-  /** Bundled, self-contained HTML built by @awc/mcp-ui. */
+  readonly buyerScopes?: readonly string[];
   readonly appHtml: string;
-  /** Testnet-only. Never enable a paid tool by default. */
+  readonly contractAppHtml?: string;
+  readonly approvalBaseUrl?: string;
+  readonly commerce?: Commerce;
+  readonly enqueue?: (work:WorkRunMessage)=>Promise<void>;
+  readonly stripeCheckoutAvailable?: boolean;
   readonly paidSandbox?: PaidSandboxConfig;
 }
 
-const response = (value: Record<string, unknown>, message: string) => ({
-  content: [{ type: "text" as const, text: message }],
-  structuredContent: value,
+const reply = (value:Record<string,unknown>,message:string) => ({
+  content:[{type:"text" as const,text:message}],
+  structuredContent:value,
 });
-const failure = (error: unknown) => {
-  const known = error instanceof MarketplaceError ? error :
-    new MarketplaceError("unavailable", "Operation failed");
-  return {
-    isError: true as const,
-    content: [{ type: "text" as const, text: known.code + ": " + known.message }],
-  };
+const failure=(unknown:unknown)=>{
+  const err=unknown instanceof MarketplaceError||unknown instanceof CommerceError ? unknown : null;
+  return {isError:true as const,content:[{
+    type:"text" as const,text:err?err.code+": "+err.message:"unavailable: Unable to complete request",
+  }]};
 };
-const guarded = async <T extends object>(
-  effect: Effect.Effect<T, MarketplaceError>,
-  summary: (value: T) => string,
-) => {
+async function guarded<T extends object>(effect:Effect.Effect<T,any>,summary:(value:T)=>string){
   try {
-    const value = await Effect.runPromise(effect);
-    return response(value as Record<string, unknown>, summary(value));
-  } catch (error) {
-    return failure(error);
+    const value=await Effect.runPromise(effect);
+    return reply(value as Record<string,unknown>,summary(value));
+  }catch(err){return failure(err);}
+}
+export function createCatalogMcpServer(config:McpServerConfig):McpServer {
+  const server=new McpServer({name:"Agent Work Catalog",version:"0.2.0"});
+  const scope=(name:string)=>!!config.buyerId&&!!config.buyerScopes?.includes(name);
+  const reviewUrl=(id:string)=>config.approvalBaseUrl
+    ? new URL("/review?work="+encodeURIComponent(id),config.approvalBaseUrl).toString()
+    : undefined;
+
+  registerAppTool(server,"catalog.search",{
+    description:"Find purchasable work by desired outcome. Demo results are fictional, not verified providers.",
+    inputSchema:z.object({
+      intent:z.string().min(3).max(2000),
+      currency:z.string().max(10).optional(),
+      maxPriceMinor:z.string().regex(/^(0|[1-9][0-9]*)$/).optional(),
+      inputMediaType:z.string().max(120).optional(),
+      outputMediaType:z.string().max(120).optional(),
+      limit:z.number().int().min(1).max(20).optional(),
+    }).strict(),
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true,openWorldHint:true},
+    _meta:{ui:{resourceUri:MARKETPLACE_APP_URI}},
+  },async(args)=>guarded(config.marketplace.search(args),x=>
+    "Found "+x.matches.length+" illustrative offerings. No payment required."));
+
+  server.registerTool("catalog.get_offering",{
+    description:"Inspect a fictional, versioned commercial offering and its task type.",
+    inputSchema:z.object({offeringId:z.string().min(3).max(180)}).strict(),
+    annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+  },async({offeringId})=>guarded(config.marketplace.getOffering(offeringId),
+    x=>"Illustrative offering: "+x.offering.title));
+
+  for (const [name,uri,html] of [
+    ["Marketplace Explorer",MARKETPLACE_APP_URI,config.appHtml],
+    ["Contract Review",CONTRACT_APP_URI,config.contractAppHtml??""],
+  ] as const){
+    registerAppResource(server,name,uri,{
+      description:name+" interface, optional in clients without MCP Apps",
+      mimeType:RESOURCE_MIME_TYPE,
+    },async()=>({contents:[{
+      uri,mimeType:RESOURCE_MIME_TYPE,
+      text:html||"<!doctype html><html><body>Build the MCP App assets first.</body></html>",
+    }]}));
   }
-};
-const unauthenticated = () => ({
-  isError: true as const,
-  content: [{ type: "text" as const, text: "unauthorized: Configure an authorized buyer connection before requesting private work" }],
-});
 
-/**
- * Creates a fresh MCP SDK v2 server per transport request.
- * This is a control plane; it NEVER executes paid work or authorizes real funding.
- */
-export function createCatalogMcpServer(config: McpServerConfig): McpServer {
-  const server = new McpServer({ name: "Agent Work Catalog", version: "0.1.0" });
+  server.registerResource("Catalog manifest","awc://catalog/manifest",{
+    title:"AWC public demo catalog",mimeType:"application/json",
+  },async(uri)=>({contents:[{uri:uri.href,mimeType:"application/json",
+    text:JSON.stringify({schemaVersion:"awc-catalog/v0.2",catalog:"seeded-demo-only",
+      publicTools:["catalog.search","catalog.get_offering"],payments:"disabled-unless-tested"})}]}));
 
-  const searchSchema = z.object({
-    intent: z.string().min(3).max(2000),
-    currency: z.string().max(10).optional(),
-    maxPriceMinor: z.string().regex(/^(0|[1-9][0-9]*)$/).optional(),
-    inputMediaType: z.string().max(120).optional(),
-    outputMediaType: z.string().max(120).optional(),
-    limit: z.number().int().min(1).max(20).optional(),
-  }).strict();
-
-  registerAppTool(server, "catalog.search", {
-    description: "Find purchasable types of work by outcome. Demo catalog, NOT live verified providers.",
-    inputSchema: searchSchema,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true },
-    _meta: { ui: { resourceUri: MARKETPLACE_APP_URI } },
-  }, async (args) => guarded(config.marketplace.search(args), (value) =>
-    "Found " + (Array.isArray(value.matches) ? value.matches.length : 0) + " illustrative offerings. No payment required."));
-
-  server.registerTool("catalog.get_offering", {
-    description: "Read a versioned offering and its canonical task type. Listings are sample data.",
-    inputSchema: z.object({ offeringId: z.string().min(3).max(180) }).strict(),
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-  }, async ({ offeringId }) => guarded(config.marketplace.getOffering(offeringId), (value) =>
-    "Offering: " + ((value.offering as { title?: string }).title ?? offeringId)));
-
-  // App UI resource is available to all clients; host renders only when MCP Apps is supported.
-  registerAppResource(server, "AWC Marketplace Explorer", MARKETPLACE_APP_URI, {
-    description: "Interactive offering explorer; optional for non-MCP Apps hosts.",
-    mimeType: RESOURCE_MIME_TYPE,
-  }, async () => ({
-    contents: [{
-      uri: MARKETPLACE_APP_URI, mimeType: RESOURCE_MIME_TYPE,
-      text: config.appHtml || "<!doctype html><html><body>Build the Marketplace Explorer App first.</body></html>",
-    }],
-  }));
-
-  server.registerResource("AWC public catalog", "awc://catalog/manifest", {
-    title: "AWC Catalog Manifest", description: "Public demo catalog metadata", mimeType: "application/json",
-  }, async (uri) => ({
-    contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify({
-      schemaVersion: "awc-catalog/v0.1", catalog: "seeded-demo-only",
-      discovery: "catalog.search", protectedWork: "bearer-authenticated-sandbox",
-    }) }],
-  }));
-
-  server.registerResource("Versioned offering", new ResourceTemplate("awc://offerings/{slug}/{version}", {
-    list: undefined,
-  }), { description: "Public offering and matching task type", mimeType: "application/json" },
-  async (uri, variables) => {
-    const slug = String(variables.slug);
-    const result = await Effect.runPromise(config.marketplace.getOffering("offering:" + slug));
-    if (String(variables.version) !== result.offering.version) throw new Error("Offering version not found");
-    return { contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify(result) }] };
+  server.registerResource("Versioned offering",new ResourceTemplate("awc://offerings/{slug}/{version}",{
+    list:undefined,
+  }),{description:"Read a public offering and canonical task definition",mimeType:"application/json"},
+  async(uri,vars)=>{
+    const match=await Effect.runPromise(config.marketplace.getOffering("offering:"+String(vars.slug)));
+    if(String(vars.version)!==match.offering.version)throw new Error("Offering version unknown");
+    return {contents:[{uri:uri.href,mimeType:"application/json",text:JSON.stringify(match)}]};
   });
 
-  // Only an authenticated principal can see private work tools and resource templates.
-  // This is a single-buyer sandbox key, NOT a substitute for OAuth in multi-tenant deployment.
-  if (config.buyerId) {
-    const buyerId = config.buyerId;
-
-    server.registerTool("quotes.request", {
-      description: "Request an exact fixed-price quote for an illustrative offering; no charge.",
-      inputSchema: z.object({
-        offeringId: z.string().min(3).max(180),
-        scope: z.string().min(8).max(2000),
-        idempotencyKey: z.string().min(8).max(100),
-        maxPriceMinor: z.string().regex(/^(0|[1-9][0-9]*)$/).optional(),
+  const buyerId=config.buyerId;
+  if(buyerId&&scope("quotes:write")){
+    server.registerTool("quotes.request",{
+      description:"Create an exact sample fixed-price quote. NO PAYMENT is taken.",
+      inputSchema:z.object({
+        offeringId:z.string().min(3).max(180),scope:z.string().min(8).max(2000),
+        idempotencyKey:z.string().min(8).max(100),
+        maxPriceMinor:z.string().regex(/^(0|[1-9][0-9]*)$/).optional(),
       }).strict(),
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-    }, async (args) => guarded(config.marketplace.requestQuote(buyerId, args), (value) =>
-      "Quote " + value.id + " proposed only; no payment has occurred."));
-
-    server.registerTool("work.prepare", {
-      description: "Prepare an UNFUNDED commercial work order from a quote. Does not hire, execute or charge.",
-      inputSchema: z.object({
-        quoteId: z.string().min(3).max(150),
-        idempotencyKey: z.string().min(8).max(100),
-        inputs: z.array(z.object({
-          name: z.string().min(1).max(100),
-          mediaType: z.string().min(3).max(120),
-          kind: z.enum(["inline", "reference"]),
-          data: z.unknown().optional(),
-          reference: z.string().optional(),
-          sha256: z.string().optional(),
+      annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
+    },async(args)=>guarded(config.marketplace.requestQuote(buyerId,args),
+      q=>"Quote "+q.id+" proposed; no money or permission to execute."));
+  }
+  if(buyerId&&scope("work:prepare")){
+    registerAppTool(server,"work.prepare",{
+      description:"Prepare UNFUNDED work under an existing quote. Opens a separate human-facing review.",
+      inputSchema:z.object({
+        quoteId:z.string().min(3).max(150),
+        idempotencyKey:z.string().min(8).max(100),
+        inputs:z.array(z.object({
+          name:z.string().min(1).max(100),mediaType:z.string().min(3).max(120),
+          kind:z.enum(["inline","reference"]),data:z.unknown().optional(),
+          reference:z.string().optional(),sha256:z.string().optional(),
         }).strict()).min(1).max(10),
       }).strict(),
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-    }, async (args) => guarded(config.marketplace.prepareWork(buyerId, {
-      quoteId: args.quoteId,
-      idempotencyKey: args.idempotencyKey,
-      inputs: args.inputs.map((input) => ({
-        name: input.name, mediaType: input.mediaType, kind: input.kind,
-        ...(input.data !== undefined ? { data: input.data } : {}),
-        ...(input.reference !== undefined ? { reference: input.reference } : {}),
-        ...(input.sha256 !== undefined ? { sha256: input.sha256 } : {}),
-      })),
-    }), (value) =>
-      "Work order " + value.id + " is PREPARED, UNFUNDED. No executor has been started."));
+      annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
+      _meta:{ui:{resourceUri:CONTRACT_APP_URI}},
+    },async(args)=>{
+      const prepare=config.marketplace.prepareWork(buyerId,{
+        quoteId:args.quoteId,idempotencyKey:args.idempotencyKey,
+        inputs:args.inputs.map(i=>({
+          name:i.name,mediaType:i.mediaType,kind:i.kind,
+          ...(i.data!==undefined?{data:i.data}:{}),
+          ...(i.reference!==undefined?{reference:i.reference}:{}),
+          ...(i.sha256!==undefined?{sha256:i.sha256}:{}),
+        })),
+      });
+      try{
+        const work=await Effect.runPromise(prepare);
+        const quote=await Effect.runPromise(config.marketplace.getQuote(buyerId,work.quoteId));
+        return reply({...work,quote,reviewUrl:reviewUrl(work.id)},
+          "Work "+work.id+" is UNFUNDED. The human must review terms outside the agent before payment.");
+      }catch(error){return failure(error);}
+    });
+  }
+  if(buyerId&&scope("work:read")){
+    server.registerTool("work.get",{
+      description:"Read this buyer's work and any approval, funding, execution status. Not an MCP Task.",
+      inputSchema:z.object({workId:z.string().min(3).max(160)}).strict(),
+      annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+    },async({workId})=>{
+      try {
+        const work=await Effect.runPromise(config.marketplace.getWork(buyerId,workId));
+        const quote=await Effect.runPromise(config.marketplace.getQuote(buyerId,work.quoteId));
+        const commerce=config.commerce
+          ? (await Effect.runPromise(config.commerce.preview(buyerId,workId))).state
+          : undefined;
+        return reply({...work,quote,commerce,reviewUrl:reviewUrl(work.id)},
+          "Work "+work.id+" is "+(commerce?.status??work.state));
+      }catch(error){return failure(error);}
+    });
 
-    server.registerTool("work.get", {
-      description: "Read this authorized buyer's prepared commercial work order, not an MCP Task.",
-      inputSchema: z.object({ workId: z.string().min(3).max(160) }).strict(),
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    }, async ({ workId }) => guarded(config.marketplace.getWork(buyerId, workId), (value) =>
-      "Work order " + value.id + " state: " + value.state));
+    server.registerResource("Private work order",new ResourceTemplate("awc://work-orders/{workId}",{
+      list:undefined,
+    }),{description:"Buyer-private work state and exact quote terms",mimeType:"application/json"},
+    async(uri,vars)=>{
+      const work=await Effect.runPromise(config.marketplace.getWork(buyerId,String(vars.workId)));
+      const quote=await Effect.runPromise(config.marketplace.getQuote(buyerId,work.quoteId));
+      const commerce=config.commerce
+        ? (await Effect.runPromise(config.commerce.preview(buyerId,work.id))).state
+        : undefined;
+      return {contents:[{uri:uri.href,mimeType:"application/json",text:JSON.stringify({work,quote,commerce})}]};
+    });
+  }
+  if(buyerId&&scope("billing:checkout")){
+    server.registerTool("billing.options",{
+      description:"List safe available payment methods. No authorization or charge is performed.",
+      inputSchema:z.object({}).strict(),
+      annotations:{readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+    },async()=>reply({
+      stripeTestMode:!!config.stripeCheckoutAvailable,
+      x402RealMoney:false,credits:false,canStartWithoutFunding:false,
+      message:"Card checkout requires separately reviewed contract. Test mode only.",
+    },"No live-money payment rail is enabled."));
 
-    server.registerTool("billing.options", {
-      description: "Inspect the sandbox's payment capabilities. This server does NOT process real funding.",
-      inputSchema: z.object({}).strict(),
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    }, async () => response({
-      mode: "sandbox_only", stripeEnabled: false, directX402Enabled: false,
-      creditAccountsEnabled: false, canStartWork: false,
-      message: "Payment and execution are intentionally disabled in this vertical slice.",
-    }, "No live payment rail configured; work orders remain unfunded."));
-
-    server.registerResource("Private work order", new ResourceTemplate("awc://work-orders/{workId}", {
-      list: undefined,
-    }), { description: "Buyer-private prepared work order", mimeType: "application/json" },
-    async (uri, variables) => {
-      const result = await Effect.runPromise(config.marketplace.getWork(buyerId, String(variables.workId)));
-      return { contents: [{ uri: uri.href, mimeType: "application/json", text: JSON.stringify(result) }] };
+    if(config.commerce&&config.stripeCheckoutAvailable){
+      server.registerTool("billing.checkout",{
+        description:"Create a Stripe TEST Checkout URL only AFTER separately authenticated human approval.",
+        inputSchema:z.object({workId:z.string().min(3).max(160)}).strict(),
+        annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
+      },async({workId})=>guarded(config.commerce!.checkout(buyerId,workId),r=>
+        "Hosted Stripe TEST checkout ready. It will not authorize execution until settlement is verified."));
+      server.registerTool("billing.reconcile",{
+        description:"Re-query Stripe TEST settlement for an approved work order. Cannot mark arbitrary payments as verified.",
+        inputSchema:z.object({workId:z.string().min(3).max(160)}).strict(),
+        annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
+      },async({workId})=>guarded(config.commerce!.reconcileStripe(buyerId,workId),
+        r=>"Stripe TEST funding state: "+r.status));
+    }
+  }
+  if(buyerId&&scope("work:execute")&&config.commerce&&config.enqueue){
+    server.registerTool("work.start",{
+      description:"Enqueue an approved AND independently funded work order. This sandbox runs synthetic work only.",
+      inputSchema:z.object({workId:z.string().min(3).max(160)}).strict(),
+      annotations:{readOnlyHint:false,destructiveHint:false,idempotentHint:true},
+    },async({workId})=>{
+      try {
+        const scheduled=await Effect.runPromise(config.commerce!.start(buyerId,workId));
+        if(scheduled.enqueue) await config.enqueue!({buyerId,workId});
+        return reply({workId,status:scheduled.state.status,executionTransport:"Cloudflare Queue",
+          paymentRail:scheduled.state.paymentRail??"none"},
+          "Work order "+workId+" queued for a synthetic sandbox executor.");
+      }catch(error){return failure(error);}
     });
   }
 
-  // Separately enabled testnet paid operation. Its result is deterministic, not LLM inference.
-  if (config.paidSandbox) {
-    const paid = withX402(server, {
-      network: config.paidSandbox.network,
-      recipient: config.paidSandbox.recipient,
-      facilitator: { url: config.paidSandbox.facilitatorUrl },
+  // This is a separate, explicitly opted-in TESTNET paid-tool experiment.
+  if(config.paidSandbox){
+    const paid=withX402(server,{
+      network:config.paidSandbox.network,
+      recipient:config.paidSandbox.recipient,
+      facilitator:{url:config.paidSandbox.facilitatorUrl},
     });
-    paid.paidTool(
-      "sandbox.paid_text_stats",
-      "TESTNET-ONLY $0.01 deterministic word/character analysis. Not a completed gig.",
-      0.01,
-      { text: z.string().min(1).max(500) },
-      { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-      async ({ text }) => response({
-        characters: text.length, words: text.trim().split(/\s+/).length, mode: "base-sepolia-testnet",
-      }, "Word and character counts returned after the testnet payment check."),
-    );
+    paid.paidTool("sandbox.paid_text_stats","Base Sepolia TESTNET only; $0.01 deterministic text counts",0.01,
+      {text:z.string().min(1).max(500)},
+      {readOnlyHint:true,destructiveHint:false,idempotentHint:true},
+      async({text})=>reply({characters:text.length,words:text.trim().split(/\s+/).length,
+        mode:"base-sepolia-testnet"},"Text counted in testnet sandbox."));
   }
-
   return server;
 }

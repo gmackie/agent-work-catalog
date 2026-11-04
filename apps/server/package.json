@@ -1,7 +1,7 @@
 {
   "name": "@awc/server",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
@@ -14,8 +14,11 @@
   "dependencies": {
     "@awc/marketplace": "workspace:*",
     "@awc/mcp-server": "workspace:*",
+    "@awc/commerce": "workspace:*",
+    "@awc/auth": "workspace:*",
     "effect": "^4.0.6",
-    "agents": "^0.27.0"
+    "agents": "^0.27.0",
+    "stripe": "^23.1.0"
   },
   "devDependencies": {
     "wrangler": "^4.148.0",
