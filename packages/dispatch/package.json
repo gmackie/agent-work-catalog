@@ -20,6 +20,7 @@
     "effect": "^4.0.6",
     "@awc/adapter-remote-http": "workspace:*",
     "@awc/modbus-pcap": "workspace:*",
+    "@awc/tcp-analysis": "workspace:*",
     "@awc/tcp-pcap": "workspace:*"
   },
   "devDependencies": {

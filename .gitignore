@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-contract/
+dist-tcp/
 coverage/
 .env
 .env.*

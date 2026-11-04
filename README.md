@@ -65,25 +65,20 @@ limitations are explicitly separated from successful TShark comparisons.
 A deterministic malformed-capture mutation sweep adds parser robustness checks.
 See docs/pcap-differential-conformance.md for results and reproduction.
 
-## TCP analysis agents and twelve adjacent marketplace domains
+## TCP/OT analysis product family and next agent offerings
 
-The **real but bounded** `@awc/tcp-pcap` analyzer handles declared-public
-classic PCAP captures and reports TCP packet facts, handshakes, receive-window
-advertisements and ambiguous sequence-range observations. It does **not**
-prove packet loss or root cause, perform stream reassembly, or interpret
-encrypted payloads. The existing approved/test-funded WorkOrder path can route
-`offering:tcp-pcap-evidence` to a pinned remote Worker, recompute evidence,
-store private R2 outputs and emit a **provisional broker-signed observation**.
+The `@awc/tcp-analysis` executor extracts bounded TCP flow evidence from explicitly public classic PCAPs, including observed endpoints, repeated sequence-range candidates, possible gaps, reset flags and zero-window advertisements. It makes **no loss-attribution, causal-diagnosis, or full-TCP-reassembly claim**. The new `offering:tcp-flow-evidence` is available for **sandbox and Stripe TEST** routing through human-approved R2 custody, signed remote execution, deterministic report recomputation and a provisional broker-signed observation.
 
-The `@awc/offering-profiles` package describes nine tiered TCP/OT services;
-only the TCP evidence pilot and earlier Modbus pilot are test-implemented.
-`@awc/domain-opportunities` defines twelve additional **research-only**
-verticals (engineering, IaC, OT, CAN/J1939, BACnet, water, SPC, food,
-restaurant throughput, education, healthcare, and procurement).
+The [TCP evidence product family](docs/tcp-analysis-product-family.md) defines nine product tiers from free intake to human-reviewed investigations, with acceptance/verification rules, rollout gates and hypothetical prices; [TCP offering manifest](specs/tcp-offering-family-v1.json) is machine-readable.
 
-Both are inspectable through read-only MCP catalog tools:
-`catalog.list_tcp_services` and `catalog.list_domain_opportunities`.
-No live prices, active providers or regulated-data handling are implied.
+The [next twelve agent-work domains](docs/agent-offering-domains.md) and their [structured map](specs/agent-opportunity-map-v1.json) identify independently checkable SaaS, OT, medical, education, financial and operational work opportunities. These are ideas, **not active marketplace products**.
 
-See [TCP product family](docs/tcp-agent-offerings.md) and
-[twelve adjacent domains](docs/adjacent-agent-opportunities.md).
+## TCP packet-evidence agents and twelve adjacent marketplace domains
+
+The **real but bounded** `@awc/tcp-pcap` analyzer handles declared-public classic PCAP captures and reports TCP packet facts, handshakes, receive-window advertisements and ambiguous sequence-range observations. It does **not** prove packet loss or root cause, perform stream reassembly, or interpret encrypted payloads. The approved/test-funded WorkOrder path can route `offering:tcp-pcap-evidence` to a pinned remote Worker, recompute evidence, store private R2 outputs and emit a **provisional broker-signed observation**.
+
+The `@awc/offering-profiles` package describes nine tiered TCP/OT services; only the TCP evidence pilots and the earlier Modbus pilot are test-implemented. `@awc/domain-opportunities` defines twelve additional **research-only** verticals (engineering, IaC, OT, CAN/J1939, BACnet, water, SPC, food, restaurant throughput, education, healthcare, and procurement).
+
+Both packet-evidence surfaces are inspectable through read-only MCP catalog tools: `catalog.list_tcp_services` and `catalog.list_domain_opportunities`. No live prices, active providers or regulated-data handling are implied.
+
+See [TCP product family](docs/tcp-agent-offerings.md) and [twelve adjacent domains](docs/adjacent-agent-opportunities.md).

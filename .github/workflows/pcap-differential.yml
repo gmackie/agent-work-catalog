@@ -6,6 +6,7 @@ on:
     paths:
       - "packages/modbus-pcap/**"
       - "packages/modbus-workflow/**"
+      - "packages/tcp-analysis/**"
       - ".github/workflows/pcap-differential.yml"
   pull_request:
     paths:
@@ -47,6 +48,10 @@ jobs:
         run: pnpm exec tsx packages/modbus-pcap/conformance/analyze_corpus.ts "$PCAP_CONFORMANCE_DIR"
       - name: Compare AWC results to TShark dissection and Scapy intents
         run: python packages/modbus-pcap/conformance/compare_tshark.py --dir "$PCAP_CONFORMANCE_DIR"
+      - name: Analyze TCP flow evidence independently with AWC
+        run: pnpm exec tsx packages/tcp-analysis/conformance/analyze_corpus.ts "$PCAP_CONFORMANCE_DIR"
+      - name: Compare TCP flow fields against TShark
+        run: python packages/tcp-analysis/conformance/compare_tcp_tshark.py --dir "$PCAP_CONFORMANCE_DIR"
       - name: Preserve synthetic failing captures for reproducibility
         if: failure()
         uses: actions/upload-artifact@v4

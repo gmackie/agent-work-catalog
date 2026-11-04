@@ -18,9 +18,11 @@ import { d1DispatchStore,type D1Database as DispatchD1 } from "@awc/dispatch/d1"
 import { createR2ArtifactCustody,type R2BucketLike,type ArtifactCustody } from "@awc/artifact-custody";
 import { createModbusResultProcessor } from "@awc/modbus-workflow";
 import { analyzeClassicPcap, MAX_CAPTURE_BYTES,PCAP_MEDIA_TYPE } from "@awc/modbus-pcap";
-import { verifyObservation } from "@awc/attest-receipts";
+import { analyzeTcpCapture } from "@awc/tcp-analysis";
+import { analyzeTcpPcap } from "@awc/tcp-pcap";
+import { verifyObservation, TCP_OBSERVATION_SCHEMA } from "@awc/attest-receipts";
 import { verifyTcpEvidenceReceipt } from "@awc/attest-receipts/tcp";
-import { createTcpResultProcessor } from "@awc/tcp-workflow";
+import { createTcpResultProcessor, createTcpFlowResultProcessor } from "@awc/tcp-workflow";
 
 export interface Env {
   readonly DB: MarketplaceD1 & CommerceD1 & SourceD1 & DispatchD1;
@@ -54,6 +56,7 @@ export interface Env {
   readonly AWC_REMOTE_EXECUTOR_HOST?:string;
   readonly AWC_REMOTE_EXECUTOR_SHARED_KEY?:string;
   readonly ENABLE_MODBUS_PCAP?:string;
+  readonly ENABLE_TCP_FLOW?:string;
   readonly ENABLE_TCP_PCAP?:string;
   readonly AWC_ATTEST_OBSERVATION_ISSUER?:string;
   readonly AWC_ATTEST_KEY_ID?:string;
@@ -126,10 +129,10 @@ function services(env:Env,request:Request){
   let binding:TrustedExecutorBinding|undefined;
   let remote:ReturnType<typeof createRemoteHttpExecutor>|undefined;
   const boundedPcap=env.ENABLE_MODBUS_PCAP==="true";
-  const boundedTcp=env.ENABLE_TCP_PCAP==="true";
-  if(boundedPcap&&boundedTcp)throw new AdapterError("unavailable",
-    "Only one pinned capture-analysis executor profile may be active per broker deployment");
-  const capturePilot=boundedPcap||boundedTcp;
+  const tcpFlow=env.ENABLE_TCP_FLOW==="true";
+  const tcpPcap=env.ENABLE_TCP_PCAP==="true";
+  if([boundedPcap,tcpFlow,tcpPcap].filter(Boolean).length>1)throw new AdapterError("unavailable","Only one pinned capture-analysis executor profile may be active per broker deployment");
+  const capturePilot=boundedPcap||tcpFlow||tcpPcap;
   const custody=artifactCustody(env);
   if(capturePilot && (!custody || !env.AWC_ATTEST_PRIVATE_KEY_PEM ||
       !env.AWC_ATTEST_PUBLIC_KEY_PEM || !env.AWC_ATTEST_OBSERVATION_ISSUER ||
@@ -145,16 +148,16 @@ function services(env:Env,request:Request){
       id:env.AWC_REMOTE_EXECUTOR_ID,baseUrl:env.AWC_REMOTE_EXECUTOR_ORIGIN,
       allowedHost:env.AWC_REMOTE_EXECUTOR_HOST,
       sharedKey:env.AWC_REMOTE_EXECUTOR_SHARED_KEY,
-      supportedTaskTypes:[boundedTcp?"task:tcp-pcap":boundedPcap?"task:modbus-pcap":"task:modbus-diagnostics"],
+      supportedTaskTypes:[tcpFlow?"task:tcp-flow-evidence":tcpPcap?"task:tcp-pcap":boundedPcap?"task:modbus-pcap":"task:modbus-diagnostics"],
     });
     binding={
       id:env.AWC_REMOTE_EXECUTOR_ID,origin:new URL(env.AWC_REMOTE_EXECUTOR_ORIGIN).origin+"/",
-      offeringId:boundedTcp?"offering:tcp-pcap-evidence":boundedPcap?"offering:modbus-pcap-analysis":"offering:modbus-report",
+      offeringId:tcpFlow?"offering:tcp-flow-evidence":tcpPcap?"offering:tcp-pcap-evidence":boundedPcap?"offering:modbus-pcap-analysis":"offering:modbus-report",
       offeringVersion:"1",
-      taskTypeId:boundedTcp?"task:tcp-pcap":boundedPcap?"task:modbus-pcap":"task:modbus-diagnostics",
-      maxCostMinorUnits:boundedTcp?"900":"3500",outputMediaTypes:["application/json"],
+      taskTypeId:tcpFlow?"task:tcp-flow-evidence":tcpPcap?"task:tcp-pcap":boundedPcap?"task:modbus-pcap":"task:modbus-diagnostics",
+      maxCostMinorUnits:tcpFlow?"2500":tcpPcap?"900":"3500",outputMediaTypes:["application/json"],
       maxDurationSeconds:120,dataClassification:"public",allowedEffects:[],
-      executionMode:boundedTcp?"bounded-tcp-pcap/v1":boundedPcap?"bounded-modbus-pcap/v1":"synthetic-test-only",
+      executionMode:tcpFlow?"bounded-tcp-flow/v1":tcpPcap?"bounded-tcp-pcap/v1":boundedPcap?"bounded-modbus-pcap/v1":"synthetic-test-only",
     };
   }
   const commerce=makeCommerce(marketplace,d1WorkStateStore(env.DB),sandboxExecutor,{
@@ -171,7 +174,8 @@ function services(env:Env,request:Request){
     publicKeyPem:env.AWC_ATTEST_PUBLIC_KEY_PEM!,
   }:undefined;
   const resultProcessor=custody&&signer
-    ? boundedTcp?createTcpResultProcessor(custody,signer):
+    ? tcpFlow?createTcpFlowResultProcessor(custody,signer):
+      tcpPcap?createTcpResultProcessor(custody,signer):
       boundedPcap?createModbusResultProcessor(custody,signer):undefined
     :undefined;
   const remoteDispatcher=remote && binding
@@ -350,8 +354,7 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
   }
   if(!allowedOrigin(request,env))return json({error:"origin_not_allowed"},403);
   if(url.pathname==="/api/artifacts/input"&&request.method==="POST"){
-    if(env.ENABLE_MODBUS_PCAP!=="true"&&env.ENABLE_TCP_PCAP!=="true")
-      return json({error:"not_found"},404);
+    if(env.ENABLE_MODBUS_PCAP!=="true"&&env.ENABLE_TCP_FLOW!=="true"&&env.ENABLE_TCP_PCAP!=="true")return json({error:"not_found"},404);
     try{
       const actor=requireScope(await principal(request,env,"mcp"),"work:prepare");
       if(request.headers.get("content-type")?.split(";")[0]!==PCAP_MEDIA_TYPE ||
@@ -359,7 +362,9 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
         return json({error:"public_classic_pcap_only"},415);
       }
       const raw=await bodyUnderLimit(request,MAX_CAPTURE_BYTES);
-      await analyzeClassicPcap(raw);
+      if(env.ENABLE_TCP_FLOW==="true")await analyzeTcpCapture(raw);
+      else if(env.ENABLE_TCP_PCAP==="true")await analyzeTcpPcap(raw);
+      else await analyzeClassicPcap(raw);
       const custody=artifactCustody(env);
       if(!custody)return json({error:"private_r2_not_configured"},503);
       const stored=await custody.putInput(actor.buyerId,raw);
@@ -521,9 +526,11 @@ export async function handleRequest(request:Request,env:Env,ctx:ExecutionContext
                 workOrderId:workId,contractDigest:preview.quote.termsDigest,
               })
             : await verifyObservation(new TextDecoder().decode(bytes),{
-                issuerId:env.AWC_ATTEST_OBSERVATION_ISSUER,
-                keyId:env.AWC_ATTEST_KEY_ID,publicKeyPem:env.AWC_ATTEST_PUBLIC_KEY_PEM,
+                issuerId:env.AWC_ATTEST_OBSERVATION_ISSUER,keyId:env.AWC_ATTEST_KEY_ID,
+                publicKeyPem:env.AWC_ATTEST_PUBLIC_KEY_PEM,
                 workId,contractDigest:preview.quote.termsDigest,
+                ...(preview.work.taskTypeId==="task:tcp-flow-evidence"
+                  ? {schema:TCP_OBSERVATION_SCHEMA} : {}),
               });
           return {ref,mediaType:artifact.mediaType,value:observation,
             integrityVerified:true,signatureVerified:true,

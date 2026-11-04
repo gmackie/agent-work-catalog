@@ -28,8 +28,9 @@
     "@awc/modbus-workflow": "workspace:*",
     "@awc/modbus-pcap": "workspace:*",
     "@awc/attest-receipts": "workspace:*",
-    "@awc/tcp-workflow": "workspace:*",
-    "@awc/tcp-pcap": "workspace:*"
+    "@awc/tcp-analysis": "workspace:*",
+    "@awc/tcp-pcap": "workspace:*",
+    "@awc/tcp-workflow": "workspace:*"
   },
   "devDependencies": {
     "wrangler": "^4.148.0",
