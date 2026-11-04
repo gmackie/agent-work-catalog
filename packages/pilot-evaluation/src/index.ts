@@ -206,7 +206,7 @@ export function scorePilotCase(sample: PilotCase, report: TcpReport): PilotCaseS
     const k = key(item);
     if (!expectedKinds.has(item.kind) ||
         !gradeKinds.has(item.confidence) ||
-        item.frames.some(n => !Number.isInteger(n) || n < 1 ||
+        item.frames.some((n: number) => !Number.isInteger(n) || n < 1 ||
           n > report.coverage.totalFrames)) {
       throw new PilotError("integrity", "Report contains out-of-scope assertions");
     }

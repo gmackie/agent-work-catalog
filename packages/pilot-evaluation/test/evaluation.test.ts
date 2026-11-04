@@ -82,13 +82,16 @@ describe("TCP pilot scoring and go/no-go safety",()=>{
   });
   it("rejects mismatched capture bytes or analysis version, plus unconsented human evidence",async()=>{
     const f=await fixture();
-    const altered=Uint8Array.from(f.bytes);altered[85] ^= 0x1;
+    const altered=Uint8Array.from(f.bytes);
+    const byte=altered[85];
+    if(byte===undefined)throw new Error("fixture shorter than expected");
+    altered[85]=byte^0x1;
     await expect(Effect.runPromise(evaluateCase(altered,f.sample))).rejects.toThrow(PilotError);
     expect(()=>scorePilotCase(f.sample,{...f.report,
       captureSha256:"b".repeat(64)})).toThrow(PilotError);
     const human=pretendHuman(f.sample);
-    expect(()=>scorePilotCase({...human,capture:{...human.capture,
-      consentRef:undefined}},f.report)).toThrow(PilotError);
+    const {consentRef:_drop,...capture}=human.capture;
+    expect(()=>scorePilotCase({...human,capture},f.report)).toThrow(PilotError);
     expect(()=>scorePilotCase({...human,groundTruth:{...human.groundTruth,
       reviewerPseudonyms:["reviewer_0001","reviewer_0001"]}},f.report)).toThrow(PilotError);
     expect(()=>scorePilotCase({...f.sample,outcomes:human.outcomes},f.report)).toThrow(PilotError);
