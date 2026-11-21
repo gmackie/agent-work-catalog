@@ -19,7 +19,7 @@
     "@awc/tcp-pcap": "workspace:*"
   },
   "devDependencies": {
-    "wrangler": "^4.148.0",
+    "wrangler": "^4.165.0",
     "@cloudflare/workers-types": "5.20261018.1"
   }
 }
