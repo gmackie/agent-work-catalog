@@ -1,0 +1,55 @@
+{
+  "hypothesis": "Reduce repeated TypeScript work in Agent Work Catalog validation while preserving every package check.",
+  "workflow": "ci.yml",
+  "event": "workflow_dispatch",
+  "requiredChecks": [
+    "validate"
+  ],
+  "correctedPins": {
+    "baseline": {
+      "branch": "ci/AWC-2-measure-baseline",
+      "product": "4f30ec93253662129e26fb4175086799820d8677",
+      "sha": "eacd464519d790ba1c2027f26bca43636bff1e5f",
+      "tree": "28e131412e6bc1199ae8f22587d4e360f25b8919"
+    },
+    "candidate": {
+      "branch": "ci/AWC-2-measure-candidate",
+      "product": "34d96abb689c1930bbc2bdd960ad3246ad1b30b1",
+      "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6",
+      "tree": "b9d99edc078326f2b95fcff7aca9ba8d9fd17008"
+    }
+  },
+  "workload": "3dd5c2bed6cac20891414f07f7274f572c6ebd95",
+  "failedInstrumentationPilot": {
+    "id": 45331041760,
+    "sha": "3ebf14bfdc91006c97a162f6303c0f316e510252",
+    "slot": "original pair 1 baseline",
+    "reason": "All ordinary steps and the verifier completed; upload-artifact rejected a path containing .. before storing the work records."
+  },
+  "correctedPairs": [
+    {
+      "pair": 1,
+      "baseline": "pair 1 replacement baseline (last dispatch)",
+      "candidate": 45331383209
+    },
+    {
+      "pair": 2,
+      "baseline": "pair 2 baseline",
+      "candidate": 45331539344
+    },
+    {
+      "pair": 3,
+      "baseline": "pair 3 baseline",
+      "candidate": "pair 3 candidate"
+    }
+  ],
+  "chronologicalCorrectedDispatchOrder": [
+    "pair 1 candidate",
+    "pair 2 candidate",
+    "pair 2 baseline",
+    "pair 3 baseline",
+    "pair 3 candidate",
+    "pair 1 replacement baseline"
+  ],
+  "selection": "All six corrected runs in their original pair assignments. The coordinator authorized one replacement after the first baseline upload failed. Both corrected candidates already dispatched before this amendment; no corrected baseline had been dispatched and no pair durations compared. Finish the existing two adjacent pairs in their original alternating order and take the replacement baseline last. Pair 1 consequently spans the other two. No reruns or further replacements."
+}
