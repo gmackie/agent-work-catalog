@@ -1,0 +1,420 @@
+{
+  "localToolchain": {
+    "node": "v24.14.0",
+    "typescript": "6.0.3",
+    "pnpm": "10.20.0"
+  },
+  "allProjectsNegative": {
+    "baselineExit": 1,
+    "candidateExit": 1,
+    "injected": "export const awcCompileFailureProbe: never = \"awc-ci\"",
+    "diagnostics": [
+      {
+        "file": "apps/demo/src/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "apps/mcp-ui/vite.tcp.config.ts",
+        "line": 10,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "apps/operations-demo/src/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "apps/server/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "apps/standards-demo-cli/src/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "examples/remote-executor/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/adapter-github/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/adapter-remote-http/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/adapter-sdk/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/artifact-custody/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/attest-receipts/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/auth/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/authzen-approval-client/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/authzen-client/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/authzen-finance/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/authzen/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/catalog/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/coaz-mcp/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/commerce/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/contracts/src/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/dispatch/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/domain-opportunities/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/economics-durable/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/economics/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/epcis-adapter/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/events/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/mandate-registry/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/marketplace/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/mcp-server/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/modbus-pcap/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/modbus-workflow/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/oauth-rar/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/odrl-profile/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/offering-profiles/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/openslo/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/operations/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/osb-adapter/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/payment-stripe/src/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/pdp-auth/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/pilot-evaluation/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/provenance/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/provider-http/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/responsibility/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/runtime/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/simulations/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/source-inbox/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/standards-demo/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/tcp-analysis/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/tcp-pcap/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/tcp-workflow/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/token-exchange/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/ubl-adapter/test/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      },
+      {
+        "file": "packages/worker-openai/src/awc-ci-error-probe.ts",
+        "line": 2,
+        "column": 14,
+        "code": "TS2322",
+        "message": "Type '\"awc-ci\"' is not assignable to type 'never'."
+      }
+    ]
+  },
+  "customPackageScriptFailureExit": 17,
+  "restoredCleanRun": "passed",
+  "ambientAndFileListResults": [
+    "file list differences []",
+    "compiler file occurrences 16768 distinct 1556",
+    "baseline [\"packages/auth typecheck: test/awc-ambient-probe.ts(1,34): error TS2304: Cannot find name 'DurableObjectState'.\"]",
+    "candidate [\"packages/auth/test/awc-ambient-probe.ts(1,34): error TS2304: Cannot find name 'DurableObjectState'.\"]"
+  ],
+  "fullEntryPointSteps": [
+    "UI build",
+    "all package types",
+    "all package tests",
+    "operations demo",
+    "standards demo",
+    "server dry-run",
+    "remote-executor dry-run"
+  ],
+  "baselineLocalSeconds": [
+    3.94,
+    17.38,
+    8.78,
+    1.01,
+    0.76,
+    1.62,
+    2.04
+  ],
+  "candidateLocalSeconds": [
+    3.01,
+    7.28,
+    8.25,
+    0.84,
+    0.75,
+    1.64,
+    1.16
+  ]
+}

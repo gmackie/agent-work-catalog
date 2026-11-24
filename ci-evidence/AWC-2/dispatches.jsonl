@@ -1,0 +1,20 @@
+{"at": "2026-11-24T05:07:41.286055+00:00", "stage": "dispatched", "pair": 1, "side": "baseline", "id": 45331041760, "sha": "3ebf14bfdc91006c97a162f6303c0f316e510252", "ref": "ci/AWC-2-measure-baseline"}
+{"at": "2026-11-24T05:08:51.049582+00:00", "stage": "completed", "pair": 1, "side": "baseline", "id": 45331041760, "outcome": "failure"}
+{"at": "2026-11-24T05:10:11.800091+00:00", "stage": "request", "pair": 1, "side": "candidate", "ref": "ci/AWC-2-measure-candidate", "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6"}
+{"at": "2026-11-24T05:10:13.444706+00:00", "stage": "dispatched", "pair": 1, "side": "candidate", "id": 45331383209, "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6", "ref": "ci/AWC-2-measure-candidate"}
+{"at": "2026-11-24T05:11:31.899903+00:00", "stage": "completed", "pair": 1, "side": "candidate", "id": 45331383209, "outcome": "success"}
+{"at": "2026-11-24T05:11:31.900143+00:00", "stage": "request", "pair": 2, "side": "candidate", "ref": "ci/AWC-2-measure-candidate", "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6"}
+{"at": "2026-11-24T05:11:33.471626+00:00", "stage": "dispatched", "pair": 2, "side": "candidate", "id": 45331539344, "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6", "ref": "ci/AWC-2-measure-candidate"}
+{"at": "2026-11-24T05:13:01.059989+00:00", "stage": "completed", "pair": 2, "side": "candidate", "id": 45331539344, "outcome": "success"}
+{"at": "2026-11-24T05:13:01.060414+00:00", "stage": "request", "pair": 2, "side": "baseline", "ref": "ci/AWC-2-measure-baseline", "sha": "eacd464519d790ba1c2027f26bca43636bff1e5f"}
+{"at": "2026-11-24T05:13:02.435639+00:00", "stage": "dispatched", "pair": 2, "side": "baseline", "id": 45331720576, "sha": "eacd464519d790ba1c2027f26bca43636bff1e5f", "ref": "ci/AWC-2-measure-baseline"}
+{"at": "2026-11-24T05:15:03.556917+00:00", "stage": "completed", "pair": 2, "side": "baseline", "id": 45331720576, "outcome": "success"}
+{"at": "2026-11-24T05:15:03.557525+00:00", "stage": "request", "pair": 3, "side": "baseline", "ref": "ci/AWC-2-measure-baseline", "sha": "eacd464519d790ba1c2027f26bca43636bff1e5f"}
+{"at": "2026-11-24T05:15:05.070838+00:00", "stage": "dispatched", "pair": 3, "side": "baseline", "id": 45331969755, "sha": "eacd464519d790ba1c2027f26bca43636bff1e5f", "ref": "ci/AWC-2-measure-baseline"}
+{"at": "2026-11-24T05:16:55.977515+00:00", "stage": "completed", "pair": 3, "side": "baseline", "id": 45331969755, "outcome": "success"}
+{"at": "2026-11-24T05:16:55.977910+00:00", "stage": "request", "pair": 3, "side": "candidate", "ref": "ci/AWC-2-measure-candidate", "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6"}
+{"at": "2026-11-24T05:16:57.488324+00:00", "stage": "dispatched", "pair": 3, "side": "candidate", "id": 45332203909, "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6", "ref": "ci/AWC-2-measure-candidate"}
+{"at": "2026-11-24T05:18:14.114600+00:00", "stage": "completed", "pair": 3, "side": "candidate", "id": 45332203909, "outcome": "success"}
+{"at": "2026-11-24T05:18:14.114769+00:00", "stage": "request", "pair": 1, "side": "baseline", "ref": "ci/AWC-2-measure-baseline", "sha": "eacd464519d790ba1c2027f26bca43636bff1e5f"}
+{"at": "2026-11-24T05:18:15.614746+00:00", "stage": "dispatched", "pair": 1, "side": "baseline", "id": 45332361015, "sha": "eacd464519d790ba1c2027f26bca43636bff1e5f", "ref": "ci/AWC-2-measure-baseline"}
+{"at": "2026-11-24T05:20:15.719572+00:00", "stage": "completed", "pair": 1, "side": "baseline", "id": 45332361015, "outcome": "success"}

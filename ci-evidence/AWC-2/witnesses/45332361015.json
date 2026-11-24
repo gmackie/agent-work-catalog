@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "kind": "ci-work-witness",
+  "origin": "https://github.com",
+  "repo": "gmackie/agent-work-catalog",
+  "runId": 45332361015,
+  "sha": "eacd464519d790ba1c2027f26bca43636bff1e5f",
+  "runDigest": "e04cd9f69caec71d08b7e469e20cecba9a1f4b3105950cfd335fc7624edc3364",
+  "sourceSha256": "17f90bf835f7a066a13da5c3da937dc2dc94190bef2f88689de9cd3448e9d08c",
+  "checks": [
+    {
+      "name": "validate",
+      "jobId": 138236275678,
+      "format": "tasks",
+      "count": 247,
+      "passed": 247,
+      "resultDigest": "f2a7647b9a1e07dece56618e5aaccb89520bd6aa19733cecd340804841b3dcfc"
+    }
+  ],
+  "digest": "962645e0d51b0f6b9462bc5d19b5849ec2d6ae8fcdc2cd2d6b635fb7597ac7d2"
+}

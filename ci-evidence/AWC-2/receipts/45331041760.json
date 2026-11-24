@@ -1,0 +1,175 @@
+{
+  "id": 45331041760,
+  "attempt": 1,
+  "ref": "ci/AWC-2-measure-baseline",
+  "sha": "3ebf14bfdc91006c97a162f6303c0f316e510252",
+  "workflow": ".github/workflows/ci.yml",
+  "event": "workflow_dispatch",
+  "jobId": 138232065966,
+  "jobName": "validate",
+  "outcome": "failure",
+  "runCreatedAt": "2026-11-24T05:07:16Z",
+  "attemptCreatedAt": "2026-11-24T05:07:17Z",
+  "jobStartedAt": "2026-11-24T05:07:20Z",
+  "jobCompletedAt": "2026-11-24T05:08:49Z",
+  "queueSeconds": 4,
+  "executionSeconds": 89,
+  "endToEndSeconds": 93,
+  "actions": {
+    "actions/checkout@v4": "11d5960a326750d5838078e36cf38b85af677262",
+    "pnpm/action-setup@v4": "b906affcce14559ad1aafd4ab0e942779e9f58b1",
+    "actions/setup-node@v4": "49933ea5288caeca8642d1e84afbd3f7d6820020",
+    "actions/upload-artifact@v4": "ea165f8d65b6e75b540449e92b4886f43607fa02"
+  },
+  "runnerLabels": [
+    "ubuntu-latest"
+  ],
+  "versions": {
+    "arch": "X64",
+    "image": "ubuntu26",
+    "imageVersion": "20261116.202.1",
+    "node": "v24.22.3",
+    "pnpm": "10.20.0",
+    "typescript": "6.0.3"
+  },
+  "verifiedTaskCountAtRuntime": 247,
+  "steps": [
+    {
+      "number": 1,
+      "name": "Set up job",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:07:21Z",
+      "completed_at": "2026-11-24T05:07:22Z"
+    },
+    {
+      "number": 2,
+      "name": "Run actions/checkout@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:07:22Z",
+      "completed_at": "2026-11-24T05:07:23Z"
+    },
+    {
+      "number": 3,
+      "name": "Run pnpm/action-setup@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:07:23Z",
+      "completed_at": "2026-11-24T05:07:25Z"
+    },
+    {
+      "number": 4,
+      "name": "Run actions/setup-node@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:07:25Z",
+      "completed_at": "2026-11-24T05:07:26Z"
+    },
+    {
+      "number": 5,
+      "name": "Record fresh checkout and package store",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:07:26Z",
+      "completed_at": "2026-11-24T05:07:26Z"
+    },
+    {
+      "number": 6,
+      "name": "Run pnpm install --no-frozen-lockfile",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:07:26Z",
+      "completed_at": "2026-11-24T05:07:34Z"
+    },
+    {
+      "number": 7,
+      "name": "Run pnpm --filter @awc/mcp-ui build",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:07:34Z",
+      "completed_at": "2026-11-24T05:07:38Z"
+    },
+    {
+      "number": 8,
+      "name": "Run pnpm typecheck",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:07:38Z",
+      "completed_at": "2026-11-24T05:08:24Z"
+    },
+    {
+      "number": 9,
+      "name": "Run pnpm test",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:08:24Z",
+      "completed_at": "2026-11-24T05:08:39Z"
+    },
+    {
+      "number": 10,
+      "name": "Run pnpm operations:demo",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:08:39Z",
+      "completed_at": "2026-11-24T05:08:41Z"
+    },
+    {
+      "number": 11,
+      "name": "Run pnpm standards:demo",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:08:41Z",
+      "completed_at": "2026-11-24T05:08:42Z"
+    },
+    {
+      "number": 12,
+      "name": "Run pnpm --filter @awc/server bundle",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:08:42Z",
+      "completed_at": "2026-11-24T05:08:44Z"
+    },
+    {
+      "number": 13,
+      "name": "Run pnpm --filter @awc/example-remote-executor bundle",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:08:44Z",
+      "completed_at": "2026-11-24T05:08:45Z"
+    },
+    {
+      "number": 14,
+      "name": "Verify completed work",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:08:45Z",
+      "completed_at": "2026-11-24T05:08:46Z"
+    },
+    {
+      "number": 15,
+      "name": "Preserve completed work",
+      "conclusion": "failure",
+      "started_at": "2026-11-24T05:08:46Z",
+      "completed_at": "2026-11-24T05:08:46Z"
+    },
+    {
+      "number": 28,
+      "name": "Post Run actions/setup-node@v4",
+      "conclusion": "skipped",
+      "started_at": "2026-11-24T05:08:46Z",
+      "completed_at": "2026-11-24T05:08:46Z"
+    },
+    {
+      "number": 29,
+      "name": "Post Run pnpm/action-setup@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:08:46Z",
+      "completed_at": "2026-11-24T05:08:46Z"
+    },
+    {
+      "number": 30,
+      "name": "Post Run actions/checkout@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:08:46Z",
+      "completed_at": "2026-11-24T05:08:46Z"
+    },
+    {
+      "number": 31,
+      "name": "Complete job",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:08:46Z",
+      "completed_at": "2026-11-24T05:08:46Z"
+    }
+  ],
+  "url": "https://github.com/gmackie/agent-work-catalog/actions/runs/45331041760",
+  "jobUrl": "https://github.com/gmackie/agent-work-catalog/actions/runs/45331041760/job/138232065966",
+  "artifact": null,
+  "preservationError": "Invalid pattern '/home/runner/work/agent-work-catalog/agent-work-catalog/../awc-completed-work'. Relative pathing '.' and '..' is not allowed."
+}

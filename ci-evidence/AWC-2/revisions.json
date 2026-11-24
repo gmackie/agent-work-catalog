@@ -1,0 +1,15 @@
+{
+  "baseProduct": "4f30ec93253662129e26fb4175086799820d8677",
+  "candidateProduct": "34d96abb689c1930bbc2bdd960ad3246ad1b30b1",
+  "baseMeasured": "eacd464519d790ba1c2027f26bca43636bff1e5f",
+  "candidateMeasured": "1b11211469b0c3329c368e5118a64b172dab5aa6",
+  "productPatchSha256": "fcb8829a1d562e52c969f2727d0c39b06a8de40cf8ce5237abc6ecdc6b742160",
+  "matchingMeasuredPatchSha256": "fcb8829a1d562e52c969f2727d0c39b06a8de40cf8ce5237abc6ecdc6b742160",
+  "productTree": "72df2dd82535c51688d8671c551a08dc63541883",
+  "originalCIWorkflowSha256": "39d0ae19c578c96db1745fc13b9e603c5ef4ecb6497f241b33b31dcedee44e7a",
+  "measurementWorkflowSha256": "c63a1c93455cf4e8918c657f476d1385b48fa8cde3a168d3389803a34f83035a",
+  "reporterSha256": "a8a5b8cb5f88b004f17ab5ab67dd335b0bbb9cd07fecd1608d3b703c233c6d3c",
+  "commonGraphManifestSha256": "05b335d7665b8c029f52cf943a6811044ee68148a23dc3fcf297c7fd91e6c70c",
+  "comparatorRevision": "182b452b20cc306ee3596ad1976e2046ee6cff65",
+  "githubCollectorRevision": "d528dacd531fed9bfd7615a0420a627f425272b1"
+}

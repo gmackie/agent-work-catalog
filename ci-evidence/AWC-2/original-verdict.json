@@ -1,0 +1,291 @@
+{
+  "schemaVersion": 1,
+  "kind": "ci-verdict",
+  "origin": "https://github.com",
+  "repository": "gmackie/agent-work-catalog",
+  "workflow": "ci.yml",
+  "origins": {
+    "baseline": "https://github.com",
+    "candidate": "https://github.com"
+  },
+  "revisions": {
+    "baseline": [
+      "3ebf14bfdc91006c97a162f6303c0f316e510252",
+      "eacd464519d790ba1c2027f26bca43636bff1e5f"
+    ],
+    "candidate": [
+      "1b11211469b0c3329c368e5118a64b172dab5aa6"
+    ]
+  },
+  "event": "workflow_dispatch",
+  "hypothesis": "Reduce repeated TypeScript work in Agent Work Catalog validation while preserving every package check.",
+  "requiredChecks": [
+    "validate"
+  ],
+  "verdict": "inconclusive",
+  "scorePercent": null,
+  "thresholdPercent": 5,
+  "minimumPairs": 3,
+  "eligiblePairs": 2,
+  "nominatedPairs": 3,
+  "reasons": [
+    "one or more nominated pairs excluded",
+    "at least 3 independent eligible pairs required"
+  ],
+  "metrics": {
+    "baseline": {
+      "endToEndSeconds": {
+        "n": 2,
+        "median": 108.5,
+        "p90": null
+      },
+      "queueSeconds": {
+        "n": 2,
+        "median": 3.5,
+        "p90": null
+      },
+      "executionSeconds": {
+        "n": 2,
+        "median": 105.0,
+        "p90": null
+      }
+    },
+    "candidate": {
+      "endToEndSeconds": {
+        "n": 2,
+        "median": 58.0,
+        "p90": null
+      },
+      "queueSeconds": {
+        "n": 2,
+        "median": 3.0,
+        "p90": null
+      },
+      "executionSeconds": {
+        "n": 2,
+        "median": 55.0,
+        "p90": null
+      }
+    }
+  },
+  "observedMetrics": {
+    "baseline": {
+      "endToEndSeconds": {
+        "n": 2,
+        "median": 108.5,
+        "p90": null
+      },
+      "queueSeconds": {
+        "n": 2,
+        "median": 3.5,
+        "p90": null
+      },
+      "executionSeconds": {
+        "n": 2,
+        "median": 105.0,
+        "p90": null
+      }
+    },
+    "candidate": {
+      "endToEndSeconds": {
+        "n": 3,
+        "median": 69.0,
+        "p90": null
+      },
+      "queueSeconds": {
+        "n": 3,
+        "median": 3.0,
+        "p90": null
+      },
+      "executionSeconds": {
+        "n": 3,
+        "median": 66.0,
+        "p90": null
+      }
+    }
+  },
+  "missing": {
+    "baseline": {},
+    "candidate": {}
+  },
+  "unusedRuns": {
+    "baseline": [],
+    "candidate": []
+  },
+  "includedPairs": [
+    {
+      "baseline": {
+        "id": 45331720576,
+        "sha": "eacd464519d790ba1c2027f26bca43636bff1e5f",
+        "digest": "aae38b2ae2ecc4e5e9f3b64d5418f2d30f1520bfd72fbe8c4a07feb54564326f",
+        "workload": "3dd5c2bed6cac20891414f07f7274f572c6ebd95",
+        "runnerClass": "GitHub-hosted ubuntu-latest x64, single fresh validate job",
+        "cachePolicy": "No Actions dependency or compiler cache. Fresh checkout without lock, node_modules or tsbuildinfo. Compare observed pre-install store count and generated lock SHA-256.",
+        "witness": "40a732e5408d41fb6c50213c0c32087f739ea242c60d67f62a3be761c3eece8f",
+        "url": "https://github.com/gmackie/agent-work-catalog/actions/runs/45331720576/attempts/1",
+        "number": 292,
+        "ref": "ci/AWC-2-measure-baseline",
+        "outcome": "success",
+        "timing": {
+          "queueSeconds": 3.0,
+          "executionSeconds": 110.0,
+          "endToEndSeconds": 113.0
+        },
+        "missing": [],
+        "completedWork": {
+          "validate": {
+            "format": "tasks",
+            "count": 247,
+            "passed": 247,
+            "resultDigest": "f2a7647b9a1e07dece56618e5aaccb89520bd6aa19733cecd340804841b3dcfc"
+          }
+        }
+      },
+      "candidate": {
+        "id": 45331539344,
+        "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6",
+        "digest": "34672cdb55b0aa6cce5b254e30cd3efc9efe90f259d2bf1581e01340c348c8b0",
+        "workload": "3dd5c2bed6cac20891414f07f7274f572c6ebd95",
+        "runnerClass": "GitHub-hosted ubuntu-latest x64, single fresh validate job",
+        "cachePolicy": "No Actions dependency or compiler cache. Fresh checkout without lock, node_modules or tsbuildinfo. Compare observed pre-install store count and generated lock SHA-256.",
+        "witness": "259cb4f228d19f655a2e21b14fa4b2280815d085181fbb2d71108bd67035f8e0",
+        "url": "https://github.com/gmackie/agent-work-catalog/actions/runs/45331539344/attempts/1",
+        "number": 291,
+        "ref": "ci/AWC-2-measure-candidate",
+        "outcome": "success",
+        "timing": {
+          "queueSeconds": 3.0,
+          "executionSeconds": 44.0,
+          "endToEndSeconds": 47.0
+        },
+        "missing": [],
+        "completedWork": {
+          "validate": {
+            "format": "tasks",
+            "count": 247,
+            "passed": 247,
+            "resultDigest": "f2a7647b9a1e07dece56618e5aaccb89520bd6aa19733cecd340804841b3dcfc"
+          }
+        }
+      },
+      "observedChangePercent": 58.4070796460177
+    },
+    {
+      "baseline": {
+        "id": 45331969755,
+        "sha": "eacd464519d790ba1c2027f26bca43636bff1e5f",
+        "digest": "5c1345b54b043ad5ccfbd658cf93b8929df666cb6c92ba85f332c895f7b47e4c",
+        "workload": "3dd5c2bed6cac20891414f07f7274f572c6ebd95",
+        "runnerClass": "GitHub-hosted ubuntu-latest x64, single fresh validate job",
+        "cachePolicy": "No Actions dependency or compiler cache. Fresh checkout without lock, node_modules or tsbuildinfo. Compare observed pre-install store count and generated lock SHA-256.",
+        "witness": "83dbbf96e4d4c7dbeafbe7ac6f938f129327c00e260b9fbe9a25c01a00069520",
+        "url": "https://github.com/gmackie/agent-work-catalog/actions/runs/45331969755/attempts/1",
+        "number": 293,
+        "ref": "ci/AWC-2-measure-baseline",
+        "outcome": "success",
+        "timing": {
+          "queueSeconds": 4.0,
+          "executionSeconds": 100.0,
+          "endToEndSeconds": 104.0
+        },
+        "missing": [],
+        "completedWork": {
+          "validate": {
+            "format": "tasks",
+            "count": 247,
+            "passed": 247,
+            "resultDigest": "f2a7647b9a1e07dece56618e5aaccb89520bd6aa19733cecd340804841b3dcfc"
+          }
+        }
+      },
+      "candidate": {
+        "id": 45332203909,
+        "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6",
+        "digest": "8f2c335139ff1613439399b12d17aa2bcdb80fa6b1661f73f4d86391ef443908",
+        "workload": "3dd5c2bed6cac20891414f07f7274f572c6ebd95",
+        "runnerClass": "GitHub-hosted ubuntu-latest x64, single fresh validate job",
+        "cachePolicy": "No Actions dependency or compiler cache. Fresh checkout without lock, node_modules or tsbuildinfo. Compare observed pre-install store count and generated lock SHA-256.",
+        "witness": "a5ae49d5ed71024b82a69272d66c77cac742c905e0a89dc57d202a8ffd0d0836",
+        "url": "https://github.com/gmackie/agent-work-catalog/actions/runs/45332203909/attempts/1",
+        "number": 294,
+        "ref": "ci/AWC-2-measure-candidate",
+        "outcome": "success",
+        "timing": {
+          "queueSeconds": 3.0,
+          "executionSeconds": 66.0,
+          "endToEndSeconds": 69.0
+        },
+        "missing": [],
+        "completedWork": {
+          "validate": {
+            "format": "tasks",
+            "count": 247,
+            "passed": 247,
+            "resultDigest": "f2a7647b9a1e07dece56618e5aaccb89520bd6aa19733cecd340804841b3dcfc"
+          }
+        }
+      },
+      "observedChangePercent": 33.65384615384615
+    }
+  ],
+  "excludedPairs": [
+    {
+      "baseline": {
+        "id": 45331041760,
+        "sha": "3ebf14bfdc91006c97a162f6303c0f316e510252",
+        "digest": "ac0df16bd2ed8c931ea473c6c5763892d0a38dbf3c66268eef0c5b516f6f374e",
+        "workload": "3dd5c2bed6cac20891414f07f7274f572c6ebd95",
+        "runnerClass": "GitHub-hosted ubuntu-latest x64, single fresh validate job",
+        "cachePolicy": "No Actions dependency or compiler cache. Fresh checkout without lock, node_modules or tsbuildinfo. Compare observed pre-install store count and generated lock SHA-256.",
+        "witness": null,
+        "url": "https://github.com/gmackie/agent-work-catalog/actions/runs/45331041760/attempts/1",
+        "number": 289,
+        "ref": "ci/AWC-2-measure-baseline",
+        "outcome": "failure",
+        "timing": {
+          "queueSeconds": 4.0,
+          "executionSeconds": 89.0,
+          "endToEndSeconds": 93.0
+        },
+        "missing": [],
+        "completedWork": null
+      },
+      "candidate": {
+        "id": 45331383209,
+        "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6",
+        "digest": "41d1c4379ed43c2bb81812c64154a9372062730e5d604ace67e2e8d14d31b770",
+        "workload": "3dd5c2bed6cac20891414f07f7274f572c6ebd95",
+        "runnerClass": "GitHub-hosted ubuntu-latest x64, single fresh validate job",
+        "cachePolicy": "No Actions dependency or compiler cache. Fresh checkout without lock, node_modules or tsbuildinfo. Compare observed pre-install store count and generated lock SHA-256.",
+        "witness": "13e1c507d01821f8b627420ccc13b6d00bc66b4028d5155ea0f6b2aec27803fa",
+        "url": "https://github.com/gmackie/agent-work-catalog/actions/runs/45331383209/attempts/1",
+        "number": 290,
+        "ref": "ci/AWC-2-measure-candidate",
+        "outcome": "success",
+        "timing": {
+          "queueSeconds": 4.0,
+          "executionSeconds": 71.0,
+          "endToEndSeconds": 75.0
+        },
+        "missing": [],
+        "completedWork": {
+          "validate": {
+            "format": "tasks",
+            "count": 247,
+            "passed": 247,
+            "resultDigest": "f2a7647b9a1e07dece56618e5aaccb89520bd6aa19733cecd340804841b3dcfc"
+          }
+        }
+      },
+      "observedChangePercent": 19.35483870967742,
+      "reasons": [
+        "baseline: run did not pass",
+        "baseline: required check absent or did not pass",
+        "baseline: job did not complete successfully",
+        "baseline: completed-work witness absent",
+        "job outcome changed (validate)",
+        "observed completed-work identities, counts, results or output checksums differ"
+      ]
+    }
+  ]
+}

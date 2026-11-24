@@ -1,0 +1,244 @@
+{
+  "url": "https://github.com/gmackie/agent-work-catalog/actions/runs/45332674229",
+  "jobUrl": "https://github.com/gmackie/agent-work-catalog/actions/runs/45332674229/job/138237277940",
+  "check": "validate",
+  "conclusion": "success",
+  "sha": "34d96abb689c1930bbc2bdd960ad3246ad1b30b1",
+  "runAttempt": 1,
+  "ref": "ci/measure-catalog-typecheck",
+  "refCheckedOut": "00a0ac110266e9533979b920ae83e001dbd0b395",
+  "createdAt": "2026-11-24T05:20:52Z",
+  "attemptCreatedAt": "2026-11-24T05:20:52Z",
+  "jobStartedAt": "2026-11-24T05:20:54Z",
+  "jobCompletedAt": "2026-11-24T05:21:39Z",
+  "endToEndSeconds": 47,
+  "typecheckSeconds": 9,
+  "queueSeconds": 2,
+  "projectBuilds": 53,
+  "testPackages": 47,
+  "testFiles": 62,
+  "testsPassed": 177,
+  "demoScenarios": {
+    "operations": [
+      "vending",
+      "cloud",
+      "plant"
+    ],
+    "standards": [
+      "vending",
+      "cloud",
+      "plant"
+    ]
+  },
+  "uiPages": 4,
+  "bundles": [
+    "@awc/server",
+    "@awc/example-remote-executor"
+  ],
+  "steps": [
+    {
+      "name": "Set up job",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:20:55Z",
+      "completed_at": "2026-11-24T05:20:56Z"
+    },
+    {
+      "name": "Run actions/checkout@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:20:56Z",
+      "completed_at": "2026-11-24T05:20:58Z"
+    },
+    {
+      "name": "Run pnpm/action-setup@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:20:58Z",
+      "completed_at": "2026-11-24T05:20:58Z"
+    },
+    {
+      "name": "Run actions/setup-node@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:20:58Z",
+      "completed_at": "2026-11-24T05:20:59Z"
+    },
+    {
+      "name": "Run pnpm install --no-frozen-lockfile",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:20:59Z",
+      "completed_at": "2026-11-24T05:21:04Z"
+    },
+    {
+      "name": "Run pnpm --filter @awc/mcp-ui build",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:21:04Z",
+      "completed_at": "2026-11-24T05:21:09Z"
+    },
+    {
+      "name": "Run pnpm typecheck",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:21:09Z",
+      "completed_at": "2026-11-24T05:21:18Z"
+    },
+    {
+      "name": "Run pnpm test",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:21:18Z",
+      "completed_at": "2026-11-24T05:21:32Z"
+    },
+    {
+      "name": "Run pnpm operations:demo",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:21:32Z",
+      "completed_at": "2026-11-24T05:21:32Z"
+    },
+    {
+      "name": "Run pnpm standards:demo",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:21:32Z",
+      "completed_at": "2026-11-24T05:21:33Z"
+    },
+    {
+      "name": "Run pnpm --filter @awc/server bundle",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:21:33Z",
+      "completed_at": "2026-11-24T05:21:35Z"
+    },
+    {
+      "name": "Run pnpm --filter @awc/example-remote-executor bundle",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:21:35Z",
+      "completed_at": "2026-11-24T05:21:36Z"
+    },
+    {
+      "name": "Post Run actions/setup-node@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:21:36Z",
+      "completed_at": "2026-11-24T05:21:37Z"
+    },
+    {
+      "name": "Post Run pnpm/action-setup@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:21:37Z",
+      "completed_at": "2026-11-24T05:21:37Z"
+    },
+    {
+      "name": "Post Run actions/checkout@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:21:37Z",
+      "completed_at": "2026-11-24T05:21:37Z"
+    },
+    {
+      "name": "Complete job",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:21:37Z",
+      "completed_at": "2026-11-24T05:21:37Z"
+    }
+  ],
+  "branchPathFilterChecks": {
+    "Modbus PCAP differential conformance": "paths filter did not select a changed path",
+    "TCP Scapy-TShark differential": "paths filter did not select a changed path"
+  },
+  "typecheckBuildPaths": [
+    "apps/demo/tsconfig.json",
+    "apps/mcp-ui/tsconfig.json",
+    "apps/operations-demo/tsconfig.json",
+    "apps/server/tsconfig.json",
+    "apps/standards-demo-cli/tsconfig.json",
+    "examples/remote-executor/tsconfig.json",
+    "packages/adapter-github/tsconfig.json",
+    "packages/adapter-remote-http/tsconfig.json",
+    "packages/adapter-sdk/tsconfig.json",
+    "packages/artifact-custody/tsconfig.json",
+    "packages/attest-receipts/tsconfig.json",
+    "packages/auth/tsconfig.json",
+    "packages/authzen/tsconfig.json",
+    "packages/authzen-approval-client/tsconfig.json",
+    "packages/authzen-client/tsconfig.json",
+    "packages/authzen-finance/tsconfig.json",
+    "packages/catalog/tsconfig.json",
+    "packages/coaz-mcp/tsconfig.json",
+    "packages/commerce/tsconfig.json",
+    "packages/contracts/tsconfig.json",
+    "packages/dispatch/tsconfig.json",
+    "packages/domain-opportunities/tsconfig.json",
+    "packages/economics/tsconfig.json",
+    "packages/economics-durable/tsconfig.json",
+    "packages/epcis-adapter/tsconfig.json",
+    "packages/events/tsconfig.json",
+    "packages/mandate-registry/tsconfig.json",
+    "packages/marketplace/tsconfig.json",
+    "packages/mcp-server/tsconfig.json",
+    "packages/modbus-pcap/tsconfig.json",
+    "packages/modbus-workflow/tsconfig.json",
+    "packages/oauth-rar/tsconfig.json",
+    "packages/odrl-profile/tsconfig.json",
+    "packages/offering-profiles/tsconfig.json",
+    "packages/openslo/tsconfig.json",
+    "packages/operations/tsconfig.json",
+    "packages/osb-adapter/tsconfig.json",
+    "packages/payment-stripe/tsconfig.json",
+    "packages/pdp-auth/tsconfig.json",
+    "packages/pilot-evaluation/tsconfig.json",
+    "packages/provenance/tsconfig.json",
+    "packages/provider-http/tsconfig.json",
+    "packages/responsibility/tsconfig.json",
+    "packages/runtime/tsconfig.json",
+    "packages/simulations/tsconfig.json",
+    "packages/source-inbox/tsconfig.json",
+    "packages/standards-demo/tsconfig.json",
+    "packages/tcp-analysis/tsconfig.json",
+    "packages/tcp-pcap/tsconfig.json",
+    "packages/tcp-workflow/tsconfig.json",
+    "packages/token-exchange/tsconfig.json",
+    "packages/ubl-adapter/tsconfig.json",
+    "packages/worker-openai/tsconfig.json"
+  ],
+  "testPackagesPassed": {
+    "packages/artifact-custody": 2,
+    "packages/attest-receipts": 2,
+    "packages/auth": 3,
+    "packages/domain-opportunities": 1,
+    "packages/epcis-adapter": 2,
+    "packages/offering-profiles": 1,
+    "packages/osb-adapter": 3,
+    "packages/modbus-pcap": 4,
+    "packages/token-exchange": 2,
+    "packages/ubl-adapter": 2,
+    "packages/tcp-pcap": 4,
+    "packages/catalog": 4,
+    "packages/responsibility": 7,
+    "packages/marketplace": 3,
+    "packages/pilot-evaluation": 5,
+    "packages/tcp-analysis": 7,
+    "packages/runtime": 3,
+    "packages/economics-durable": 4,
+    "packages/authzen": 5,
+    "packages/economics": 6,
+    "packages/commerce": 5,
+    "packages/openslo": 2,
+    "packages/oauth-rar": 2,
+    "packages/odrl-profile": 2,
+    "packages/provider-http": 1,
+    "packages/worker-openai": 2,
+    "packages/coaz-mcp": 6,
+    "packages/authzen-approval-client": 2,
+    "packages/authzen-client": 2,
+    "packages/operations": 6,
+    "packages/provenance": 2,
+    "packages/events": 2,
+    "packages/adapter-sdk": 6,
+    "packages/simulations": 4,
+    "packages/adapter-remote-http": 4,
+    "packages/source-inbox": 2,
+    "packages/adapter-github": 6,
+    "packages/standards-demo": 3,
+    "examples/remote-executor": 3,
+    "packages/mandate-registry": 6,
+    "packages/dispatch": 7,
+    "packages/authzen-finance": 1,
+    "packages/tcp-workflow": 2,
+    "packages/modbus-workflow": 1,
+    "packages/pdp-auth": 2,
+    "packages/mcp-server": 12,
+    "apps/server": 14
+  }
+}

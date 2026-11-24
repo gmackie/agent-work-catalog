@@ -1,0 +1,197 @@
+{
+  "id": 45331969755,
+  "attempt": 1,
+  "ref": "ci/AWC-2-measure-baseline",
+  "sha": "eacd464519d790ba1c2027f26bca43636bff1e5f",
+  "workflow": ".github/workflows/ci.yml",
+  "event": "workflow_dispatch",
+  "jobId": 138235044811,
+  "jobName": "validate",
+  "outcome": "success",
+  "runCreatedAt": "2026-11-24T05:15:04Z",
+  "attemptCreatedAt": "2026-11-24T05:15:04Z",
+  "jobStartedAt": "2026-11-24T05:15:08Z",
+  "jobCompletedAt": "2026-11-24T05:16:48Z",
+  "queueSeconds": 4,
+  "executionSeconds": 100,
+  "endToEndSeconds": 104,
+  "actions": {
+    "actions/checkout@v4": "11d5960a326750d5838078e36cf38b85af677262",
+    "pnpm/action-setup@v4": "b906affcce14559ad1aafd4ab0e942779e9f58b1",
+    "actions/setup-node@v4": "49933ea5288caeca8642d1e84afbd3f7d6820020",
+    "actions/upload-artifact@v4": "ea165f8d65b6e75b540449e92b4886f43607fa02"
+  },
+  "runnerLabels": [
+    "ubuntu-latest"
+  ],
+  "versions": {
+    "arch": "X64",
+    "image": "ubuntu26",
+    "imageVersion": "20261116.202.1",
+    "node": "v24.22.3",
+    "pnpm": "10.20.0",
+    "typescript": "6.0.3"
+  },
+  "verifiedTaskCountAtRuntime": 247,
+  "steps": [
+    {
+      "number": 1,
+      "name": "Set up job",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:15:08Z",
+      "completed_at": "2026-11-24T05:15:10Z"
+    },
+    {
+      "number": 2,
+      "name": "Run actions/checkout@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:15:10Z",
+      "completed_at": "2026-11-24T05:15:11Z"
+    },
+    {
+      "number": 3,
+      "name": "Run pnpm/action-setup@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:15:11Z",
+      "completed_at": "2026-11-24T05:15:12Z"
+    },
+    {
+      "number": 4,
+      "name": "Run actions/setup-node@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:15:12Z",
+      "completed_at": "2026-11-24T05:15:13Z"
+    },
+    {
+      "number": 5,
+      "name": "Record fresh checkout and package store",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:15:13Z",
+      "completed_at": "2026-11-24T05:15:13Z"
+    },
+    {
+      "number": 6,
+      "name": "Run pnpm install --no-frozen-lockfile",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:15:13Z",
+      "completed_at": "2026-11-24T05:15:20Z"
+    },
+    {
+      "number": 7,
+      "name": "Run pnpm --filter @awc/mcp-ui build",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:15:20Z",
+      "completed_at": "2026-11-24T05:15:25Z"
+    },
+    {
+      "number": 8,
+      "name": "Run pnpm typecheck",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:15:25Z",
+      "completed_at": "2026-11-24T05:16:19Z"
+    },
+    {
+      "number": 9,
+      "name": "Run pnpm test",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:16:19Z",
+      "completed_at": "2026-11-24T05:16:37Z"
+    },
+    {
+      "number": 10,
+      "name": "Run pnpm operations:demo",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:16:37Z",
+      "completed_at": "2026-11-24T05:16:38Z"
+    },
+    {
+      "number": 11,
+      "name": "Run pnpm standards:demo",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:16:38Z",
+      "completed_at": "2026-11-24T05:16:39Z"
+    },
+    {
+      "number": 12,
+      "name": "Run pnpm --filter @awc/server bundle",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:16:39Z",
+      "completed_at": "2026-11-24T05:16:42Z"
+    },
+    {
+      "number": 13,
+      "name": "Run pnpm --filter @awc/example-remote-executor bundle",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:16:42Z",
+      "completed_at": "2026-11-24T05:16:43Z"
+    },
+    {
+      "number": 14,
+      "name": "Verify completed work",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:16:43Z",
+      "completed_at": "2026-11-24T05:16:44Z"
+    },
+    {
+      "number": 15,
+      "name": "Preserve completed work",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:16:44Z",
+      "completed_at": "2026-11-24T05:16:45Z"
+    },
+    {
+      "number": 28,
+      "name": "Post Run actions/setup-node@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:16:45Z",
+      "completed_at": "2026-11-24T05:16:45Z"
+    },
+    {
+      "number": 29,
+      "name": "Post Run pnpm/action-setup@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:16:45Z",
+      "completed_at": "2026-11-24T05:16:45Z"
+    },
+    {
+      "number": 30,
+      "name": "Post Run actions/checkout@v4",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:16:46Z",
+      "completed_at": "2026-11-24T05:16:46Z"
+    },
+    {
+      "number": 31,
+      "name": "Complete job",
+      "conclusion": "success",
+      "started_at": "2026-11-24T05:16:46Z",
+      "completed_at": "2026-11-24T05:16:46Z"
+    }
+  ],
+  "url": "https://github.com/gmackie/agent-work-catalog/actions/runs/45331969755",
+  "jobUrl": "https://github.com/gmackie/agent-work-catalog/actions/runs/45331969755/job/138235044811",
+  "artifact": {
+    "id": 14891658566,
+    "name": "awc-work-45331969755-1",
+    "sha256": "e7192009846da657325754270d04e37a39bb74d986c418d800ee23dcbbca7bcf",
+    "bytes": 62021,
+    "url": "https://github.com/gmackie/agent-work-catalog/actions/runs/45331969755/artifacts/14891658566",
+    "tasksSha256": "2fdc033274c7ab2069fd343a2670c5dac7997f953aac9de84b67ee859f27b627",
+    "expiresAt": "2026-12-24T05:16:44Z"
+  },
+  "workCounts": {
+    "tsc": 53,
+    "vitest": 177,
+    "ui": 4,
+    "bundle": 4,
+    "demo": 6,
+    "install": 2,
+    "environment": 1
+  },
+  "testPackages": 47,
+  "testFiles": 62,
+  "lockSha256": "e326ccf585da3e9b84d2ff91bb77c642768de77f6ab03c4753c9fcf75c56de03",
+  "initialStoreFiles": 0,
+  "tree": "28e131412e6bc1199ae8f22587d4e360f25b8919",
+  "sourceSha256": "7121a24fd9142549cacc54799bed157b28c95cfc111653a4fbd7f35a08519d24"
+}

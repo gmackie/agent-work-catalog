@@ -1,0 +1,267 @@
+{
+  "apps/demo": {
+    "count": 348,
+    "repoFileCount": 3,
+    "sha256": "17b2844fef13fea79a508da0eb309ac7cbcb671e976c84a0d91071c020ae2b89"
+  },
+  "apps/mcp-ui": {
+    "count": 329,
+    "repoFileCount": 8,
+    "sha256": "e95f10d32f8f30043bdea48ef672e0d89045b927aa91827ca2a3a5c3620b75b2"
+  },
+  "apps/operations-demo": {
+    "count": 353,
+    "repoFileCount": 8,
+    "sha256": "fec9e692e14975eaff6f92dd710250857ada0ad05ca595b0d0a95bc1af1272f3"
+  },
+  "apps/server": {
+    "count": 1437,
+    "repoFileCount": 64,
+    "sha256": "95dbcb2f44313e8fcf88735df7c255dd1cf6c911d1f0703080203a9311600ca7"
+  },
+  "apps/standards-demo-cli": {
+    "count": 363,
+    "repoFileCount": 18,
+    "sha256": "d388098c8397b472a472dbe54aa43cefda48907d880105aa7b221a12bb33d065"
+  },
+  "examples/remote-executor": {
+    "count": 404,
+    "repoFileCount": 9,
+    "sha256": "9daca64181b800e50f13c14d8aff62aced65abd775bcf66b3f172b506538a57f"
+  },
+  "packages/adapter-github": {
+    "count": 321,
+    "repoFileCount": 6,
+    "sha256": "c82ecea5c23cf251e0e6053275fdcb88d9bea9cae74d0370f62e279a4cfb818a"
+  },
+  "packages/adapter-remote-http": {
+    "count": 289,
+    "repoFileCount": 5,
+    "sha256": "f205735514d1bd6009d99a61a7dab63dbd78cb203c6e93689af63b150c155223"
+  },
+  "packages/adapter-sdk": {
+    "count": 293,
+    "repoFileCount": 9,
+    "sha256": "96f5f41e6885b293a69602ba29f6dcbe8a748c1a0963578b8cf1e0ef95913e52"
+  },
+  "packages/artifact-custody": {
+    "count": 109,
+    "repoFileCount": 2,
+    "sha256": "317b9867d45dc1b2bc93ecc5a201c8ee11d162272506358fddf632c739cedccf"
+  },
+  "packages/attest-receipts": {
+    "count": 142,
+    "repoFileCount": 4,
+    "sha256": "13e8f8ac07642960fbe43f7f0a3a53a478992ab44ebf92f982cf4ef991cb3819"
+  },
+  "packages/auth": {
+    "count": 251,
+    "repoFileCount": 2,
+    "sha256": "ca1f2454f69c85deb47cec80af0e4b7145d7630a51086b139fa610bda4eeae68"
+  },
+  "packages/authzen": {
+    "count": 288,
+    "repoFileCount": 4,
+    "sha256": "442ef72952bcec581fe1489ca316e0c00177f67491624123539bbdb64afcec13"
+  },
+  "packages/authzen-approval-client": {
+    "count": 289,
+    "repoFileCount": 5,
+    "sha256": "73fd0c05e8d9fcde57d2c6eb071a6fbd0296b01b168982b8986b5d22ff28e90b"
+  },
+  "packages/authzen-client": {
+    "count": 289,
+    "repoFileCount": 5,
+    "sha256": "5849c5fd569462dee813adcfa75d0553bef93aaf501b65faab18c1f569d2f391"
+  },
+  "packages/authzen-finance": {
+    "count": 304,
+    "repoFileCount": 20,
+    "sha256": "848993337847902e9e2f53a1be9c1c6c1f664b8c5bf55b36a38afbe1d534bd28"
+  },
+  "packages/catalog": {
+    "count": 287,
+    "repoFileCount": 3,
+    "sha256": "f15f23b3eca0d58304aaa19b2ae08d2f24e4f0d4d6414498691b6828e1c66d0b"
+  },
+  "packages/coaz-mcp": {
+    "count": 289,
+    "repoFileCount": 5,
+    "sha256": "b36adea8de90fc2f97c770e3e40bdeebbd44f8a172171e872249876c57ddfdcc"
+  },
+  "packages/commerce": {
+    "count": 658,
+    "repoFileCount": 7,
+    "sha256": "b8fb00b4846fae1048b342cf559f3a3ad1e6567e2f5063e39be3919b97cd031e"
+  },
+  "packages/contracts": {
+    "count": 236,
+    "repoFileCount": 1,
+    "sha256": "80d6ab6f872da4817aaa001c64119917cfe8228dae456b2d93d126c6f214f592"
+  },
+  "packages/dispatch": {
+    "count": 408,
+    "repoFileCount": 13,
+    "sha256": "f4bbc5b2d5bde5e08e9ead2ecd2bad394c1f232db66d6613b4c8dc36b98c51ec"
+  },
+  "packages/domain-opportunities": {
+    "count": 109,
+    "repoFileCount": 2,
+    "sha256": "b574f5cde4043387d33c2392647e45960f334319a9181ebd30f6a92bbf4447b1"
+  },
+  "packages/economics": {
+    "count": 288,
+    "repoFileCount": 4,
+    "sha256": "2262c2930f7f1b263f344e4ef1fe011903ed8eec847d73350c632d278d05f514"
+  },
+  "packages/economics-durable": {
+    "count": 398,
+    "repoFileCount": 4,
+    "sha256": "262051491ee76fd8bb700342d7eba2dc85393e18aeaa03507637a51d332dfbdf"
+  },
+  "packages/epcis-adapter": {
+    "count": 109,
+    "repoFileCount": 2,
+    "sha256": "4fe323393ff08a3d610033c8292ad50e905649b6cc0ab3a6ac6de476b191bd81"
+  },
+  "packages/events": {
+    "count": 290,
+    "repoFileCount": 6,
+    "sha256": "a4e5a73e5feb2b319f7ae03d07a9ab7d194cf0c281495c0f0d1ef3403c2c6499"
+  },
+  "packages/mandate-registry": {
+    "count": 308,
+    "repoFileCount": 24,
+    "sha256": "7c2f04cfa003a6d0e4dabf2fb158bf04b9aaf4232f2283f1613a1cc340e9d4c4"
+  },
+  "packages/marketplace": {
+    "count": 288,
+    "repoFileCount": 4,
+    "sha256": "739b04b13444f09eaad4f6b130f88feb61e7b3b2737b45589acbeccf556bbe43"
+  },
+  "packages/mcp-server": {
+    "count": 1111,
+    "repoFileCount": 29,
+    "sha256": "0ea5c918c16942e5890f22e6a9cfb507dcfaae8fb3cf27101cb412fda17fb4f2"
+  },
+  "packages/modbus-pcap": {
+    "count": 111,
+    "repoFileCount": 4,
+    "sha256": "1814317167875cd5241477809c4bd27bce21851fbc7be4e23568b6e669630904"
+  },
+  "packages/modbus-workflow": {
+    "count": 328,
+    "repoFileCount": 13,
+    "sha256": "1547569473b7a97f8d6ef3c200cc528f9be8d7054a6690ff3b908ae6434834d8"
+  },
+  "packages/oauth-rar": {
+    "count": 288,
+    "repoFileCount": 4,
+    "sha256": "433451dcd591344f156cb80438c9b552d3cf1ac51592e221a44a83acfad90d85"
+  },
+  "packages/odrl-profile": {
+    "count": 288,
+    "repoFileCount": 4,
+    "sha256": "fc866e2bac88cb6b963c4d75ef23859801cc61e54520ec410d09c03d87ebcd7c"
+  },
+  "packages/offering-profiles": {
+    "count": 109,
+    "repoFileCount": 2,
+    "sha256": "6dfba5215fabf386f19061571d78b124de76b59cc84e874cfe4713cb3cbaf296"
+  },
+  "packages/openslo": {
+    "count": 288,
+    "repoFileCount": 4,
+    "sha256": "d38aa6597876d77fa5cd0116b2d1dd19fdcf80675d03652ec5faa2111366a90c"
+  },
+  "packages/operations": {
+    "count": 291,
+    "repoFileCount": 7,
+    "sha256": "f8d667811c766c2b2b55bb5911e67e17211ac3edd8b8057d48396bec05011bfe"
+  },
+  "packages/osb-adapter": {
+    "count": 109,
+    "repoFileCount": 2,
+    "sha256": "550b967e193cae1a5f646b6c49c9635f85b3cc4576e3a9854258b7e2aeb01c76"
+  },
+  "packages/payment-stripe": {
+    "count": 605,
+    "repoFileCount": 3,
+    "sha256": "4eb42bfa894735a2264d5c4643866db1eede10df322419cc3f258b8f3a4435df"
+  },
+  "packages/pdp-auth": {
+    "count": 321,
+    "repoFileCount": 6,
+    "sha256": "89c15a6cc65930eb56b4be22326fe4acb9ccbe92287bccb59e5daed3c224a48e"
+  },
+  "packages/pilot-evaluation": {
+    "count": 397,
+    "repoFileCount": 3,
+    "sha256": "13cf6cbdf0548dfb7a8f22ddffda300b90478909d6946e6fe71951dc2a116500"
+  },
+  "packages/provenance": {
+    "count": 290,
+    "repoFileCount": 6,
+    "sha256": "f9a34c3ca858cf623df79f3a6af25f6ae3b582ef8f8995c217e129180e3a539a"
+  },
+  "packages/provider-http": {
+    "count": 288,
+    "repoFileCount": 4,
+    "sha256": "2c9d41af0a52f7d5a0d2a5eece5afbfe75a6fbfdc7e952583c6eaa689019ea18"
+  },
+  "packages/responsibility": {
+    "count": 287,
+    "repoFileCount": 3,
+    "sha256": "0a4fc84dc533d89e91038636d09c4f16158eb231e28c46b80d108a3c5c8adc6a"
+  },
+  "packages/runtime": {
+    "count": 287,
+    "repoFileCount": 3,
+    "sha256": "3ac39f0f928feb27878ae17845441104b84ef543a65afdc3720663f660f0dc9b"
+  },
+  "packages/simulations": {
+    "count": 292,
+    "repoFileCount": 8,
+    "sha256": "d6083420760f974982db6bf4a295107ef115823e3e1810a6c0cea483ce887a0b"
+  },
+  "packages/source-inbox": {
+    "count": 289,
+    "repoFileCount": 5,
+    "sha256": "6e336ea0b63d296b434b868087253a2473539f346cf3a097f756aab3316cff9f"
+  },
+  "packages/standards-demo": {
+    "count": 302,
+    "repoFileCount": 18,
+    "sha256": "5d88b0b1820497c45bb4257bd4fb8413e2bf4ea8a991a2274248bbf979ecc903"
+  },
+  "packages/tcp-analysis": {
+    "count": 113,
+    "repoFileCount": 6,
+    "sha256": "d471c7d251a1cbc8bcd56204a6a02d901bec32a0135612f50e27634a79db5c5c"
+  },
+  "packages/tcp-pcap": {
+    "count": 110,
+    "repoFileCount": 3,
+    "sha256": "9fb0a05bdb9f5773292257207cf57fab548d2f5a22fece5805ed141ebe183270"
+  },
+  "packages/tcp-workflow": {
+    "count": 331,
+    "repoFileCount": 16,
+    "sha256": "2dbd5b53c1b2b97e586835305e20bf24555212061a4792e561542bb3696d0890"
+  },
+  "packages/token-exchange": {
+    "count": 109,
+    "repoFileCount": 2,
+    "sha256": "65e8e34b760a9514c2306948b4bc653d320665f56002a1a779efc7710a2803b3"
+  },
+  "packages/ubl-adapter": {
+    "count": 109,
+    "repoFileCount": 2,
+    "sha256": "42baad16a1441a38f70bc5cdea3833432f9a936c20e00a1d151a63ca448989fd"
+  },
+  "packages/worker-openai": {
+    "count": 238,
+    "repoFileCount": 3,
+    "sha256": "779c22bb98016d7e6aa7a738dacedb7a98c2e87426524ee3a078e07472748af0"
+  }
+}

@@ -1,0 +1,595 @@
+{
+  "schemaVersion": 1,
+  "kind": "ci-runs",
+  "origin": "https://github.com",
+  "runs": [
+    {
+      "repository": "gmackie/agent-work-catalog",
+      "workflow": "ci.yml",
+      "event": "workflow_dispatch",
+      "ref": "ci/AWC-2-measure-candidate",
+      "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6",
+      "id": 45331383209,
+      "number": 290,
+      "url": "https://github.com/gmackie/agent-work-catalog/actions/runs/45331383209/attempts/1",
+      "outcome": "success",
+      "createdAt": "2026-11-24T05:10:13Z",
+      "startedAt": "2026-11-24T05:10:17Z",
+      "finishedAt": "2026-11-24T05:11:28Z",
+      "timing": {
+        "queueSeconds": 4.0,
+        "executionSeconds": 71.0,
+        "endToEndSeconds": 75.0
+      },
+      "runAttempt": 1,
+      "jobSource": "github-attempt-jobs",
+      "jobsComplete": true,
+      "timingBasis": "creation to last executed job completion; start is first recorded job start",
+      "jobs": [
+        {
+          "id": 138233174801,
+          "name": "validate",
+          "outcome": "success",
+          "startedAt": "2026-11-24T05:10:17Z",
+          "finishedAt": "2026-11-24T05:11:28Z",
+          "durationSeconds": 71.0,
+          "runnerName": "GitHub Actions 1000041767",
+          "runnerLabels": [
+            "ubuntu-latest"
+          ],
+          "attempt": 1,
+          "steps": [
+            {
+              "index": 1,
+              "key": "0f18368152a8d471ade424813fb96bbe7d7b2074d20d611502ff922956e5e521",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:10:18Z",
+              "finishedAt": "2026-11-24T05:10:19Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 2,
+              "key": "e20365d0e5b8487d12c4aa70a0488bde10846ab12937ea0ab000b2520ee4c7e6",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:10:19Z",
+              "finishedAt": "2026-11-24T05:10:20Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 3,
+              "key": "479886a679a626eff184df19b46c2093c5b23bcfd33653e744f8ae45aeb14d18",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:10:20Z",
+              "finishedAt": "2026-11-24T05:10:22Z",
+              "durationSeconds": 2.0
+            },
+            {
+              "index": 4,
+              "key": "e9c8e11fbcea9518c28ee7dd48d303d1fa83a15d788f27059c8e0bb3871fcfc1",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:10:22Z",
+              "finishedAt": "2026-11-24T05:10:25Z",
+              "durationSeconds": 3.0
+            },
+            {
+              "index": 5,
+              "key": "54b9c30e628578305ff9807b5ec36c169a818e43a32e9df4aebe77af7d80cef0",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:10:25Z",
+              "finishedAt": "2026-11-24T05:10:25Z",
+              "durationSeconds": 0.0
+            },
+            {
+              "index": 6,
+              "key": "6c4c1a6d186a32b04d1725f2229573116dc37b4872220f916f115fcd16a61303",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:10:25Z",
+              "finishedAt": "2026-11-24T05:10:33Z",
+              "durationSeconds": 8.0
+            },
+            {
+              "index": 7,
+              "key": "c9af591b449e64df6494626361f52173590d189e1830b28175439871c829b14c",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:10:33Z",
+              "finishedAt": "2026-11-24T05:10:39Z",
+              "durationSeconds": 6.0
+            },
+            {
+              "index": 8,
+              "key": "d1113391bf0248e62b7076bc240c27ca7f758139ec739e99f7dd52bf2c923f98",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:10:39Z",
+              "finishedAt": "2026-11-24T05:10:54Z",
+              "durationSeconds": 15.0
+            },
+            {
+              "index": 9,
+              "key": "d5a9cfd81fce8f9a9ddaa0ab611bc72f40af8d4e0a6816d00844fe26b03f4201",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:10:54Z",
+              "finishedAt": "2026-11-24T05:11:15Z",
+              "durationSeconds": 21.0
+            },
+            {
+              "index": 10,
+              "key": "9a6fadf894cda8c9834184cbf7c24985bca814eda862e3945d966b0b92a865d9",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:15Z",
+              "finishedAt": "2026-11-24T05:11:16Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 11,
+              "key": "dc09f238e3cc1a9e0e5bb4cb257541b0a656e975f2afd1d5778fa6f32ce13be0",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:16Z",
+              "finishedAt": "2026-11-24T05:11:18Z",
+              "durationSeconds": 2.0
+            },
+            {
+              "index": 12,
+              "key": "4a34e551e55050ac96ff10e128e29a5b0d6f18b0c1a5acda9b14d112d555e9ca",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:18Z",
+              "finishedAt": "2026-11-24T05:11:21Z",
+              "durationSeconds": 3.0
+            },
+            {
+              "index": 13,
+              "key": "7d8e414d3b3053254e26a4e5d57728d7451a053a8444f3e00f413f8b1756267c",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:21Z",
+              "finishedAt": "2026-11-24T05:11:23Z",
+              "durationSeconds": 2.0
+            },
+            {
+              "index": 14,
+              "key": "8e6c3f0f568f824dfc9c0c69929ded51dc8c5db898866ee931b39064689b1f20",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:23Z",
+              "finishedAt": "2026-11-24T05:11:23Z",
+              "durationSeconds": 0.0
+            },
+            {
+              "index": 15,
+              "key": "45e7d9706df906e5e501f49bbfa8872586defd6c4e5e2298d0e2230996d7b6c4",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:23Z",
+              "finishedAt": "2026-11-24T05:11:25Z",
+              "durationSeconds": 2.0
+            },
+            {
+              "index": 16,
+              "key": "ea4e6e30c8f21dabf421ffbf2873454a47e2e5aadfda9c8729d2fab178148158",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:25Z",
+              "finishedAt": "2026-11-24T05:11:25Z",
+              "durationSeconds": 0.0
+            },
+            {
+              "index": 17,
+              "key": "3acd2718a7c7ed920bf9222ab743605994e22ca69384f0c6d63ccf95f7dfc6ef",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:25Z",
+              "finishedAt": "2026-11-24T05:11:25Z",
+              "durationSeconds": 0.0
+            },
+            {
+              "index": 18,
+              "key": "e53df8584419aee40e1a9476e55cc43eec43fe255a94bcdf9c882a7f2698699d",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:25Z",
+              "finishedAt": "2026-11-24T05:11:26Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 19,
+              "key": "a007f8748e6073491ed6bd8677558b71fd544fc5f89608af6f65686ee6175a67",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:26Z",
+              "finishedAt": "2026-11-24T05:11:26Z",
+              "durationSeconds": 0.0
+            }
+          ]
+        }
+      ],
+      "missing": [],
+      "digest": "41d1c4379ed43c2bb81812c64154a9372062730e5d604ace67e2e8d14d31b770"
+    },
+    {
+      "repository": "gmackie/agent-work-catalog",
+      "workflow": "ci.yml",
+      "event": "workflow_dispatch",
+      "ref": "ci/AWC-2-measure-candidate",
+      "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6",
+      "id": 45331539344,
+      "number": 291,
+      "url": "https://github.com/gmackie/agent-work-catalog/actions/runs/45331539344/attempts/1",
+      "outcome": "success",
+      "createdAt": "2026-11-24T05:11:33Z",
+      "startedAt": "2026-11-24T05:11:36Z",
+      "finishedAt": "2026-11-24T05:12:20Z",
+      "timing": {
+        "queueSeconds": 3.0,
+        "executionSeconds": 44.0,
+        "endToEndSeconds": 47.0
+      },
+      "runAttempt": 1,
+      "jobSource": "github-attempt-jobs",
+      "jobsComplete": true,
+      "timingBasis": "creation to last executed job completion; start is first recorded job start",
+      "jobs": [
+        {
+          "id": 138233675790,
+          "name": "validate",
+          "outcome": "success",
+          "startedAt": "2026-11-24T05:11:36Z",
+          "finishedAt": "2026-11-24T05:12:20Z",
+          "durationSeconds": 44.0,
+          "runnerName": "GitHub Actions 1000041768",
+          "runnerLabels": [
+            "ubuntu-latest"
+          ],
+          "attempt": 1,
+          "steps": [
+            {
+              "index": 1,
+              "key": "0f18368152a8d471ade424813fb96bbe7d7b2074d20d611502ff922956e5e521",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:36Z",
+              "finishedAt": "2026-11-24T05:11:38Z",
+              "durationSeconds": 2.0
+            },
+            {
+              "index": 2,
+              "key": "e20365d0e5b8487d12c4aa70a0488bde10846ab12937ea0ab000b2520ee4c7e6",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:38Z",
+              "finishedAt": "2026-11-24T05:11:39Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 3,
+              "key": "479886a679a626eff184df19b46c2093c5b23bcfd33653e744f8ae45aeb14d18",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:39Z",
+              "finishedAt": "2026-11-24T05:11:40Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 4,
+              "key": "e9c8e11fbcea9518c28ee7dd48d303d1fa83a15d788f27059c8e0bb3871fcfc1",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:40Z",
+              "finishedAt": "2026-11-24T05:11:40Z",
+              "durationSeconds": 0.0
+            },
+            {
+              "index": 5,
+              "key": "54b9c30e628578305ff9807b5ec36c169a818e43a32e9df4aebe77af7d80cef0",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:40Z",
+              "finishedAt": "2026-11-24T05:11:41Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 6,
+              "key": "6c4c1a6d186a32b04d1725f2229573116dc37b4872220f916f115fcd16a61303",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:41Z",
+              "finishedAt": "2026-11-24T05:11:46Z",
+              "durationSeconds": 5.0
+            },
+            {
+              "index": 7,
+              "key": "c9af591b449e64df6494626361f52173590d189e1830b28175439871c829b14c",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:46Z",
+              "finishedAt": "2026-11-24T05:11:50Z",
+              "durationSeconds": 4.0
+            },
+            {
+              "index": 8,
+              "key": "d1113391bf0248e62b7076bc240c27ca7f758139ec739e99f7dd52bf2c923f98",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:50Z",
+              "finishedAt": "2026-11-24T05:11:58Z",
+              "durationSeconds": 8.0
+            },
+            {
+              "index": 9,
+              "key": "d5a9cfd81fce8f9a9ddaa0ab611bc72f40af8d4e0a6816d00844fe26b03f4201",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:11:58Z",
+              "finishedAt": "2026-11-24T05:12:11Z",
+              "durationSeconds": 13.0
+            },
+            {
+              "index": 10,
+              "key": "9a6fadf894cda8c9834184cbf7c24985bca814eda862e3945d966b0b92a865d9",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:12:11Z",
+              "finishedAt": "2026-11-24T05:12:12Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 11,
+              "key": "dc09f238e3cc1a9e0e5bb4cb257541b0a656e975f2afd1d5778fa6f32ce13be0",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:12:12Z",
+              "finishedAt": "2026-11-24T05:12:13Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 12,
+              "key": "4a34e551e55050ac96ff10e128e29a5b0d6f18b0c1a5acda9b14d112d555e9ca",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:12:13Z",
+              "finishedAt": "2026-11-24T05:12:14Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 13,
+              "key": "7d8e414d3b3053254e26a4e5d57728d7451a053a8444f3e00f413f8b1756267c",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:12:14Z",
+              "finishedAt": "2026-11-24T05:12:16Z",
+              "durationSeconds": 2.0
+            },
+            {
+              "index": 14,
+              "key": "8e6c3f0f568f824dfc9c0c69929ded51dc8c5db898866ee931b39064689b1f20",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:12:16Z",
+              "finishedAt": "2026-11-24T05:12:16Z",
+              "durationSeconds": 0.0
+            },
+            {
+              "index": 15,
+              "key": "45e7d9706df906e5e501f49bbfa8872586defd6c4e5e2298d0e2230996d7b6c4",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:12:16Z",
+              "finishedAt": "2026-11-24T05:12:17Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 16,
+              "key": "ea4e6e30c8f21dabf421ffbf2873454a47e2e5aadfda9c8729d2fab178148158",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:12:17Z",
+              "finishedAt": "2026-11-24T05:12:17Z",
+              "durationSeconds": 0.0
+            },
+            {
+              "index": 17,
+              "key": "3acd2718a7c7ed920bf9222ab743605994e22ca69384f0c6d63ccf95f7dfc6ef",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:12:17Z",
+              "finishedAt": "2026-11-24T05:12:17Z",
+              "durationSeconds": 0.0
+            },
+            {
+              "index": 18,
+              "key": "e53df8584419aee40e1a9476e55cc43eec43fe255a94bcdf9c882a7f2698699d",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:12:17Z",
+              "finishedAt": "2026-11-24T05:12:18Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 19,
+              "key": "a007f8748e6073491ed6bd8677558b71fd544fc5f89608af6f65686ee6175a67",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:12:18Z",
+              "finishedAt": "2026-11-24T05:12:18Z",
+              "durationSeconds": 0.0
+            }
+          ]
+        }
+      ],
+      "missing": [],
+      "digest": "34672cdb55b0aa6cce5b254e30cd3efc9efe90f259d2bf1581e01340c348c8b0"
+    },
+    {
+      "repository": "gmackie/agent-work-catalog",
+      "workflow": "ci.yml",
+      "event": "workflow_dispatch",
+      "ref": "ci/AWC-2-measure-candidate",
+      "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6",
+      "id": 45332203909,
+      "number": 294,
+      "url": "https://github.com/gmackie/agent-work-catalog/actions/runs/45332203909/attempts/1",
+      "outcome": "success",
+      "createdAt": "2026-11-24T05:16:57Z",
+      "startedAt": "2026-11-24T05:17:00Z",
+      "finishedAt": "2026-11-24T05:18:06Z",
+      "timing": {
+        "queueSeconds": 3.0,
+        "executionSeconds": 66.0,
+        "endToEndSeconds": 69.0
+      },
+      "runAttempt": 1,
+      "jobSource": "github-attempt-jobs",
+      "jobsComplete": true,
+      "timingBasis": "creation to last executed job completion; start is first recorded job start",
+      "jobs": [
+        {
+          "id": 138235777579,
+          "name": "validate",
+          "outcome": "success",
+          "startedAt": "2026-11-24T05:17:00Z",
+          "finishedAt": "2026-11-24T05:18:06Z",
+          "durationSeconds": 66.0,
+          "runnerName": "GitHub Actions 1000041771",
+          "runnerLabels": [
+            "ubuntu-latest"
+          ],
+          "attempt": 1,
+          "steps": [
+            {
+              "index": 1,
+              "key": "0f18368152a8d471ade424813fb96bbe7d7b2074d20d611502ff922956e5e521",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:17:02Z",
+              "finishedAt": "2026-11-24T05:17:03Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 2,
+              "key": "e20365d0e5b8487d12c4aa70a0488bde10846ab12937ea0ab000b2520ee4c7e6",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:17:03Z",
+              "finishedAt": "2026-11-24T05:17:04Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 3,
+              "key": "479886a679a626eff184df19b46c2093c5b23bcfd33653e744f8ae45aeb14d18",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:17:04Z",
+              "finishedAt": "2026-11-24T05:17:05Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 4,
+              "key": "e9c8e11fbcea9518c28ee7dd48d303d1fa83a15d788f27059c8e0bb3871fcfc1",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:17:05Z",
+              "finishedAt": "2026-11-24T05:17:06Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 5,
+              "key": "54b9c30e628578305ff9807b5ec36c169a818e43a32e9df4aebe77af7d80cef0",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:17:06Z",
+              "finishedAt": "2026-11-24T05:17:06Z",
+              "durationSeconds": 0.0
+            },
+            {
+              "index": 6,
+              "key": "6c4c1a6d186a32b04d1725f2229573116dc37b4872220f916f115fcd16a61303",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:17:06Z",
+              "finishedAt": "2026-11-24T05:17:13Z",
+              "durationSeconds": 7.0
+            },
+            {
+              "index": 7,
+              "key": "c9af591b449e64df6494626361f52173590d189e1830b28175439871c829b14c",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:17:13Z",
+              "finishedAt": "2026-11-24T05:17:19Z",
+              "durationSeconds": 6.0
+            },
+            {
+              "index": 8,
+              "key": "d1113391bf0248e62b7076bc240c27ca7f758139ec739e99f7dd52bf2c923f98",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:17:19Z",
+              "finishedAt": "2026-11-24T05:17:33Z",
+              "durationSeconds": 14.0
+            },
+            {
+              "index": 9,
+              "key": "d5a9cfd81fce8f9a9ddaa0ab611bc72f40af8d4e0a6816d00844fe26b03f4201",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:17:33Z",
+              "finishedAt": "2026-11-24T05:17:53Z",
+              "durationSeconds": 20.0
+            },
+            {
+              "index": 10,
+              "key": "9a6fadf894cda8c9834184cbf7c24985bca814eda862e3945d966b0b92a865d9",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:17:53Z",
+              "finishedAt": "2026-11-24T05:17:55Z",
+              "durationSeconds": 2.0
+            },
+            {
+              "index": 11,
+              "key": "dc09f238e3cc1a9e0e5bb4cb257541b0a656e975f2afd1d5778fa6f32ce13be0",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:17:55Z",
+              "finishedAt": "2026-11-24T05:17:56Z",
+              "durationSeconds": 1.0
+            },
+            {
+              "index": 12,
+              "key": "4a34e551e55050ac96ff10e128e29a5b0d6f18b0c1a5acda9b14d112d555e9ca",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:17:56Z",
+              "finishedAt": "2026-11-24T05:17:59Z",
+              "durationSeconds": 3.0
+            },
+            {
+              "index": 13,
+              "key": "7d8e414d3b3053254e26a4e5d57728d7451a053a8444f3e00f413f8b1756267c",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:17:59Z",
+              "finishedAt": "2026-11-24T05:18:01Z",
+              "durationSeconds": 2.0
+            },
+            {
+              "index": 14,
+              "key": "8e6c3f0f568f824dfc9c0c69929ded51dc8c5db898866ee931b39064689b1f20",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:18:01Z",
+              "finishedAt": "2026-11-24T05:18:01Z",
+              "durationSeconds": 0.0
+            },
+            {
+              "index": 15,
+              "key": "45e7d9706df906e5e501f49bbfa8872586defd6c4e5e2298d0e2230996d7b6c4",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:18:01Z",
+              "finishedAt": "2026-11-24T05:18:03Z",
+              "durationSeconds": 2.0
+            },
+            {
+              "index": 16,
+              "key": "ea4e6e30c8f21dabf421ffbf2873454a47e2e5aadfda9c8729d2fab178148158",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:18:03Z",
+              "finishedAt": "2026-11-24T05:18:03Z",
+              "durationSeconds": 0.0
+            },
+            {
+              "index": 17,
+              "key": "3acd2718a7c7ed920bf9222ab743605994e22ca69384f0c6d63ccf95f7dfc6ef",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:18:03Z",
+              "finishedAt": "2026-11-24T05:18:03Z",
+              "durationSeconds": 0.0
+            },
+            {
+              "index": 18,
+              "key": "e53df8584419aee40e1a9476e55cc43eec43fe255a94bcdf9c882a7f2698699d",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:18:03Z",
+              "finishedAt": "2026-11-24T05:18:03Z",
+              "durationSeconds": 0.0
+            },
+            {
+              "index": 19,
+              "key": "a007f8748e6073491ed6bd8677558b71fd544fc5f89608af6f65686ee6175a67",
+              "outcome": "success",
+              "startedAt": "2026-11-24T05:18:03Z",
+              "finishedAt": "2026-11-24T05:18:03Z",
+              "durationSeconds": 0.0
+            }
+          ]
+        }
+      ],
+      "missing": [],
+      "digest": "8f2c335139ff1613439399b12d17aa2bcdb80fa6b1661f73f4d86391ef443908"
+    }
+  ],
+  "selections": [
+    {
+      "repo": "gmackie/agent-work-catalog",
+      "collected": 3
+    }
+  ]
+}

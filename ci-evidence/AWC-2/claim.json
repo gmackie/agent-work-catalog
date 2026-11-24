@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "origin": "https://github.com",
+  "repo": "gmackie/agent-work-catalog",
+  "workflow": "ci.yml",
+  "hypothesis": "Reduce repeated TypeScript work in Agent Work Catalog validation while preserving every package check.",
+  "requiredChecks": [
+    "validate"
+  ],
+  "event": "workflow_dispatch",
+  "pairs": [
+    {
+      "candidate": {
+        "id": 45331383209,
+        "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6",
+        "ref": "ci/AWC-2-measure-candidate",
+        "digest": "41d1c4379ed43c2bb81812c64154a9372062730e5d604ace67e2e8d14d31b770",
+        "workload": "3dd5c2bed6cac20891414f07f7274f572c6ebd95",
+        "runnerClass": "GitHub-hosted ubuntu-latest x64, single fresh validate job",
+        "cachePolicy": "No Actions dependency or compiler cache. Fresh checkout without lock, node_modules or tsbuildinfo. Compare observed pre-install store count and generated lock SHA-256.",
+        "witness": "13e1c507d01821f8b627420ccc13b6d00bc66b4028d5155ea0f6b2aec27803fa"
+      },
+      "baseline": {
+        "id": 45332361015,
+        "sha": "eacd464519d790ba1c2027f26bca43636bff1e5f",
+        "ref": "ci/AWC-2-measure-baseline",
+        "digest": "e04cd9f69caec71d08b7e469e20cecba9a1f4b3105950cfd335fc7624edc3364",
+        "workload": "3dd5c2bed6cac20891414f07f7274f572c6ebd95",
+        "runnerClass": "GitHub-hosted ubuntu-latest x64, single fresh validate job",
+        "cachePolicy": "No Actions dependency or compiler cache. Fresh checkout without lock, node_modules or tsbuildinfo. Compare observed pre-install store count and generated lock SHA-256.",
+        "witness": "962645e0d51b0f6b9462bc5d19b5849ec2d6ae8fcdc2cd2d6b635fb7597ac7d2"
+      }
+    },
+    {
+      "candidate": {
+        "id": 45331539344,
+        "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6",
+        "ref": "ci/AWC-2-measure-candidate",
+        "digest": "34672cdb55b0aa6cce5b254e30cd3efc9efe90f259d2bf1581e01340c348c8b0",
+        "workload": "3dd5c2bed6cac20891414f07f7274f572c6ebd95",
+        "runnerClass": "GitHub-hosted ubuntu-latest x64, single fresh validate job",
+        "cachePolicy": "No Actions dependency or compiler cache. Fresh checkout without lock, node_modules or tsbuildinfo. Compare observed pre-install store count and generated lock SHA-256.",
+        "witness": "259cb4f228d19f655a2e21b14fa4b2280815d085181fbb2d71108bd67035f8e0"
+      },
+      "baseline": {
+        "id": 45331720576,
+        "sha": "eacd464519d790ba1c2027f26bca43636bff1e5f",
+        "ref": "ci/AWC-2-measure-baseline",
+        "digest": "aae38b2ae2ecc4e5e9f3b64d5418f2d30f1520bfd72fbe8c4a07feb54564326f",
+        "workload": "3dd5c2bed6cac20891414f07f7274f572c6ebd95",
+        "runnerClass": "GitHub-hosted ubuntu-latest x64, single fresh validate job",
+        "cachePolicy": "No Actions dependency or compiler cache. Fresh checkout without lock, node_modules or tsbuildinfo. Compare observed pre-install store count and generated lock SHA-256.",
+        "witness": "40a732e5408d41fb6c50213c0c32087f739ea242c60d67f62a3be761c3eece8f"
+      }
+    },
+    {
+      "baseline": {
+        "id": 45331969755,
+        "sha": "eacd464519d790ba1c2027f26bca43636bff1e5f",
+        "ref": "ci/AWC-2-measure-baseline",
+        "digest": "5c1345b54b043ad5ccfbd658cf93b8929df666cb6c92ba85f332c895f7b47e4c",
+        "workload": "3dd5c2bed6cac20891414f07f7274f572c6ebd95",
+        "runnerClass": "GitHub-hosted ubuntu-latest x64, single fresh validate job",
+        "cachePolicy": "No Actions dependency or compiler cache. Fresh checkout without lock, node_modules or tsbuildinfo. Compare observed pre-install store count and generated lock SHA-256.",
+        "witness": "83dbbf96e4d4c7dbeafbe7ac6f938f129327c00e260b9fbe9a25c01a00069520"
+      },
+      "candidate": {
+        "id": 45332203909,
+        "sha": "1b11211469b0c3329c368e5118a64b172dab5aa6",
+        "ref": "ci/AWC-2-measure-candidate",
+        "digest": "8f2c335139ff1613439399b12d17aa2bcdb80fa6b1661f73f4d86391ef443908",
+        "workload": "3dd5c2bed6cac20891414f07f7274f572c6ebd95",
+        "runnerClass": "GitHub-hosted ubuntu-latest x64, single fresh validate job",
+        "cachePolicy": "No Actions dependency or compiler cache. Fresh checkout without lock, node_modules or tsbuildinfo. Compare observed pre-install store count and generated lock SHA-256.",
+        "witness": "a5ae49d5ed71024b82a69272d66c77cac742c905e0a89dc57d202a8ffd0d0836"
+      }
+    }
+  ]
+}
