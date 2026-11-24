@@ -1,4 +1,6 @@
 """Turn this checkout's completed validation outputs into portable task records."""
+import base64
+import gzip
 import hashlib
 import json
 import os
@@ -125,6 +127,8 @@ def main():
             "sha": os.getenv("GITHUB_SHA"), "event": os.getenv("GITHUB_EVENT_NAME"), "job": os.getenv("GITHUB_JOB"),
             "lockSha256": digest(Path("pnpm-lock.yaml").read_bytes())}
     (MARK / "metadata.json").write_bytes(encode(meta) + b"\n")
+    # The job log is a second source for the verified task bytes.
+    print("AWC_WORK_GZIP_BASE64=" + base64.b64encode(gzip.compress((MARK / "tasks.json").read_bytes(), mtime=0)).decode())
     print(f"{len(tasks)} completed validation tasks", json.dumps(versions, sort_keys=True))
 
 if __name__ == "__main__":
