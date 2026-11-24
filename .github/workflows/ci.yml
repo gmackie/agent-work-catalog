@@ -15,7 +15,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     env:
-      PROOF_DIR: ${{ github.workspace }}/../awc-completed-work
+      PROOF_DIR: ${{ github.workspace }}/awc-completed-work
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
