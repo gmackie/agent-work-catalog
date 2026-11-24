@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "origin": "https://github.com",
+  "repo": "gmackie/agent-work-catalog",
+  "workflow": "ci.yml",
+  "hypothesis": "Reduce repeated TypeScript work in Agent Work Catalog validation while preserving every package check.",
+  "requiredChecks": [
+    "validate"
+  ],
+  "workload": "3dd5c2bed6cac20891414f07f7274f572c6ebd95",
+  "conditions": {
+    "baseline": {
+      "branch": "ci/AWC-2-measure-baseline",
+      "product": "4f30ec93253662129e26fb4175086799820d8677"
+    },
+    "candidate": {
+      "branch": "ci/AWC-2-measure-candidate",
+      "product": "34d96abb689c1930bbc2bdd960ad3246ad1b30b1"
+    }
+  },
+  "schedule": [
+    [
+      "baseline",
+      "candidate"
+    ],
+    [
+      "candidate",
+      "baseline"
+    ],
+    [
+      "baseline",
+      "candidate"
+    ]
+  ],
+  "runnerClass": "GitHub-hosted ubuntu-latest x64, single fresh validate job",
+  "cachePolicy": "No Actions dependency or compiler cache. Fresh checkout without lock, node_modules or tsbuildinfo. Compare observed pre-install store count and generated lock SHA-256.",
+  "clock": "creation to last executed job completion; queue ends at first recorded job start",
+  "eventPolicy": "Use workflow_dispatch on fixed refs. If GitHub rejects dispatch before creating a run, use pull_request opened/reopened on both unchanged heads. Six independent first attempts total. No reruns or replacements."
+}

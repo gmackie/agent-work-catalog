@@ -1,11 +1,21 @@
 name: CI
+run-name: ${{ inputs.sample || github.event.pull_request.title || github.ref_name }}
 on:
   push:
     branches: [main, "feat/**", "design/**"]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      sample:
+        description: Predeclared pair and side
+        required: true
+        type: string
+
 jobs:
   validate:
     runs-on: ubuntu-latest
+    env:
+      PROOF_DIR: ${{ github.workspace }}/../awc-completed-work
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -14,11 +24,43 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Record fresh checkout and package store
+        shell: bash
+        run: |
+          test ! -e node_modules
+          test ! -e pnpm-lock.yaml
+          test -z "$(find apps examples packages -name '*.tsbuildinfo' -print -quit)"
+          mkdir -p "$PROOF_DIR"
+          store=$(pnpm store path)
+          if [[ -d "$store" ]]; then
+            find "$store" -type f | wc -l > "$PROOF_DIR/store-files-before.txt"
+          else
+            echo 0 > "$PROOF_DIR/store-files-before.txt"
+          fi
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm --filter @awc/mcp-ui build
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm operations:demo
-      - run: pnpm standards:demo
+      - name: Run pnpm typecheck
+        shell: bash
+        run: |
+          mkdir -p "$PROOF_DIR"
+          pnpm typecheck | tee "$PROOF_DIR/typecheck.log"
+      - name: Run pnpm test
+        run: pnpm test --reporter=json --outputFile=awc-ci-vitest.json
+      - name: Run pnpm operations:demo
+        shell: bash
+        run: pnpm operations:demo | tee "$PROOF_DIR/operations.log"
+      - name: Run pnpm standards:demo
+        shell: bash
+        run: pnpm standards:demo | tee "$PROOF_DIR/standards.log"
       - run: pnpm --filter @awc/server bundle
       - run: pnpm --filter @awc/example-remote-executor bundle
+      - name: Verify completed work
+        run: python3 .ci-pilot/report.py
+      - name: Preserve completed work
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: awc-work-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.PROOF_DIR }}
+          if-no-files-found: error
+          retention-days: 30

@@ -1,0 +1,919 @@
+{
+  "apps/demo/tsconfig.json": {
+    "roots": [
+      "apps/demo/src/main.ts"
+    ],
+    "sourceFiles": [
+      "apps/demo/src/main.ts",
+      "packages/contracts/src/index.ts",
+      "packages/runtime/src/index.ts"
+    ],
+    "programFiles": 348
+  },
+  "apps/mcp-ui/tsconfig.json": {
+    "roots": [
+      "apps/mcp-ui/src/contract.ts",
+      "apps/mcp-ui/src/main.ts",
+      "apps/mcp-ui/src/operations.ts",
+      "apps/mcp-ui/src/tcp-report.ts",
+      "apps/mcp-ui/vite.config.ts",
+      "apps/mcp-ui/vite.contract.config.ts",
+      "apps/mcp-ui/vite.operations.config.ts",
+      "apps/mcp-ui/vite.tcp.config.ts"
+    ],
+    "sourceFiles": [
+      "apps/mcp-ui/src/contract.ts",
+      "apps/mcp-ui/src/main.ts",
+      "apps/mcp-ui/src/operations.ts",
+      "apps/mcp-ui/src/tcp-report.ts",
+      "apps/mcp-ui/vite.config.ts",
+      "apps/mcp-ui/vite.contract.config.ts",
+      "apps/mcp-ui/vite.operations.config.ts",
+      "apps/mcp-ui/vite.tcp.config.ts"
+    ],
+    "programFiles": 329
+  },
+  "apps/operations-demo/tsconfig.json": {
+    "roots": [
+      "apps/operations-demo/src/main.ts"
+    ],
+    "sourceFiles": [
+      "apps/operations-demo/src/main.ts",
+      "packages/contracts/src/index.ts",
+      "packages/economics/src/index.ts",
+      "packages/operations/src/index.ts",
+      "packages/operations/src/planner.ts",
+      "packages/operations/src/simulated.ts",
+      "packages/responsibility/src/index.ts",
+      "packages/simulations/src/index.ts"
+    ],
+    "programFiles": 353
+  },
+  "apps/server/tsconfig.json": {
+    "roots": [
+      "apps/server/src/index.ts",
+      "apps/server/src/treasury.ts",
+      "apps/server/test/artifact-upload.test.ts",
+      "apps/server/test/cloudflare-workers-mock.ts",
+      "apps/server/test/github-source.test.ts",
+      "apps/server/test/modbus-e2e.test.ts",
+      "apps/server/test/server.test.ts",
+      "apps/server/test/tcp-e2e.test.ts",
+      "apps/server/test/tcp-flow-e2e.test.ts"
+    ],
+    "sourceFiles": [
+      "apps/server/src/index.ts",
+      "apps/server/src/treasury.ts",
+      "apps/server/test/artifact-upload.test.ts",
+      "apps/server/test/cloudflare-workers-mock.ts",
+      "apps/server/test/github-source.test.ts",
+      "apps/server/test/modbus-e2e.test.ts",
+      "apps/server/test/server.test.ts",
+      "apps/server/test/tcp-e2e.test.ts",
+      "apps/server/test/tcp-flow-e2e.test.ts",
+      "examples/remote-executor/src/index.ts",
+      "packages/adapter-github/src/app-auth.ts",
+      "packages/adapter-github/src/index.ts",
+      "packages/adapter-remote-http/src/index.ts",
+      "packages/adapter-sdk/src/index.ts",
+      "packages/artifact-custody/src/index.ts",
+      "packages/attest-receipts/src/index.ts",
+      "packages/attest-receipts/src/tcp.ts",
+      "packages/auth/src/index.ts",
+      "packages/authzen-approval-client/src/index.ts",
+      "packages/authzen-client/src/index.ts",
+      "packages/authzen/src/index.ts",
+      "packages/coaz-mcp/src/index.ts",
+      "packages/commerce/src/d1.ts",
+      "packages/commerce/src/index.ts",
+      "packages/commerce/src/stripe.ts",
+      "packages/contracts/src/index.ts",
+      "packages/dispatch/src/d1.ts",
+      "packages/dispatch/src/index.ts",
+      "packages/domain-opportunities/src/index.ts",
+      "packages/economics-durable/src/index.ts",
+      "packages/economics/src/index.ts",
+      "packages/epcis-adapter/src/index.ts",
+      "packages/events/src/index.ts",
+      "packages/mandate-registry/src/d1-tools.ts",
+      "packages/mandate-registry/src/d1.ts",
+      "packages/mandate-registry/src/index.ts",
+      "packages/mandate-registry/src/tools.ts",
+      "packages/marketplace/src/d1.ts",
+      "packages/marketplace/src/index.ts",
+      "packages/mcp-server/src/index.ts",
+      "packages/modbus-pcap/src/index.ts",
+      "packages/modbus-pcap/src/testing.ts",
+      "packages/modbus-workflow/src/index.ts",
+      "packages/oauth-rar/src/index.ts",
+      "packages/odrl-profile/src/index.ts",
+      "packages/offering-profiles/src/index.ts",
+      "packages/openslo/src/index.ts",
+      "packages/operations/src/index.ts",
+      "packages/operations/src/planner.ts",
+      "packages/operations/src/simulated.ts",
+      "packages/osb-adapter/src/index.ts",
+      "packages/pdp-auth/src/index.ts",
+      "packages/provenance/src/index.ts",
+      "packages/responsibility/src/index.ts",
+      "packages/simulations/src/index.ts",
+      "packages/source-inbox/src/d1.ts",
+      "packages/source-inbox/src/index.ts",
+      "packages/standards-demo/src/index.ts",
+      "packages/tcp-analysis/src/index.ts",
+      "packages/tcp-pcap/src/index.ts",
+      "packages/tcp-workflow/src/flow.ts",
+      "packages/tcp-workflow/src/index.ts",
+      "packages/token-exchange/src/index.ts",
+      "packages/ubl-adapter/src/index.ts"
+    ],
+    "programFiles": 1437
+  },
+  "apps/standards-demo-cli/tsconfig.json": {
+    "roots": [
+      "apps/standards-demo-cli/src/main.ts"
+    ],
+    "sourceFiles": [
+      "apps/standards-demo-cli/src/main.ts",
+      "packages/authzen/src/index.ts",
+      "packages/contracts/src/index.ts",
+      "packages/economics/src/index.ts",
+      "packages/epcis-adapter/src/index.ts",
+      "packages/events/src/index.ts",
+      "packages/oauth-rar/src/index.ts",
+      "packages/odrl-profile/src/index.ts",
+      "packages/openslo/src/index.ts",
+      "packages/operations/src/index.ts",
+      "packages/operations/src/planner.ts",
+      "packages/operations/src/simulated.ts",
+      "packages/osb-adapter/src/index.ts",
+      "packages/provenance/src/index.ts",
+      "packages/responsibility/src/index.ts",
+      "packages/simulations/src/index.ts",
+      "packages/standards-demo/src/index.ts",
+      "packages/ubl-adapter/src/index.ts"
+    ],
+    "programFiles": 363
+  },
+  "packages/adapter-github/tsconfig.json": {
+    "roots": [
+      "packages/adapter-github/src/app-auth.ts",
+      "packages/adapter-github/src/index.ts",
+      "packages/adapter-github/test/app-auth.test.ts",
+      "packages/adapter-github/test/github.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/adapter-github/src/app-auth.ts",
+      "packages/adapter-github/src/index.ts",
+      "packages/adapter-github/test/app-auth.test.ts",
+      "packages/adapter-github/test/github.test.ts",
+      "packages/adapter-sdk/src/index.ts",
+      "packages/contracts/src/index.ts"
+    ],
+    "programFiles": 321
+  },
+  "packages/adapter-remote-http/tsconfig.json": {
+    "roots": [
+      "packages/adapter-remote-http/src/index.ts",
+      "packages/adapter-remote-http/test/remote.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/adapter-remote-http/src/index.ts",
+      "packages/adapter-remote-http/test/remote.test.ts",
+      "packages/adapter-sdk/src/conformance.ts",
+      "packages/adapter-sdk/src/index.ts",
+      "packages/contracts/src/index.ts"
+    ],
+    "programFiles": 289
+  },
+  "packages/adapter-sdk/tsconfig.json": {
+    "roots": [
+      "packages/adapter-sdk/src/conformance.ts",
+      "packages/adapter-sdk/src/index.ts",
+      "packages/adapter-sdk/src/managed-systems.ts",
+      "packages/adapter-sdk/test/adapter.test.ts",
+      "packages/adapter-sdk/test/sdk.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/adapter-sdk/src/conformance.ts",
+      "packages/adapter-sdk/src/index.ts",
+      "packages/adapter-sdk/src/managed-systems.ts",
+      "packages/adapter-sdk/test/adapter.test.ts",
+      "packages/adapter-sdk/test/sdk.test.ts",
+      "packages/contracts/src/index.ts",
+      "packages/economics/src/index.ts",
+      "packages/operations/src/index.ts",
+      "packages/responsibility/src/index.ts"
+    ],
+    "programFiles": 293
+  },
+  "packages/artifact-custody/tsconfig.json": {
+    "roots": [
+      "packages/artifact-custody/src/index.ts",
+      "packages/artifact-custody/test/custody.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/artifact-custody/src/index.ts",
+      "packages/artifact-custody/test/custody.test.ts"
+    ],
+    "programFiles": 109
+  },
+  "packages/attest-receipts/tsconfig.json": {
+    "roots": [
+      "packages/attest-receipts/src/index.ts",
+      "packages/attest-receipts/src/tcp.ts",
+      "packages/attest-receipts/test/receipt.test.ts",
+      "packages/attest-receipts/test/tcp.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/attest-receipts/src/index.ts",
+      "packages/attest-receipts/src/tcp.ts",
+      "packages/attest-receipts/test/receipt.test.ts",
+      "packages/attest-receipts/test/tcp.test.ts"
+    ],
+    "programFiles": 142
+  },
+  "packages/auth/tsconfig.json": {
+    "roots": [
+      "packages/auth/src/index.ts",
+      "packages/auth/test/auth.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/auth/src/index.ts",
+      "packages/auth/test/auth.test.ts"
+    ],
+    "programFiles": 251
+  },
+  "packages/authzen/tsconfig.json": {
+    "roots": [
+      "packages/authzen/src/index.ts",
+      "packages/authzen/test/authzen.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/authzen/src/index.ts",
+      "packages/authzen/test/authzen.test.ts",
+      "packages/contracts/src/index.ts",
+      "packages/responsibility/src/index.ts"
+    ],
+    "programFiles": 288
+  },
+  "packages/authzen-approval-client/tsconfig.json": {
+    "roots": [
+      "packages/authzen-approval-client/src/index.ts",
+      "packages/authzen-approval-client/test/approval.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/authzen-approval-client/src/index.ts",
+      "packages/authzen-approval-client/test/approval.test.ts",
+      "packages/authzen/src/index.ts",
+      "packages/contracts/src/index.ts",
+      "packages/responsibility/src/index.ts"
+    ],
+    "programFiles": 289
+  },
+  "packages/authzen-client/tsconfig.json": {
+    "roots": [
+      "packages/authzen-client/src/index.ts",
+      "packages/authzen-client/test/client.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/authzen-client/src/index.ts",
+      "packages/authzen-client/test/client.test.ts",
+      "packages/authzen/src/index.ts",
+      "packages/contracts/src/index.ts",
+      "packages/responsibility/src/index.ts"
+    ],
+    "programFiles": 289
+  },
+  "packages/authzen-finance/tsconfig.json": {
+    "roots": [
+      "packages/authzen-finance/src/index.ts",
+      "packages/authzen-finance/test/finance.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/authzen-finance/src/index.ts",
+      "packages/authzen-finance/test/finance.test.ts",
+      "packages/authzen/src/index.ts",
+      "packages/contracts/src/index.ts",
+      "packages/economics-durable/src/index.ts",
+      "packages/economics/src/index.ts",
+      "packages/epcis-adapter/src/index.ts",
+      "packages/events/src/index.ts",
+      "packages/oauth-rar/src/index.ts",
+      "packages/odrl-profile/src/index.ts",
+      "packages/openslo/src/index.ts",
+      "packages/operations/src/index.ts",
+      "packages/operations/src/planner.ts",
+      "packages/operations/src/simulated.ts",
+      "packages/osb-adapter/src/index.ts",
+      "packages/provenance/src/index.ts",
+      "packages/responsibility/src/index.ts",
+      "packages/simulations/src/index.ts",
+      "packages/standards-demo/src/index.ts",
+      "packages/ubl-adapter/src/index.ts"
+    ],
+    "programFiles": 304
+  },
+  "packages/catalog/tsconfig.json": {
+    "roots": [
+      "packages/catalog/src/index.ts",
+      "packages/catalog/test/catalog.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/catalog/src/index.ts",
+      "packages/catalog/test/catalog.test.ts",
+      "packages/contracts/src/index.ts"
+    ],
+    "programFiles": 287
+  },
+  "packages/coaz-mcp/tsconfig.json": {
+    "roots": [
+      "packages/coaz-mcp/src/index.ts",
+      "packages/coaz-mcp/test/coaz.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/authzen/src/index.ts",
+      "packages/coaz-mcp/src/index.ts",
+      "packages/coaz-mcp/test/coaz.test.ts",
+      "packages/contracts/src/index.ts",
+      "packages/responsibility/src/index.ts"
+    ],
+    "programFiles": 289
+  },
+  "packages/commerce/tsconfig.json": {
+    "roots": [
+      "packages/commerce/src/d1.ts",
+      "packages/commerce/src/index.ts",
+      "packages/commerce/src/stripe.ts",
+      "packages/commerce/test/commerce.test.ts",
+      "packages/commerce/test/stripe.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/commerce/src/d1.ts",
+      "packages/commerce/src/index.ts",
+      "packages/commerce/src/stripe.ts",
+      "packages/commerce/test/commerce.test.ts",
+      "packages/commerce/test/stripe.test.ts",
+      "packages/contracts/src/index.ts",
+      "packages/marketplace/src/index.ts"
+    ],
+    "programFiles": 658
+  },
+  "packages/contracts/tsconfig.json": {
+    "roots": [
+      "packages/contracts/src/index.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts"
+    ],
+    "programFiles": 236
+  },
+  "packages/dispatch/tsconfig.json": {
+    "roots": [
+      "packages/dispatch/src/d1.ts",
+      "packages/dispatch/src/index.ts",
+      "packages/dispatch/test/dispatch.test.ts",
+      "packages/dispatch/test/remote-e2e.test.ts"
+    ],
+    "sourceFiles": [
+      "examples/remote-executor/src/index.ts",
+      "packages/adapter-remote-http/src/index.ts",
+      "packages/adapter-sdk/src/index.ts",
+      "packages/commerce/src/index.ts",
+      "packages/contracts/src/index.ts",
+      "packages/dispatch/src/d1.ts",
+      "packages/dispatch/src/index.ts",
+      "packages/dispatch/test/dispatch.test.ts",
+      "packages/dispatch/test/remote-e2e.test.ts",
+      "packages/marketplace/src/index.ts",
+      "packages/modbus-pcap/src/index.ts",
+      "packages/tcp-analysis/src/index.ts",
+      "packages/tcp-pcap/src/index.ts"
+    ],
+    "programFiles": 408
+  },
+  "packages/domain-opportunities/tsconfig.json": {
+    "roots": [
+      "packages/domain-opportunities/src/index.ts",
+      "packages/domain-opportunities/test/domains.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/domain-opportunities/src/index.ts",
+      "packages/domain-opportunities/test/domains.test.ts"
+    ],
+    "programFiles": 109
+  },
+  "packages/economics/tsconfig.json": {
+    "roots": [
+      "packages/economics/src/index.ts",
+      "packages/economics/test/ledger.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/economics/src/index.ts",
+      "packages/economics/test/ledger.test.ts",
+      "packages/responsibility/src/index.ts"
+    ],
+    "programFiles": 288
+  },
+  "packages/economics-durable/tsconfig.json": {
+    "roots": [
+      "packages/economics-durable/src/index.ts",
+      "packages/economics-durable/test/ledger.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/economics-durable/src/index.ts",
+      "packages/economics-durable/test/ledger.test.ts",
+      "packages/responsibility/src/index.ts"
+    ],
+    "programFiles": 398
+  },
+  "packages/epcis-adapter/tsconfig.json": {
+    "roots": [
+      "packages/epcis-adapter/src/index.ts",
+      "packages/epcis-adapter/test/epcis.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/epcis-adapter/src/index.ts",
+      "packages/epcis-adapter/test/epcis.test.ts"
+    ],
+    "programFiles": 109
+  },
+  "packages/events/tsconfig.json": {
+    "roots": [
+      "packages/events/src/index.ts",
+      "packages/events/test/events.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/economics/src/index.ts",
+      "packages/events/src/index.ts",
+      "packages/events/test/events.test.ts",
+      "packages/operations/src/index.ts",
+      "packages/responsibility/src/index.ts"
+    ],
+    "programFiles": 290
+  },
+  "packages/mandate-registry/tsconfig.json": {
+    "roots": [
+      "packages/mandate-registry/src/d1-tools.ts",
+      "packages/mandate-registry/src/d1.ts",
+      "packages/mandate-registry/src/index.ts",
+      "packages/mandate-registry/src/tools.ts",
+      "packages/mandate-registry/test/registry.test.ts",
+      "packages/mandate-registry/test/tools.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/authzen/src/index.ts",
+      "packages/coaz-mcp/src/index.ts",
+      "packages/contracts/src/index.ts",
+      "packages/economics/src/index.ts",
+      "packages/epcis-adapter/src/index.ts",
+      "packages/events/src/index.ts",
+      "packages/mandate-registry/src/d1-tools.ts",
+      "packages/mandate-registry/src/d1.ts",
+      "packages/mandate-registry/src/index.ts",
+      "packages/mandate-registry/src/tools.ts",
+      "packages/mandate-registry/test/registry.test.ts",
+      "packages/mandate-registry/test/tools.test.ts",
+      "packages/oauth-rar/src/index.ts",
+      "packages/odrl-profile/src/index.ts",
+      "packages/openslo/src/index.ts",
+      "packages/operations/src/index.ts",
+      "packages/operations/src/planner.ts",
+      "packages/operations/src/simulated.ts",
+      "packages/osb-adapter/src/index.ts",
+      "packages/provenance/src/index.ts",
+      "packages/responsibility/src/index.ts",
+      "packages/simulations/src/index.ts",
+      "packages/standards-demo/src/index.ts",
+      "packages/ubl-adapter/src/index.ts"
+    ],
+    "programFiles": 308
+  },
+  "packages/marketplace/tsconfig.json": {
+    "roots": [
+      "packages/marketplace/src/d1.ts",
+      "packages/marketplace/src/index.ts",
+      "packages/marketplace/test/marketplace.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/marketplace/src/d1.ts",
+      "packages/marketplace/src/index.ts",
+      "packages/marketplace/test/marketplace.test.ts"
+    ],
+    "programFiles": 288
+  },
+  "packages/mcp-server/tsconfig.json": {
+    "roots": [
+      "packages/mcp-server/src/index.ts",
+      "packages/mcp-server/test/mcp.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/adapter-sdk/src/index.ts",
+      "packages/authzen/src/index.ts",
+      "packages/commerce/src/index.ts",
+      "packages/contracts/src/index.ts",
+      "packages/dispatch/src/index.ts",
+      "packages/domain-opportunities/src/index.ts",
+      "packages/economics/src/index.ts",
+      "packages/epcis-adapter/src/index.ts",
+      "packages/events/src/index.ts",
+      "packages/marketplace/src/index.ts",
+      "packages/mcp-server/src/index.ts",
+      "packages/mcp-server/test/mcp.test.ts",
+      "packages/modbus-pcap/src/index.ts",
+      "packages/oauth-rar/src/index.ts",
+      "packages/odrl-profile/src/index.ts",
+      "packages/offering-profiles/src/index.ts",
+      "packages/openslo/src/index.ts",
+      "packages/operations/src/index.ts",
+      "packages/operations/src/planner.ts",
+      "packages/operations/src/simulated.ts",
+      "packages/osb-adapter/src/index.ts",
+      "packages/provenance/src/index.ts",
+      "packages/responsibility/src/index.ts",
+      "packages/simulations/src/index.ts",
+      "packages/source-inbox/src/index.ts",
+      "packages/standards-demo/src/index.ts",
+      "packages/tcp-analysis/src/index.ts",
+      "packages/tcp-pcap/src/index.ts",
+      "packages/ubl-adapter/src/index.ts"
+    ],
+    "programFiles": 1111
+  },
+  "packages/modbus-pcap/tsconfig.json": {
+    "roots": [
+      "packages/modbus-pcap/src/index.ts",
+      "packages/modbus-pcap/src/testing.ts",
+      "packages/modbus-pcap/test/modbus.test.ts",
+      "packages/modbus-pcap/test/mutation.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/modbus-pcap/src/index.ts",
+      "packages/modbus-pcap/src/testing.ts",
+      "packages/modbus-pcap/test/modbus.test.ts",
+      "packages/modbus-pcap/test/mutation.test.ts"
+    ],
+    "programFiles": 111
+  },
+  "packages/modbus-workflow/tsconfig.json": {
+    "roots": [
+      "packages/modbus-workflow/src/index.ts",
+      "packages/modbus-workflow/test/workflow.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/adapter-sdk/src/index.ts",
+      "packages/artifact-custody/src/index.ts",
+      "packages/attest-receipts/src/index.ts",
+      "packages/commerce/src/index.ts",
+      "packages/contracts/src/index.ts",
+      "packages/dispatch/src/index.ts",
+      "packages/marketplace/src/index.ts",
+      "packages/modbus-pcap/src/index.ts",
+      "packages/modbus-pcap/src/testing.ts",
+      "packages/modbus-workflow/src/index.ts",
+      "packages/modbus-workflow/test/workflow.test.ts",
+      "packages/tcp-analysis/src/index.ts",
+      "packages/tcp-pcap/src/index.ts"
+    ],
+    "programFiles": 328
+  },
+  "packages/oauth-rar/tsconfig.json": {
+    "roots": [
+      "packages/oauth-rar/src/index.ts",
+      "packages/oauth-rar/test/rar.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/oauth-rar/src/index.ts",
+      "packages/oauth-rar/test/rar.test.ts",
+      "packages/responsibility/src/index.ts"
+    ],
+    "programFiles": 288
+  },
+  "packages/odrl-profile/tsconfig.json": {
+    "roots": [
+      "packages/odrl-profile/src/index.ts",
+      "packages/odrl-profile/test/odrl.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/odrl-profile/src/index.ts",
+      "packages/odrl-profile/test/odrl.test.ts",
+      "packages/responsibility/src/index.ts"
+    ],
+    "programFiles": 288
+  },
+  "packages/offering-profiles/tsconfig.json": {
+    "roots": [
+      "packages/offering-profiles/src/index.ts",
+      "packages/offering-profiles/test/offering.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/offering-profiles/src/index.ts",
+      "packages/offering-profiles/test/offering.test.ts"
+    ],
+    "programFiles": 109
+  },
+  "packages/openslo/tsconfig.json": {
+    "roots": [
+      "packages/openslo/src/index.ts",
+      "packages/openslo/test/openslo.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/openslo/src/index.ts",
+      "packages/openslo/test/openslo.test.ts",
+      "packages/responsibility/src/index.ts"
+    ],
+    "programFiles": 288
+  },
+  "packages/operations/tsconfig.json": {
+    "roots": [
+      "packages/operations/src/index.ts",
+      "packages/operations/src/planner.ts",
+      "packages/operations/src/simulated.ts",
+      "packages/operations/test/operations.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/economics/src/index.ts",
+      "packages/operations/src/index.ts",
+      "packages/operations/src/planner.ts",
+      "packages/operations/src/simulated.ts",
+      "packages/operations/test/operations.test.ts",
+      "packages/responsibility/src/index.ts"
+    ],
+    "programFiles": 291
+  },
+  "packages/osb-adapter/tsconfig.json": {
+    "roots": [
+      "packages/osb-adapter/src/index.ts",
+      "packages/osb-adapter/test/osb.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/osb-adapter/src/index.ts",
+      "packages/osb-adapter/test/osb.test.ts"
+    ],
+    "programFiles": 109
+  },
+  "packages/payment-stripe/tsconfig.json": {
+    "roots": [
+      "packages/payment-stripe/src/index.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/payment-stripe/src/index.ts",
+      "packages/runtime/src/index.ts"
+    ],
+    "programFiles": 605
+  },
+  "packages/pdp-auth/tsconfig.json": {
+    "roots": [
+      "packages/pdp-auth/src/index.ts",
+      "packages/pdp-auth/test/auth.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/authzen/src/index.ts",
+      "packages/contracts/src/index.ts",
+      "packages/mandate-registry/src/index.ts",
+      "packages/pdp-auth/src/index.ts",
+      "packages/pdp-auth/test/auth.test.ts",
+      "packages/responsibility/src/index.ts"
+    ],
+    "programFiles": 321
+  },
+  "packages/pilot-evaluation/tsconfig.json": {
+    "roots": [
+      "packages/pilot-evaluation/src/index.ts",
+      "packages/pilot-evaluation/test/evaluation.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/pilot-evaluation/src/index.ts",
+      "packages/pilot-evaluation/test/evaluation.test.ts",
+      "packages/tcp-pcap/src/index.ts"
+    ],
+    "programFiles": 397
+  },
+  "packages/provenance/tsconfig.json": {
+    "roots": [
+      "packages/provenance/src/index.ts",
+      "packages/provenance/test/prov.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/economics/src/index.ts",
+      "packages/operations/src/index.ts",
+      "packages/provenance/src/index.ts",
+      "packages/provenance/test/prov.test.ts",
+      "packages/responsibility/src/index.ts"
+    ],
+    "programFiles": 290
+  },
+  "packages/provider-http/tsconfig.json": {
+    "roots": [
+      "packages/provider-http/src/index.ts",
+      "packages/provider-http/test/provider.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/provider-http/src/index.ts",
+      "packages/provider-http/test/provider.test.ts",
+      "packages/runtime/src/index.ts"
+    ],
+    "programFiles": 288
+  },
+  "packages/responsibility/tsconfig.json": {
+    "roots": [
+      "packages/responsibility/src/index.ts",
+      "packages/responsibility/test/policy.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/responsibility/src/index.ts",
+      "packages/responsibility/test/policy.test.ts"
+    ],
+    "programFiles": 287
+  },
+  "packages/runtime/tsconfig.json": {
+    "roots": [
+      "packages/runtime/src/index.ts",
+      "packages/runtime/test/broker.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/runtime/src/index.ts",
+      "packages/runtime/test/broker.test.ts"
+    ],
+    "programFiles": 287
+  },
+  "packages/simulations/tsconfig.json": {
+    "roots": [
+      "packages/simulations/src/index.ts",
+      "packages/simulations/test/scenarios.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/economics/src/index.ts",
+      "packages/operations/src/index.ts",
+      "packages/operations/src/planner.ts",
+      "packages/operations/src/simulated.ts",
+      "packages/responsibility/src/index.ts",
+      "packages/simulations/src/index.ts",
+      "packages/simulations/test/scenarios.test.ts"
+    ],
+    "programFiles": 292
+  },
+  "packages/source-inbox/tsconfig.json": {
+    "roots": [
+      "packages/source-inbox/src/d1.ts",
+      "packages/source-inbox/src/index.ts",
+      "packages/source-inbox/test/inbox.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/adapter-sdk/src/index.ts",
+      "packages/contracts/src/index.ts",
+      "packages/source-inbox/src/d1.ts",
+      "packages/source-inbox/src/index.ts",
+      "packages/source-inbox/test/inbox.test.ts"
+    ],
+    "programFiles": 289
+  },
+  "packages/standards-demo/tsconfig.json": {
+    "roots": [
+      "packages/standards-demo/src/index.ts",
+      "packages/standards-demo/test/integration.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/authzen/src/index.ts",
+      "packages/contracts/src/index.ts",
+      "packages/economics/src/index.ts",
+      "packages/epcis-adapter/src/index.ts",
+      "packages/events/src/index.ts",
+      "packages/oauth-rar/src/index.ts",
+      "packages/odrl-profile/src/index.ts",
+      "packages/openslo/src/index.ts",
+      "packages/operations/src/index.ts",
+      "packages/operations/src/planner.ts",
+      "packages/operations/src/simulated.ts",
+      "packages/osb-adapter/src/index.ts",
+      "packages/provenance/src/index.ts",
+      "packages/responsibility/src/index.ts",
+      "packages/simulations/src/index.ts",
+      "packages/standards-demo/src/index.ts",
+      "packages/standards-demo/test/integration.test.ts",
+      "packages/ubl-adapter/src/index.ts"
+    ],
+    "programFiles": 302
+  },
+  "packages/tcp-analysis/tsconfig.json": {
+    "roots": [
+      "packages/tcp-analysis/src/index.ts",
+      "packages/tcp-analysis/test/offerings.test.ts",
+      "packages/tcp-analysis/test/tcp.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/modbus-pcap/src/testing.ts",
+      "packages/tcp-analysis/src/index.ts",
+      "packages/tcp-analysis/test/offerings.test.ts",
+      "packages/tcp-analysis/test/tcp.test.ts",
+      "specs/agent-opportunity-map-v1.json",
+      "specs/tcp-offering-family-v1.json"
+    ],
+    "programFiles": 113
+  },
+  "packages/tcp-pcap/tsconfig.json": {
+    "roots": [
+      "packages/tcp-pcap/src/index.ts",
+      "packages/tcp-pcap/test/mutation.test.ts",
+      "packages/tcp-pcap/test/tcp.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/tcp-pcap/src/index.ts",
+      "packages/tcp-pcap/test/mutation.test.ts",
+      "packages/tcp-pcap/test/tcp.test.ts"
+    ],
+    "programFiles": 110
+  },
+  "packages/tcp-workflow/tsconfig.json": {
+    "roots": [
+      "packages/tcp-workflow/src/flow.ts",
+      "packages/tcp-workflow/src/index.ts",
+      "packages/tcp-workflow/test/flow-workflow.test.ts",
+      "packages/tcp-workflow/test/workflow.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/adapter-sdk/src/index.ts",
+      "packages/artifact-custody/src/index.ts",
+      "packages/attest-receipts/src/index.ts",
+      "packages/attest-receipts/src/tcp.ts",
+      "packages/commerce/src/index.ts",
+      "packages/contracts/src/index.ts",
+      "packages/dispatch/src/index.ts",
+      "packages/marketplace/src/index.ts",
+      "packages/modbus-pcap/src/index.ts",
+      "packages/modbus-pcap/src/testing.ts",
+      "packages/tcp-analysis/src/index.ts",
+      "packages/tcp-pcap/src/index.ts",
+      "packages/tcp-workflow/src/flow.ts",
+      "packages/tcp-workflow/src/index.ts",
+      "packages/tcp-workflow/test/flow-workflow.test.ts",
+      "packages/tcp-workflow/test/workflow.test.ts"
+    ],
+    "programFiles": 331
+  },
+  "packages/token-exchange/tsconfig.json": {
+    "roots": [
+      "packages/token-exchange/src/index.ts",
+      "packages/token-exchange/test/token-exchange.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/token-exchange/src/index.ts",
+      "packages/token-exchange/test/token-exchange.test.ts"
+    ],
+    "programFiles": 109
+  },
+  "packages/ubl-adapter/tsconfig.json": {
+    "roots": [
+      "packages/ubl-adapter/src/index.ts",
+      "packages/ubl-adapter/test/ubl.test.ts"
+    ],
+    "sourceFiles": [
+      "packages/ubl-adapter/src/index.ts",
+      "packages/ubl-adapter/test/ubl.test.ts"
+    ],
+    "programFiles": 109
+  },
+  "packages/worker-openai/tsconfig.json": {
+    "roots": [
+      "packages/worker-openai/src/index.ts"
+    ],
+    "sourceFiles": [
+      "packages/contracts/src/index.ts",
+      "packages/runtime/src/index.ts",
+      "packages/worker-openai/src/index.ts"
+    ],
+    "programFiles": 238
+  },
+  "examples/remote-executor/tsconfig.json": {
+    "roots": [
+      "examples/remote-executor/src/index.ts",
+      "examples/remote-executor/test/worker.test.ts"
+    ],
+    "sourceFiles": [
+      "examples/remote-executor/src/index.ts",
+      "examples/remote-executor/test/worker.test.ts",
+      "packages/adapter-remote-http/src/index.ts",
+      "packages/adapter-sdk/src/conformance.ts",
+      "packages/adapter-sdk/src/index.ts",
+      "packages/contracts/src/index.ts",
+      "packages/modbus-pcap/src/index.ts",
+      "packages/tcp-analysis/src/index.ts",
+      "packages/tcp-pcap/src/index.ts"
+    ],
+    "programFiles": 404
+  }
+}
