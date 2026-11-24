@@ -10,7 +10,7 @@
   "scripts": {
     "check": "pnpm -r --if-present check",
     "test": "pnpm -r --if-present test",
-    "typecheck": "pnpm -r --if-present typecheck",
+    "typecheck": "node scripts/typecheck.mjs",
     "demo": "pnpm --filter @awc/demo start",
     "operations:demo": "pnpm --filter @awc/operations-demo start",
     "standards:demo": "pnpm --filter @awc/standards-demo-cli start"
